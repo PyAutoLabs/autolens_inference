@@ -49,6 +49,8 @@ hpc/batch_cpu/error/*
 !hpc/batch_gpu/error/.gitkeep
 !hpc/batch_cpu/output/.gitkeep
 !hpc/batch_cpu/error/.gitkeep
+# `hpc/sync pull` lands SLURM logs here (logs/{gpu,cpu}/{output,error}); never tracked.
+logs/
 
 # Local virtualenvs
 .venv/
