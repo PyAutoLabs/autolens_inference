@@ -1,0 +1,9 @@
+# Workspace overrides for the library lensing latent toggles. Enables all 5
+# default latents so every run in this repo carries the same latent catalogue —
+# a search is judged partly on whether the *derived* quantities agree across a
+# parity row, not only on the sampled parameters.
+total_lens_flux_mujy: true
+total_lensed_source_flux_mujy: true
+total_source_flux_mujy: true
+magnification: true
+effective_einstein_radius: true

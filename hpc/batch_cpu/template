@@ -1,0 +1,69 @@
+#!/bin/bash -l
+#
+# TEMPLATE — copy to `submit_<name>` and fill in. Do not submit this file.
+#
+# The CPU leg of a parity row: --partition=ral. There is NO `cpu` partition on RAL; a
+# submit that asks for one is rejected. Check `sinfo` before inventing a partition name.
+#
+# Name the copy for what it runs and the config it runs it as, e.g.
+#   submit_slam_hst_base_ral_numba_cpu_sparse_fp64
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This template runs nothing, so its row is a shape to copy, not a claim.
+#   `unmeasured` is the honest state in this repo today: wall/rates.py starts EMPTY and
+#   inherits no rate from the retired inference_programme. A CPU rate is never a stand-in
+#   for a GPU one, or the other way round.
+#   cell: imaging/<cell>/hst  device: ral_cpu  precision: fp64
+#   lanes: 1  steps: 3000  source: unmeasured  probe-first: yes
+
+#SBATCH -J <job_name>
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64gb
+#SBATCH --time=24:00:00
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_inference
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# PYAUTO_DISABLE_JAX is deliberately NOT set here. It is process-wide, and it belongs next
+# to the `--backend numba_cpu` flag that motivates it — a numba leg exports it in the
+# script below, a jax_cpu leg must not. Setting it in the template would make every CPU
+# submit a numba submit by accident.
+
+echo "=========================================="
+date
+echo "Cell:       <dataset_class>/<cell>"
+echo "Instrument: hst"
+echo "Config:     local_numba_cpu_sparse_fp64"
+
+cd $AP_ROOT
+
+# Replace with the real invocation. Left commented so the wall-clock gate reads this
+# template as running no cells — a template that "runs" one would have to justify it.
+#
+# A numba leg must pass use_jax=False to EVERY Analysis the pipeline builds; one missed
+# stage silently makes that stage a JAX run. --backend numba_cpu is what carries that.
+#
+# export PYAUTO_DISABLE_JAX=1
+# python3 scripts/<dataset_class>/<task>/<leaf>.py \
+#     --instrument hst \
+#     --backend numba_cpu \
+#     --inversion sparse \
+#     --seed 0 \
+#     --config-name local_numba_cpu_sparse_fp64
+
+echo "Finished."
+date

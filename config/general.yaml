@@ -1,0 +1,12 @@
+# PyAutoConf overrides for runs launched from this repo.
+hpc:
+  hpc_mode: false                   # NEVER delete the unzipped output tree. hpc_mode is the disk lever, not a logging switch: with it on, PyAutoFit removes the unzipped run directory and leaves only the .zip, which breaks every loose-file reader. This repo is judged on posteriors, samples and convergence history, so the tree stays.
+output:
+  remove_files: false               # keep every per-stage file. Outputs are the evidence here, not a by-product — budget ~150 MB per 5-stage lens per leg, and read AGENTS.md "Outputs are KEPT" before changing either of these two lines.
+  samples_to_csv: true              # write the samples table beside the run so a result row can be rebuilt without unpickling the search.
+test:
+  check_likelihood_function: true   # resume recomputes one likelihood per stage to verify consistency — a real resume cost this repo measures, so keep the production default.
+  disable_positions_lh_inversion_check: true   # workspace parity: slam source_pix[2]/light/mass compose pixelizations without positions_likelihood_list, as in autolens_workspace.
+  log_likelihood_ceiling: 1.0e+20    # opt in to PyAutoFit's magnitude guard (off in the packaged config, PyAutoFit#1549): finite garbage above this is replaced by the resample figure of merit. Enabled HERE and not by default because the threshold is unit-dependent, and this repo's cells have known units.
+version:
+  workspace_version_check: false    # this repo tracks main, not a release tag; the mismatch warning is expected noise in run logs.

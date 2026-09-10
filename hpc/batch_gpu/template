@@ -1,0 +1,68 @@
+#!/bin/bash -l
+#
+# TEMPLATE — copy to `submit_<name>` and fill in. Do not submit this file.
+#
+# The A100 leg of a parity row: --partition=gpu, one GPU, JAX on cuda.
+# Name the copy for what it runs and the config it runs it as, e.g.
+#   submit_slam_hst_base_a100_jax_gpu_dense_fp64
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This template runs nothing, so its row is a shape to copy, not a claim.
+#   `unmeasured` is the honest state in this repo today: wall/rates.py starts EMPTY and
+#   inherits no rate from the retired inference_programme. Replace `source: unmeasured`
+#   with `source: rates` only once a rate measured HERE, on THIS cell, is in rates.py.
+#   cell: imaging/<cell>/hst  device: a100  precision: fp64
+#   lanes: 1  steps: 3000  source: unmeasured  probe-first: yes
+
+#SBATCH -J <job_name>
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=3:00:00
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_inference
+source $AP_ROOT/activate.sh
+
+# JAX_PLATFORMS and JAX_ENABLE_X64 are exported EXPLICITLY, never inherited: without the
+# first, this job can silently fall back to CPU and report a "GPU" wall clock that is
+# nothing of the kind; without the second, an fp64 config runs in fp32.
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# Proof of what the job actually got. A four-second CUDA init failure and a healthy run
+# look identical in sacct; they do not look identical here.
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       <dataset_class>/<cell>"
+echo "Instrument: hst"
+echo "Config:     hpc_a100_jax_gpu_dense_fp64"
+
+cd $AP_ROOT
+
+# Replace with the real invocation. Left commented so the wall-clock gate reads this
+# template as running no cells — a template that "runs" one would have to justify it.
+#
+# python3 scripts/<dataset_class>/<task>/<leaf>.py \
+#     --instrument hst \
+#     --backend jax_gpu \
+#     --inversion dense \
+#     --seed 0 \
+#     --config-name hpc_a100_jax_gpu_dense_fp64
+
+echo "Finished."
+date

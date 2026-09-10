@@ -1,0 +1,35 @@
+# profile.yml — manual re-run of the runs this repo owns.
+#
+# TODO (phase 3 of the autolens-inference epic): wire this to the
+# backend-parameterised SLaM driver once it exists. Today it is a placeholder
+# that does nothing but say so.
+#
+# It is deliberately `workflow_dispatch` only, and it is NOT a PR gate:
+#
+#   - The real legs of a parity row are an A100 job and a multi-hour CPU job.
+#     Neither runs on a GitHub-hosted runner, and a leg that quietly ran on
+#     different hardware would be a row that lies about what it measured.
+#   - `lint.yml` is the per-PR gate. Inference burns wall clock; a PR is not
+#     the cadence for it.
+#
+# Real runs are submitted to RAL by hand: `hpc/sync submit [--gpu|--cpu] <name>`,
+# then `hpc/sync jobs` / `tail` / `pull`. See hpc/README.md.
+
+name: profile
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Nothing to run yet
+        run: |
+          echo "profile.yml is a phase-1 placeholder."
+          echo "The backend-parameterised driver lands in phase 3; until then,"
+          echo "runs are submitted to RAL by hand (hpc/sync submit)."

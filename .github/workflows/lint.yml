@@ -1,0 +1,137 @@
+# lint.yml — PR / push-to-main gate.
+#
+# Cheap, fast (<5 min), CPU-only. Runs on every PR and on push to main.
+# Does NOT produce real result artifacts — the smoke step short-circuits
+# every script via AUTOLENS_INFERENCE_SMOKE=1.
+#
+# Runs that actually produce results are submitted to RAL by hand
+# (hpc/sync submit); CI never runs an inference.
+
+name: lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout autolens_inference
+        uses: actions/checkout@v4
+        with:
+          path: autolens_inference
+
+      - name: Checkout PyAutoNerves
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoNerves
+          path: PyAutoNerves
+      - name: Checkout PyAutoFit
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoFit
+          path: PyAutoFit
+      - name: Checkout PyAutoArray
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoArray
+          path: PyAutoArray
+      - name: Checkout PyAutoGalaxy
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoGalaxy
+          path: PyAutoGalaxy
+      - name: Checkout PyAutoLens
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoLens
+          path: PyAutoLens
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          # Install each sibling checkout in dependency order (the PyAutoHeart
+          # lib-tests.yml pattern): satisfies the full third-party dep chain
+          # (pyyaml, astropy, jax, numba, ...) without hand-maintaining a
+          # package list. PYTHONPATH below still resolves the PyAuto* imports
+          # from source, so the checkouts stay authoritative.
+          for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+            pip install "./$r[optional]"
+          done
+
+      - name: Install lint tools
+        run: |
+          pip install ruff pytest
+          # lychee is a Rust binary; fetch the prebuilt release. The tarball
+          # nests everything under lychee-x86_64-unknown-linux-gnu/, so strip
+          # that leading directory and extract just the binary.
+          curl -sSfL https://github.com/lycheeverse/lychee/releases/latest/download/lychee-x86_64-unknown-linux-gnu.tar.gz \
+            | tar -xz -C /usr/local/bin --strip-components=1 lychee-x86_64-unknown-linux-gnu/lychee
+
+      - name: ruff check
+        working-directory: autolens_inference
+        run: ruff check .
+
+      - name: ruff format --check
+        working-directory: autolens_inference
+        run: ruff format --check .
+
+      - name: build_readme.py --check (dashboard idempotence)
+        working-directory: autolens_inference
+        run: python scripts/misc/tooling/build_readme.py --check
+
+      - name: wall check_submits.py --check (per-cell --time basis)
+        working-directory: autolens_inference
+        run: |
+          # Every submit -- and both hpc/batch_*/template files -- must justify
+          # its --time from a rate measured on the cell it runs. A submit that
+          # cited a parametric rate for a mostly-pixelized array lost 35 of 39
+          # arms at ~12% of budget. Pure stdlib: no PyAuto* imports needed.
+          python scripts/misc/wall/check_submits.py --check
+
+      - name: pytest — scripts/misc/test/
+        working-directory: autolens_inference
+        env:
+          MPLCONFIGDIR: /tmp/matplotlib
+          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
+        run: pytest scripts/misc/test -q
+
+      - name: lychee — markdown link-rot
+        working-directory: autolens_inference
+        run: |
+          # Conservative scope: only README.md files in this repo, exclude
+          # GitHub UI links that lychee tends to false-positive on, and the
+          # Slack invite (302 -> 403 to any non-browser client).
+          lychee \
+            --exclude '^https://github\.com/.*/(issues|pull|commit|releases)/' \
+            --exclude '^https://join\.slack\.com/' \
+            --no-progress \
+            --accept '200..=299,429' \
+            --max-redirects 5 \
+            $(find . -name 'README.md' -not -path './results/*' -not -path './dataset/*')
+
+      - name: Smoke — the simulators
+        working-directory: autolens_inference
+        env:
+          AUTOLENS_INFERENCE_SMOKE: "1"
+          NUMBA_CACHE_DIR: /tmp/numba_cache
+          MPLCONFIGDIR: /tmp/matplotlib
+          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
+        run: |
+          # Each script reads AUTOLENS_INFERENCE_SMOKE at module top and exits 0
+          # immediately after the import + setup section. Catches import-graph
+          # breakage without simulating or fitting anything.
+          python scripts/misc/simulators/imaging.py
+          python scripts/misc/simulators/interferometer.py
+          python scripts/misc/simulators/point_source.py
