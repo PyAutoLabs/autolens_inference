@@ -1,0 +1,80 @@
+#!/bin/bash -l
+#
+# THE RATE PROBE for the `imaging/slam/hst` cell on the A100.
+#
+# It runs ONE stage — `source_lp[1]`, the parametric MGE stage that opens the SLaM chain —
+# under `--stages source_lp`, and exists purely to measure seconds per likelihood
+# evaluation on this hardware. `wall/rates.py` starts empty in this repo and inherits
+# nothing from the retired `inference_programme`, so this job is the first A100 number
+# this project is allowed to cite, and every production submit beside it declares
+# `source: unmeasured  probe-first: yes` until it lands.
+#
+# Read the rate out of the result row it writes:
+#
+#   results/slam/imaging/hst/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json
+#   -> stages[0].wall_s / stages[0].likelihood_evals   (seconds per eval)
+#
+# `likelihood_evals` is nautilus's reject-INCLUSIVE `total_samples`, which is the count a
+# wall-clock budget has to be built on: the sampler pays for rejected proposals too.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This submit IS the probe, so its own `--time` cannot rest on a rate: there is none yet.
+#   `source: unmeasured` with no `wall:` is the honest declaration, and the gate accepts it
+#   without a budget check precisely because inventing a number to satisfy a linter is the
+#   disease rather than the cure. The 1-hour cap is a containment, not an estimate.
+#   cell: imaging/slam/hst  device: a100  precision: fp64
+#   lanes: 1  steps: 20000  source: unmeasured  probe-first: yes
+#   stages-run: source_lp  (one of five; NOT a basis for the full chain)
+
+#SBATCH -J slam_hst_rate_jax_gpu
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%j.out
+#SBATCH -e error/error.%j.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_inference
+source $AP_ROOT/activate.sh
+
+# JAX_PLATFORMS and JAX_ENABLE_X64 are exported EXPLICITLY, never inherited: without the
+# first, this job can silently fall back to CPU and report a "GPU" wall clock that is
+# nothing of the kind — and this job's entire output is a wall clock. Without the second,
+# an fp64 config runs in fp32.
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# Proof of what the job actually got. A four-second CUDA init failure and a healthy run
+# look identical in sacct; they do not look identical here.
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       imaging/slam/hst  (stage source_lp[1] only)"
+echo "Instrument: hst"
+echo "Config:     hpc_a100_jax_gpu_dense_fp64"
+
+cd $AP_ROOT
+
+python3 scripts/imaging/slam/hst.py \
+    --instrument hst \
+    --backend jax_gpu \
+    --inversion dense \
+    --seed 0 \
+    --config-name hpc_a100_jax_gpu_dense_fp64 \
+    --stages source_lp \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date

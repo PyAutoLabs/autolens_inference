@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,6 +38,35 @@ BACKENDS = ("jax_cpu", "numba_cpu", "jax_gpu")
 
 #: The ``--inversion`` vocabulary — the third field of the same grammar.
 INVERSIONS = ("dense", "sparse")
+
+#: The ``--config-name`` grammar, as a regex with one group per field:
+#: ``(where, backend, inversion, precision)``. Drivers match against this and
+#: refuse a name whose fields disagree with the flags actually passed — a config
+#: name that lies about its run turns a parity row into a lie, and nothing
+#: downstream (the result JSON, the README table, a Cortex ruling) can detect it.
+CONFIG_NAME_RE = re.compile(
+    r"^(local|hpc_a100)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse)_(fp64|mp)$"
+)
+
+#: The ``--stages`` vocabulary — the SLaM chain in order. ``--stages <name>``
+#: stops the driver after that stage, which is how a per-backend rate is
+#: measured from a ``source_lp``-only leg without paying for the whole chain.
+STAGES = ("source_lp", "source_pix_1", "source_pix_2", "light", "mass_total")
+
+
+def default_cores() -> int:
+    """Cores to parallelise over when ``--cores`` is not given.
+
+    ``SLURM_CPUS_PER_TASK`` first (inside a job, that is the allocation and
+    taking more is taking someone else's), then the machine's CPU count.
+    """
+    slurm = os.environ.get("SLURM_CPUS_PER_TASK")
+    if slurm:
+        try:
+            return int(slurm)
+        except ValueError:
+            pass
+    return os.cpu_count() or 1
 
 
 @dataclass(frozen=True)
@@ -52,6 +82,8 @@ class InferenceCLI:
     rect_mesh: str
     regularization: str | None
     memo: str
+    cores: int = 1
+    stages: str | None = None
 
 
 def parse_inference_cli(default_config_name: str | None = None) -> InferenceCLI:
@@ -205,6 +237,32 @@ def parse_inference_cli(default_config_name: str | None = None) -> InferenceCLI:
         ),
     )
 
+    parser.add_argument(
+        "--cores",
+        type=int,
+        default=None,
+        help=(
+            "Number of CPU cores the run may use. Consumed two different ways "
+            "depending on the backend: a numba leg passes it to "
+            "``SettingsSearch(number_of_cores=...)`` (nautilus forks that many "
+            "likelihood workers), while a JAX leg exports it as ``NPROC``, which "
+            "sizes XLA's CPU thread pool — never both, since nautilus under "
+            "``use_jax=True`` ignores the pool and vmaps with ``n_batch``. "
+            "Defaults to SLURM_CPUS_PER_TASK inside a job, else os.cpu_count()."
+        ),
+    )
+    parser.add_argument(
+        "--stages",
+        choices=STAGES,
+        default=None,
+        help=(
+            "Stop the pipeline after this stage instead of running the whole "
+            "chain. Used to measure a per-backend likelihood rate from a "
+            "``--stages source_lp`` leg (which no inversion flag changes) "
+            "without paying for the four pixelized stages. Omitted = run all."
+        ),
+    )
+
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
@@ -220,6 +278,8 @@ def parse_inference_cli(default_config_name: str | None = None) -> InferenceCLI:
         rect_mesh=args.rect_mesh,
         regularization=args.regularization,
         memo=args.memo,
+        cores=int(args.cores) if args.cores else default_cores(),
+        stages=args.stages,
     )
 
 

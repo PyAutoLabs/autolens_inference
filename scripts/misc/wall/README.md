@@ -46,13 +46,21 @@ One row per cell the submit runs, in the header above the `#SBATCH` stanza:
 
 ```
 # WALL-BASIS: — one row per cell this submit runs.
-#   cell: imaging/slam_hst_base/hst  device: a100  precision: fp64
+#   cell: imaging/slam/hst  device: a100  precision: fp64
 #   lanes: 1  steps: 3000  source: unmeasured  probe-first: yes
 ```
 
 A row starts at its `cell:` key and runs to the next `cell:` or the end of the
-block. `cell:` is always `<dataset_class>/<cell>/<instrument>`. Prose lines
-inside the block are ignored, so the human "why" can sit next to the
+block. **`cell:` is the invoked script's path below `scripts/`, without the
+`.py`** — `python3 scripts/imaging/slam/hst.py` is the cell `imaging/slam/hst`,
+i.e. `<dataset_class>/<task>/<leaf>`. The task directory is part of the identity
+because this repo names a leaf for the *target* (`AGENTS.md`: the instrument is a
+flag, never a directory), so `imaging/slam/hst.py` and
+`imaging/searches/nautilus/hst.py` would otherwise both be the cell
+`imaging/hst` — two pipelines sharing one rate row, which is the carry this gate
+exists to prevent. The rate-table key splits the id as `(dataset, task, leaf)`,
+and the leaf doubles as the instrument the `--instrument` check reads. Prose
+lines inside the block are ignored, so the human "why" can sit next to the
 machine-checked "what".
 
 ### The three `source:` kinds

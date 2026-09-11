@@ -26,8 +26,17 @@ The WALL-BASIS block
 A comment block anywhere in the submit's header, one row per cell::
 
     # WALL-BASIS:
-    #   cell: imaging/slam_hst_base/hst  device: a100  precision: fp64
+    #   cell: imaging/slam/hst  device: a100  precision: fp64
     #   lanes: 1  steps: 3000  source: unmeasured  probe-first: yes
+
+A ``cell:`` is the runnable script's path below ``scripts/``, with the ``.py``
+dropped: ``scripts/imaging/slam/hst.py`` is the cell ``imaging/slam/hst``. That
+is ``<dataset_class>/<task>/<leaf>``, and because this repo names a leaf for the
+target it runs (``AGENTS.md``: "the instrument is a flag, never a directory"),
+its last component doubles as the instrument the ``--instrument`` check reads.
+Deeper trees (``scripts/imaging/searches/<sampler>/hst.py``) simply carry more
+components; the rate-table key always splits the id as
+``(dataset, task..., leaf)``.
 
 A row starts at its ``cell:`` key and runs to the next ``cell:`` or the end of
 the block. Three kinds of basis are accepted, and each says plainly how much
@@ -192,25 +201,35 @@ def strip_comments(text: str) -> str:
     return "\n".join("" if ln.lstrip().startswith("#") else ln for ln in text.splitlines())
 
 
-def cells_run(text: str) -> tuple[set[tuple[str, str]], set[str]]:
-    """The ``(dataset, cell)`` pairs a submit actually runs, and its instruments.
+def cells_run(text: str) -> tuple[set[str], set[str]]:
+    """The cell ids a submit actually runs, and its instruments.
 
-    Read from the ``python3 scripts/<dataset>/.../<cell>.py`` invocations,
+    A cell id is the invoked script's path below ``scripts/`` with the ``.py``
+    dropped — ``python3 scripts/imaging/slam/hst.py`` runs the cell
+    ``imaging/slam/hst``. The task directory is part of the identity on purpose:
+    this repo names a leaf for the *target* it runs rather than for the task
+    (``scripts/imaging/slam/hst.py``, not ``slam_hst_base.py``), so a cell id cut
+    at ``<dataset>/<leaf>`` would call this cell ``imaging/hst`` and collide with
+    every other task's HST leaf — ``imaging/searches/nautilus/hst.py`` included.
+    Two different pipelines sharing one rate row is precisely the carry this
+    module exists to prevent.
+
+    Read from the ``python3 scripts/<dataset>/<task>/<leaf>.py`` invocations,
     resolving ``${CELL}``-style paths through `resolve_var`. This is the half
     the author cannot fudge: it is what the job will really execute, and it is
     what each WALL-BASIS row is checked against.
     """
     text = strip_comments(text)
-    cells: set[tuple[str, str]] = set()
+    cells: set[str] = set()
     for match in _PYTHON_CALL.finditer(text):
         parts = match.group(1).split("/")
         if len(parts) < 3:
             continue
-        dataset = parts[1]
+        prefix = parts[1:-1]
         stem = parts[-1][: -len(".py")]
         for cell in _expand(text, stem) or {stem}:
             if not _VAR_REF.match(cell):
-                cells.add((dataset, cell))
+                cells.add("/".join([*prefix, cell]))
 
     instruments: set[str] = set()
     for match in _INSTRUMENT.finditer(text):
@@ -348,25 +367,28 @@ def check_text(text: str, name: str) -> list[Problem]:
     budget = parse_slurm_time(time_match.group(1))
 
     run_cells, run_instruments = cells_run(text)
-    declared: set[tuple[str, str]] = set()
+    declared: set[str] = set()
 
     for row in rows:
         cell_field = row.get("cell", "")
         parts = cell_field.split("/")
-        if len(parts) != 3:
+        if len(parts) < 3:
             problems.append(
-                Problem(f"row `cell: {cell_field}` is not `<dataset>/<cell>/<instrument>`")
+                Problem(
+                    f"row `cell: {cell_field}` is not `<dataset_class>/<task>/<leaf>` "
+                    f"(the invoked script's path below scripts/, without the .py)"
+                )
             )
             continue
-        row["_cell_parts"] = parts  # type: ignore[assignment]
-        dataset, cell, instrument = parts
-        declared.add((dataset, cell))
+        # The rate-table key stays a triple: everything between the dataset class
+        # and the leaf is the task, and the leaf doubles as the instrument.
+        dataset, cell, instrument = parts[0], "/".join(parts[1:-1]), parts[-1]
+        row["_cell_parts"] = [dataset, cell, instrument]  # type: ignore[assignment]
+        declared.add(cell_field)
         where = f"row {cell_field}"
 
-        if run_cells and (dataset, cell) not in run_cells:
-            problems.append(
-                Problem(f"{where}: declared, but this submit never runs {dataset}/{cell}")
-            )
+        if run_cells and cell_field not in run_cells:
+            problems.append(Problem(f"{where}: declared, but this submit never runs {cell_field}"))
         if run_instruments and instrument not in run_instruments:
             problems.append(
                 Problem(
@@ -398,10 +420,10 @@ def check_text(text: str, name: str) -> list[Problem]:
 
     # The rule that would have caught it: a cell the job runs with no row
     # of its own is a cell whose wall clock was justified by some other cell.
-    for dataset, cell in sorted(run_cells - declared):
+    for cell_id in sorted(run_cells - declared):
         problems.append(
             Problem(
-                f"cell {dataset}/{cell} is RUN by this submit but has no WALL-BASIS row — "
+                f"cell {cell_id} is RUN by this submit but has no WALL-BASIS row — "
                 f"its --time is being justified by another cell's rate. This is the defect "
                 f"that killed 35 of 39 arms in one overnight A100 block."
             )

@@ -50,6 +50,26 @@ failing the build:
 Rows sharing a ``target`` and differing only in ``config_name`` are one **parity
 row**, and they are rendered as adjacent lines of one table on purpose. The
 backend is a column, never a reason to split a table.
+
+Multi-stage payloads
+--------------------
+
+A pipeline result JSON is **one file per (config_name, seed) holding a ``stages``
+list**, not one file per stage — a SLaM leg is a chain, and splitting it across
+five files loses the fact that they share one dataset, one seed and one process.
+:func:`_scan_rows` flattens such a payload into one row per stage, each carrying
+the payload's header fields (``target``, ``config_name``, ``backend``, ``seed``,
+``version``, …) plus that stage's own (``stage``, ``wall_s``, ``log_evidence``,
+``likelihood_evals``, ``completed``, ``posterior``, …). Every renderer therefore
+keeps seeing flat rows.
+
+On top of the flat table :func:`render_slam` renders a **parity view** per
+(target, seed): the ``mass_total[1]`` posterior of every config side by side,
+each cell the difference from the alphabetically-first config in units of that
+reference leg's 1σ. The two legs fit the same data with the same seed, so their
+errors are heavily correlated and adding them in quadrature would overstate the
+denominator; the reference σ is the honest scale for "do these two backends
+agree".
 """
 
 from __future__ import annotations
@@ -82,8 +102,56 @@ SENTINEL_RE = re.compile(
 # ---------------------------------------------------------------------------
 
 
+#: Stage fields lifted onto a flattened row. A stage key that is absent stays
+#: absent, so the renderer's em-dash fallback still applies.
+_STAGE_FIELDS = (
+    "wall_s",
+    "total_wall_s",
+    "compile_s",
+    "likelihood_evals",
+    "log_evidence",
+    "log_evidence_err",
+    "max_log_likelihood",
+    "free_parameters",
+    "n_live",
+    "n_batch",
+    "completed",
+    "resumed",
+    "positions_info_present",
+    "inversion_applies",
+    "posterior",
+    "truth_delta_sigma",
+)
+
+
+def _flatten_stages(payload: dict) -> list[dict]:
+    """One row per entry of a payload's ``stages`` list.
+
+    Each row is the payload header (everything but ``stages``) plus that stage's
+    fields, with the stage's ``name`` promoted to ``stage`` — the key every
+    renderer already reads. The raw stage dict is kept on ``_stage`` for the
+    parity view, which needs the nested ``posterior``.
+    """
+    header = {key: value for key, value in payload.items() if key != "stages"}
+    rows = []
+    for stage in payload["stages"]:
+        if not isinstance(stage, dict):
+            continue
+        row = dict(header)
+        row["stage"] = stage.get("name")
+        for key in _STAGE_FIELDS:
+            if key in stage:
+                row[key] = stage[key]
+        row["_stage"] = stage
+        rows.append(row)
+    return rows
+
+
 def _scan_rows(root: Path) -> list[dict]:
     """Every result row under ``root``, sorted for a stable render.
+
+    A payload carrying a ``stages`` list is flattened into one row per stage
+    (see :func:`_flatten_stages`); anything else is one row as it stands.
 
     A file that is not JSON, or whose top level is not an object, is skipped
     with a warning rather than failing the build: a half-written row pulled off
@@ -105,7 +173,13 @@ def _scan_rows(root: Path) -> list[dict]:
             )
             continue
         payload = dict(payload)
-        payload.setdefault("_path", str(path.relative_to(RESULTS_ROOT)))
+        relative = str(path.relative_to(RESULTS_ROOT))
+        if isinstance(payload.get("stages"), list):
+            for row in _flatten_stages(payload):
+                row.setdefault("_path", relative)
+                rows.append(row)
+            continue
+        payload.setdefault("_path", relative)
         rows.append(payload)
     return rows
 
@@ -158,8 +232,145 @@ def _sort_key(row: dict, *extra: str) -> tuple:
     return tuple(str(row.get(key, "")) for key in ("target", *extra, "config_name"))
 
 
+#: The stage the parity view reads: the headline `PowerLaw` mass model, which is
+#: the only stage whose posterior every leg of a parity row must agree on.
+PARITY_STAGE = "mass_total[1]"
+
+#: Parameters the parity view leads with, in this order. Everything else follows
+#: alphabetically. These three are what a lensing result is quoted as, so they go
+#: at the top rather than wherever the alphabet puts them.
+PARITY_LEADING_KEYS = ("einstein_radius", "slope", "shear_magnitude")
+
+#: Chain order of the SLaM stages. A table sorted alphabetically would put
+#: `light[1]` before `source_lp[1]` and read as if the pipeline ran backwards.
+#: A stage not listed here sorts after every listed one, by name.
+SLAM_STAGE_ORDER = (
+    "source_lp[1]",
+    "source_pix[1]",
+    "source_pix[2]",
+    "light[1]",
+    "mass_total[1]",
+)
+
+
+def _stage_sort_key(row: dict) -> tuple:
+    stage = str(row.get("stage", ""))
+    try:
+        index = SLAM_STAGE_ORDER.index(stage)
+    except ValueError:
+        index = len(SLAM_STAGE_ORDER)
+    return (
+        str(row.get("target", "")),
+        str(row.get("seed", "")),
+        index,
+        stage,
+        str(row.get("config_name", "")),
+    )
+
+
+def _format_evals(value) -> str:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return "—"
+    if isinstance(value, float) and math.isnan(value):
+        return "—"
+    return f"{int(value):,}"
+
+
+def _format_sigma(value) -> str:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return "—"
+    if math.isnan(value) or math.isinf(value):
+        return "—"
+    return f"{value:+.2f}σ"
+
+
+def _format_median(entry) -> str:
+    if not isinstance(entry, dict):
+        return "—"
+    median = entry.get("median")
+    sigma = entry.get("sigma")
+    if not isinstance(median, (int, float)):
+        return "—"
+    if not isinstance(sigma, (int, float)):
+        return f"{median:.4g}"
+    return f"{median:.4g} ± {sigma:.2g}"
+
+
+def _parity_key_order(keys) -> list[str]:
+    leading = [key for key in PARITY_LEADING_KEYS if key in keys]
+    rest = sorted(key for key in keys if key not in PARITY_LEADING_KEYS)
+    return leading + rest
+
+
+def _parity_delta_sigma(entry, reference) -> float | None:
+    """``(median - reference median) / reference sigma``.
+
+    The reference leg's σ is the denominator, not the two added in quadrature:
+    the legs fit the same data at the same seed, so their errors are heavily
+    correlated and quadrature would flatter every disagreement.
+    """
+    if not isinstance(entry, dict) or not isinstance(reference, dict):
+        return None
+    median = entry.get("median")
+    reference_median = reference.get("median")
+    sigma = reference.get("sigma")
+    if not isinstance(median, (int, float)) or not isinstance(reference_median, (int, float)):
+        return None
+    if not isinstance(sigma, (int, float)) or not sigma:
+        return None
+    return (median - reference_median) / sigma
+
+
+def _render_parity(rows: list[dict]) -> str:
+    """The parity view: one block per (target, seed), configs as columns."""
+    groups: dict[tuple, dict[str, dict]] = {}
+    for row in rows:
+        if row.get("stage") != PARITY_STAGE:
+            continue
+        posterior = (row.get("_stage") or {}).get("posterior") or row.get("posterior") or {}
+        if not posterior:
+            continue
+        key = (str(row.get("target", "")), str(row.get("seed", "")))
+        groups.setdefault(key, {})[str(row.get("config_name"))] = posterior
+
+    if not groups:
+        return ""
+
+    blocks: list[str] = []
+    for (target, seed), by_config in sorted(groups.items()):
+        configs = sorted(by_config)
+        heading = f"\n**Parity — `{target}` (seed {seed}), `{PARITY_STAGE}`**\n"
+        if len(configs) < 2:
+            blocks.append(
+                heading + "\n_Only one config has run for this target and seed — "
+                "a parity view needs at least two legs._\n"
+            )
+            continue
+
+        reference = configs[0]
+        reference_posterior = by_config[reference]
+        keys = _parity_key_order({k for posterior in by_config.values() for k in posterior})
+
+        headers = ["Parameter", f"`{reference}` (ref)"] + [f"`{c}`" for c in configs[1:]]
+        body = []
+        for key in keys:
+            line = [f"`{key}`", _format_median(reference_posterior.get(key))]
+            for config in configs[1:]:
+                line.append(
+                    _format_sigma(
+                        _parity_delta_sigma(
+                            by_config[config].get(key), reference_posterior.get(key)
+                        )
+                    )
+                )
+            body.append(line)
+        blocks.append(heading + _render_table(headers, body))
+
+    return "".join(blocks)
+
+
 def render_slam() -> str:
-    """Pipeline runs — one line per (target, stage, config)."""
+    """Pipeline runs — one line per (target, stage, config), plus the parity view."""
     rows = _scan_rows(SLAM_ROOT)
     if not rows:
         return _empty(
@@ -170,18 +381,20 @@ def render_slam() -> str:
         [
             f"`{_cell(row.get('target'))}`",
             _cell(row.get("stage")),
-            _cell(row.get("instrument")),
             f"`{_cell(row.get('config_name'))}`",
+            _cell(row.get("seed")),
             _format_time(row.get("wall_s")),
+            _format_evals(row.get("likelihood_evals")),
             _format_evidence(row.get("log_evidence")),
             _cell(row.get("version")),
         ]
-        for row in sorted(rows, key=lambda r: _sort_key(r, "stage"))
+        for row in sorted(rows, key=_stage_sort_key)
     ]
-    return _render_table(
-        ["Target", "Stage", "Instrument", "Config", "Wall", "Log evidence", "Version"],
+    table = _render_table(
+        ["Target", "Stage", "Config", "Seed", "Wall", "Evals", "log Z", "Version"],
         body,
     )
+    return table + _render_parity(rows)
 
 
 def render_searches() -> str:
