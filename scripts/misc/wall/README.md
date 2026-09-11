@@ -31,14 +31,18 @@ confident prose around the number makes it so. Hence a table that refuses to
 answer for a cell it has not measured, and a gate that reads what the job will
 really run rather than what its header claims.
 
-## The table starts empty
+## The table started empty, and is still narrower than it looks
 
-`rates.py` ships with `STEP_RATE = {}`. This repo was born 2026-09-10 and has
-measured nothing yet, and it deliberately does **not** inherit the retired
-`inference_programme`'s rate table — those numbers were measured on a different
-tree by runs this project cannot name. Until a row is measured here, every
-submit declares `source: unmeasured` with `probe-first: yes`. That is the honest
-state, and the gate accepts it.
+`rates.py` shipped with `STEP_RATE = {}`. This repo was born 2026-09-10 and
+deliberately does **not** inherit the retired `inference_programme`'s rate table —
+those numbers were measured on a different tree by runs this project cannot name.
+
+Its first two rows landed **2026-09-11**, and both describe `source_lp[1]`, the
+*parametric* opening stage of `imaging/slam/hst`, measured on a laptop. Neither
+may size a five-stage submit (the other four stages are pixelized and
+per-eval-inversion bound), and neither may size a RAL job (the device key names
+the host). So every submit in `hpc/batch_*` still declares `source: unmeasured`
+with `probe-first: yes`. That is the honest state, and the gate accepts it.
 
 ## The `# WALL-BASIS:` block
 

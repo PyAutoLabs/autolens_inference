@@ -192,11 +192,66 @@ cited a parametric step rate for an array of mostly pixelized arms lost 35 of it
 at ~12% of budget — an entire overnight A100 block. An array submit is sized by its
 **slowest** cell, never its fastest.
 
-`scripts/misc/wall/rates.py` starts **empty** in this repo: it inherits no rates from the
-retired `inference_programme`. Until a rate is measured here, every submit declares
-`source: unmeasured  probe-first: yes` and runs one short arm first — a truncated arm
-still measures s/step. The block's grammar and the three `source:` kinds are in
-[`../scripts/misc/wall/README.md`](../scripts/misc/wall/README.md).
+`scripts/misc/wall/rates.py` started **empty** in this repo: it inherits no rates from the
+retired `inference_programme`. Its first two rows landed 2026-09-11, and both are the
+`source_lp[1]` stage of `imaging/slam/hst` measured on a laptop — which is why **all seven
+submits here still declare `source: unmeasured  probe-first: yes`**. A parametric rate
+cannot size a mostly-pixelized chain, and a laptop rate cannot size a RAL node; the device
+keys (`laptop_numba_cpu`, `laptop_jax_cpu` vs `ral_numba_cpu`, `ral_jax_cpu`, `a100`) make
+that a mismatch the gate catches rather than a judgement call. A truncated arm still
+measures s/step, so the first production arm to run is the measurement that replaces those
+declarations with `source: measured-wall`. The block's grammar and the three `source:` kinds
+are in [`../scripts/misc/wall/README.md`](../scripts/misc/wall/README.md).
+
+## The submits that exist today
+
+All seven run the one cell `imaging/slam/hst` — `scripts/imaging/slam/hst.py`, the
+backend-parameterised SLaM driver. The six production submits are the six legs of the
+first parity row; the seventh is the rate probe that had to run before any of them could
+be sized.
+
+| submit | partition | array | what it runs |
+|---|---|---|---|
+| `batch_gpu/submit_slam_hst_rate_jax_gpu` | `gpu` | — | **the rate probe**: `--stages source_lp`, one stage, to measure A100 s/eval |
+| `batch_gpu/submit_slam_hst_jax_gpu_dense` | `gpu` | `0-1` | full chain, `jax_gpu` × dense |
+| `batch_gpu/submit_slam_hst_jax_gpu_sparse` | `gpu` | `0-1` | full chain, `jax_gpu` × sparse |
+| `batch_cpu/submit_slam_hst_jax_cpu_dense` | `ral` | `0-1` | full chain, `jax_cpu` × dense |
+| `batch_cpu/submit_slam_hst_jax_cpu_sparse` | `ral` | `0-1` | full chain, `jax_cpu` × sparse |
+| `batch_cpu/submit_slam_hst_numba_cpu_dense` | `ral` | `0-1` | full chain, `numba_cpu` × dense |
+| `batch_cpu/submit_slam_hst_numba_cpu_sparse` | `ral` | `0-1` | full chain, `numba_cpu` × sparse |
+
+Submit one with `hpc/sync submit --gpu|--cpu <full submit filename>` — the argument is the
+file's name including the `submit_` prefix, because `sbatch` is handed it verbatim.
+
+### The seed convention
+
+`--array=0-1` and `--seed $SLURM_ARRAY_TASK_ID`. There is no `SEEDS=(...)` indirection
+here because the seeds *are* 0 and 1; a submit whose seeds are not `0..N` reads them from
+a bash array indexed by `SLURM_ARRAY_TASK_ID`, as described below. The seed reaches the
+result filename (`stages_seed<n>.json`) and the PyAutoFit output path (`seed_<n>/`), so
+the two arms never overwrite each other. `seed` is also a PyAutoFit *identifier* field
+while `--config-name` is not, which is why the config name lives in the `path_prefix`:
+without that, two backends at one seed would hash to the same identifier and silently
+resume each other's fit.
+
+### Memory: why every one of these asks for `--mem=64gb`
+
+The HST cell is **15,361 masked pixels**, and the memory cost is in the Nautilus batch,
+not the dataset. Measured on 2026-09-11, a `jax_cpu` leg's vmap over `n_batch=20` at
+`source_pix[1]` needs roughly:
+
+| leg | RSS at `source_pix[1]` |
+|---|---|
+| `jax_cpu` × dense | ~13 GB |
+| `jax_cpu` × sparse | ~21.6 GB |
+
+Both OOM a 15 GB laptop, which is why the two JAX-CPU HST legs of the parity row exist
+only as RAL jobs and why the local rate measurements are `--stages source_lp` only. The
+`numba_cpu` legs have no vmap at all — with `use_jax=False` Nautilus takes the
+`number_of_cores` multiprocessing path — and the production `source_lp[1]` probe held
+~6.3 GB across nine processes; their pixelized-stage figure is **not** measured, so they
+keep the same request rather than a smaller one guessed from a mechanism. `--mem=64gb` is the template's figure and it stays: it clears the worst measured
+leg by 3x, and a leg killed by the OOM killer at stage two costs a whole night.
 
 ## Array submits (repeated-seed campaigns)
 

@@ -151,13 +151,17 @@ ruff format --check .
 The same job also runs `scripts/misc/tooling/build_readme.py --check` (dashboard
 idempotence), `scripts/misc/wall/check_submits.py --check` (every submit's `--time` is
 justified per cell), `pytest scripts/misc/test -q`, a `lychee` link-rot check over the
-`README.md` files, and a **smoke** leg that runs each simulator under
-`AUTOLENS_INFERENCE_SMOKE=1`. Every runnable script reads that variable at module top and
-exits 0 straight after the import + setup section, so the smoke catches import-graph
+`README.md` files, and a **smoke** leg that runs each simulator and the SLaM driver leaf
+under `AUTOLENS_INFERENCE_SMOKE=1`. Every runnable script reads that variable at module top
+and exits 0 straight after the import + setup section, so the smoke catches import-graph
 breakage without running an inference. None of it produces result artifacts.
 
-`.github/workflows/profile.yml` is `workflow_dispatch`-only and does nothing yet — it is
-the placeholder for the phase-3 backend-parameterised driver.
+`.github/workflows/profile.yml` is `workflow_dispatch`-only and is **not** a PR gate. It
+runs the `PYAUTO_TEST_MODE=1` witness for the SLaM driver — `numba_cpu × {dense,sparse}`
+and `jax_cpu × dense` — asserting that each leg writes a five-stage result row, and uploads
+those rows as an artifact. It runs `--instrument euclid`, never `hst`: the HST cell needs
+~13 GB (dense) to ~21.6 GB (sparse) of RSS under JAX at `source_pix[1]`, which no hosted
+runner has. The rows it writes are witnesses of the plumbing and are never committed.
 
 ## Sandboxed / restricted runs
 

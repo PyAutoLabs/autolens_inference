@@ -58,9 +58,11 @@ the author actually knows:
     ``probe-first: yes``, and any ``wall:`` it does offer carries a 3x floor.
     The row earns its place by forcing the author to state, per cell, that this
     cell's wall clock rests on nothing. **This is the normal case in this repo
-    today**: `wall/rates.py` starts empty and inherits nothing, so until a rate
-    is measured here every submit says so out loud. The honest next step is to
-    run one short arm: a truncated arm still measures s/step.
+    today**: `wall/rates.py` holds only `source_lp[1]` rates measured on a
+    laptop, and neither a parametric stage nor a laptop can size a
+    mostly-pixelized RAL chain, so every submit still says so out loud. The
+    honest next step is to run one short arm: a truncated arm still measures
+    s/step.
 
 Which submits must carry one
 ----------------------------
