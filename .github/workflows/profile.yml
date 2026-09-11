@@ -1,19 +1,33 @@
-# profile.yml — manual re-run of the runs this repo owns.
+# profile.yml — the PYAUTO_TEST_MODE witness for the SLaM driver.
 #
-# TODO (phase 3 of the autolens-inference epic): wire this to the
-# backend-parameterised SLaM driver once it exists. Today it is a placeholder
-# that does nothing but say so.
+# `workflow_dispatch` only, and NOT a PR gate. It answers exactly one question:
+# does the 5-stage chain still run end to end, in every backend x inversion
+# combination a hosted runner can hold, and does it still write a result row
+# with five stages in it? It answers nothing scientific — under
+# PYAUTO_TEST_MODE each stage stops after a single likelihood call, so the
+# posteriors are prior draws and the wall clocks are meaningless. The rows it
+# uploads are witnesses of the plumbing, never results, and they are never
+# committed (`results/` in git carries production rows only).
 #
-# It is deliberately `workflow_dispatch` only, and it is NOT a PR gate:
+# Why the real legs are not here:
 #
-#   - The real legs of a parity row are an A100 job and a multi-hour CPU job.
-#     Neither runs on a GitHub-hosted runner, and a leg that quietly ran on
-#     different hardware would be a row that lies about what it measured.
-#   - `lint.yml` is the per-PR gate. Inference burns wall clock; a PR is not
-#     the cadence for it.
+#   - The legs of a parity row are an A100 job and a multi-hour CPU job. Neither
+#     runs on a GitHub-hosted runner, and a leg that quietly ran on different
+#     hardware would be a row that lies about what it measured.
+#   - `lint.yml` is the per-PR gate, and it already smokes this leaf's import
+#     graph and flag handling. Inference burns wall clock; a PR is not the
+#     cadence for it.
 #
-# Real runs are submitted to RAL by hand: `hpc/sync submit [--gpu|--cpu] <name>`,
-# then `hpc/sync jobs` / `tail` / `pull`. See hpc/README.md.
+# Why every leg runs `--instrument euclid` and not `hst`:
+#
+#   The HST cell is 15,361 masked pixels. Measured on the 2026-09-11 witness
+#   runs, a jax_cpu leg's vmap over the Nautilus batch needs ~13 GB RSS with the
+#   dense inversion and ~21.6 GB with the sparse one at `source_pix[1]` — it OOMs
+#   a 15 GB laptop, and it would OOM a hosted runner (7 GB on the standard image,
+#   16 GB on the 4-core one) with far less ceremony. The euclid cell is the same
+#   code path on a smaller grid, so it witnesses everything this workflow exists
+#   to witness and fits in the box. HST legs belong on RAL:
+#   `hpc/sync submit --gpu|--cpu <submit>` — see hpc/README.md.
 
 name: profile
 
@@ -24,12 +38,121 @@ permissions:
   contents: read
 
 jobs:
-  placeholder:
+  witness:
+    name: "test-mode witness — ${{ matrix.backend }} / ${{ matrix.inversion }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 60
+    strategy:
+      # One red leg must not hide the others: the whole point is to learn which
+      # backend x inversion combinations still run.
+      fail-fast: false
+      matrix:
+        include:
+          - backend: numba_cpu
+            inversion: dense
+          - backend: numba_cpu
+            inversion: sparse
+          # jax_cpu x sparse is deliberately absent: it is the 21.6 GB leg on
+          # HST and the heaviest here too, and a hosted runner has no headroom
+          # to spare. It is witnessed locally and on RAL instead.
+          - backend: jax_cpu
+            inversion: dense
+
     steps:
-      - name: Nothing to run yet
+      - name: Checkout autolens_inference
+        uses: actions/checkout@v4
+        with:
+          path: autolens_inference
+
+      # The same source-checkout stack the lint job installs, in the same
+      # dependency order. PYTHONPATH below still resolves the PyAuto* imports
+      # from source, so the checkouts stay authoritative.
+      - name: Checkout PyAutoNerves
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoNerves
+          path: PyAutoNerves
+      - name: Checkout PyAutoFit
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoFit
+          path: PyAutoFit
+      - name: Checkout PyAutoArray
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoArray
+          path: PyAutoArray
+      - name: Checkout PyAutoGalaxy
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoGalaxy
+          path: PyAutoGalaxy
+      - name: Checkout PyAutoLens
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoLens
+          path: PyAutoLens
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependencies
         run: |
-          echo "profile.yml is a phase-1 placeholder."
-          echo "The backend-parameterised driver lands in phase 3; until then,"
-          echo "runs are submitted to RAL by hand (hpc/sync submit)."
+          python -m pip install --upgrade pip setuptools wheel
+          for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+            pip install "./$r[optional]"
+          done
+
+      - name: Witness — ${{ matrix.backend }} × ${{ matrix.inversion }} (euclid, test mode)
+        working-directory: autolens_inference
+        env:
+          PYAUTO_TEST_MODE: "1"
+          NUMBA_CACHE_DIR: /tmp/numba_cache
+          MPLCONFIGDIR: /tmp/matplotlib
+          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit:${{ github.workspace }}/PyAutoArray:${{ github.workspace }}/PyAutoGalaxy:${{ github.workspace }}/PyAutoLens
+        run: |
+          # The euclid dataset is gitignored and auto-simulated on first use
+          # (_inference_cli.auto_simulate_if_missing), so there is nothing to
+          # fetch. --cores 2 keeps the numba legs off a runner-sized pool.
+          python scripts/imaging/slam/hst.py \
+            --instrument euclid \
+            --backend ${{ matrix.backend }} \
+            --inversion ${{ matrix.inversion }} \
+            --seed 0 \
+            --cores 2 \
+            --config-name local_${{ matrix.backend }}_${{ matrix.inversion }}_fp64
+
+      - name: Assert the row has all five stages
+        working-directory: autolens_inference
+        run: |
+          # A leg that exits 0 having written three stages is the failure this
+          # workflow is for: the chain broke where the exit code could not see
+          # it. Read the row rather than trusting the exit status.
+          python - <<'PY'
+          import json, sys
+          from pathlib import Path
+
+          config = "local_${{ matrix.backend }}_${{ matrix.inversion }}_fp64"
+          row = Path("results/slam/imaging/euclid") / config / "stages_seed0.json"
+          if not row.exists():
+              sys.exit(f"no result row at {row}")
+          data = json.loads(row.read_text())
+          stages = data.get("stages", [])
+          names = [s.get("name") for s in stages]
+          print(f"{config}: {len(stages)} stage(s) -> {names}")
+          if len(stages) != 5:
+              sys.exit(f"expected 5 stages, got {len(stages)}: {names}")
+          incomplete = [s["name"] for s in stages if not s.get("completed")]
+          if incomplete:
+              sys.exit(f"stages did not complete: {incomplete}")
+          PY
+
+      - name: Upload the witness rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: slam-witness-${{ matrix.backend }}-${{ matrix.inversion }}
+          path: autolens_inference/results/slam/**
+          if-no-files-found: warn

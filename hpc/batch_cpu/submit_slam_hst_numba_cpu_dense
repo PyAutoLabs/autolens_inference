@@ -1,0 +1,98 @@
+#!/bin/bash -l
+#
+# SLaM base run on HST — the numba_cpu leg of the first parity row, dense inversion,
+# seeds 0-1, on the RAL CPU partition.
+#
+# Six legs share one target (same dataset, same model, same pipeline, same seed) and differ
+# only in the config name: the backend is a column, never a reason to split a table.
+# There is NO `cpu` partition on RAL — this is `--partition=ral`; a submit that asks for
+# `cpu` is rejected by SLURM.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This submit runs ONE cell, `imaging/slam/hst`, all five stages of it, and it declares
+#   itself `unmeasured` on purpose.
+#   What IS measured (2026-09-11, wall/rates.py) is `source_lp[1]`, the PARAMETRIC MGE stage
+#   that opens the chain. The other four stages are pixelized and per-eval-inversion bound at
+#   many times that cost, and a rate is never carried across that boundary — doing so is what
+#   killed 35 of 39 arms of an overnight A100 block.
+#   The only numba_cpu rate measured is 0.06831 s/eval for source_lp[1], and it was
+#   measured on a LAPTOP (wall/rates.py, device `laptop_numba_cpu`). A laptop is not a RAL
+#   node, so the device token differs and this submit cannot cite it even by accident.
+#   `steps:` below is a FLOOR, not an estimate. Nautilus had spent 128 evaluations per
+#   live point on `source_lp[1]` when the longer of the two local probes was stopped, and it
+#   had still not left its exploration phase. 128 x the chain's 725 live points
+#   (200+150+75+150+150) = 92800 evaluations
+#   is therefore the fewest this chain can possibly cost. No `wall:` is offered: multiplying
+#   a floor by a rate measured on other hardware, for a different kind of stage, would be an
+#   invention, and inventing a number to satisfy a linter is the disease rather than the cure.
+#   `--time` below is a CONTAINMENT sized against that floor and the partition's 27-day limit,
+#   not a derived budget. The first arm of this submit IS the probe: read its
+#   `stages[*].wall_s / stages[*].likelihood_evals` out of the result row and replace this
+#   block with `source: measured-wall`.
+#   cell: imaging/slam/hst  device: ral_numba_cpu  precision: fp64
+#   lanes: 1  steps: 92800  source: unmeasured  probe-first: yes
+#
+#SBATCH -J slam_hst_numba_cpu_dense
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64gb
+#SBATCH --time=5-00:00:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_inference
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# PYAUTO_DISABLE_JAX is process-wide and belongs next to the --backend numba_cpu flag that
+# motivates it, never in the template: it is the belt to use_jax=False's braces, and it is
+# not a substitute for the flag because it does not change what an Analysis reports about
+# itself. A single Analysis built without use_jax=False would silently make that stage a JAX
+# run, and this leg would stop being the leg its config name claims.
+export PYAUTO_DISABLE_JAX=1
+
+# --mem=64gb is not a round number picked for comfort. The HST cell is 15,361 masked pixels
+# and the cost is the nautilus batch, not the dataset: measured 2026-09-11 on a 15 GB
+# laptop, a jax_cpu leg needs ~13 GB RSS at source_pix[1] with the dense inversion and
+# ~21.6 GB with the sparse one — it OOMed that laptop, which is why these legs are RAL jobs
+# and why the local rate probe was `--stages source_lp` only. 64 GB clears the worst of them
+# by 3x. The numba legs are far lighter (nautilus takes the number_of_cores multiprocessing
+# path, no vmap) and keep the same request because a leg killed by the OOM killer at stage
+# two costs a night either way.
+
+echo "=========================================="
+date
+echo "Cell:       imaging/slam/hst"
+echo "Instrument: hst"
+echo "Config:     hpc_a100_numba_cpu_dense_fp64"
+echo "Seed:       $SLURM_ARRAY_TASK_ID"
+
+cd $AP_ROOT
+
+# One seed per array task: one run says the search CAN find the answer, a spread of seeds
+# says how often it does. The seed reaches the result filename (stages_seed<n>.json) AND the
+# output tree (seed_<n>/), so the two arms never overwrite each other. `seed` is a PyAutoFit
+# identifier field and `--config-name` is not, which is why the config name lives in the
+# path_prefix — without that, two backends at one seed would hash to the same identifier and
+# silently resume each other's fit.
+python3 scripts/imaging/slam/hst.py \
+    --instrument hst \
+    --backend numba_cpu \
+    --inversion dense \
+    --seed $SLURM_ARRAY_TASK_ID \
+    --config-name hpc_a100_numba_cpu_dense_fp64 \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date

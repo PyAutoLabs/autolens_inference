@@ -121,7 +121,7 @@ jobs:
             --max-redirects 5 \
             $(find . -name 'README.md' -not -path './results/*' -not -path './dataset/*')
 
-      - name: Smoke — the simulators
+      - name: Smoke — the simulators and the SLaM driver
         working-directory: autolens_inference
         env:
           AUTOLENS_INFERENCE_SMOKE: "1"
@@ -135,3 +135,10 @@ jobs:
           python scripts/misc/simulators/imaging.py
           python scripts/misc/simulators/interferometer.py
           python scripts/misc/simulators/point_source.py
+          # The SLaM leaf short-circuits in the same place, AFTER argv parsing and
+          # the backend environment block — so this also asserts that the flags,
+          # the config-name grammar check and the `scripts/misc/` import path all
+          # still agree. It runs no inference and touches no dataset: the exit is
+          # ahead of auto_simulate_if_missing.
+          python scripts/imaging/slam/hst.py \
+            --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
