@@ -87,13 +87,19 @@ export NPROC=$SLURM_CPUS_PER_TASK
 # The rectangular legs have no callback at all, which is why 4 is fine for them. `--cores
 # $SLURM_CPUS_PER_TASK` below keeps the two numbers moving together.
 
-# --mem=96gb, half again the base run's request, and for a reason that is arithmetic rather
-# than habit. Measured 2026-09-11 on the base run, a JAX sparse leg needs ~21.6 GB RSS at
-# source_pix[1] at 784 rectangular cells — the sparse operator trades the dense leg's ~13 GB
-# for a bigger resident structure; the source mesh here is 1250 vertices, so the inversion's
-# arrays scale by ~1250/784 = 1.6x and the expectation is ~35 GB. 96gb is therefore ~2.7x
-# the expected peak, which is the margin an unmeasured mesh deserves. The gpu partition's
-# nodes carry 885 GB, so the request is not what makes this job wait.
+# --mem=96gb on BOTH legs. There are two independent estimates here and they disagree about
+# which route is the heavier one, so the request is a margin over the larger of them rather
+# than a derived figure, and neither leg is given less than the other.
+#   From the base run (2026-09-11, HST cell, 784 rectangular cells): ~13 GB RSS at
+#   source_pix[1] dense, ~21.6 GB sparse. Scaling by the mesh alone, 1250/784 = 1.6x,
+#   expects ~21 GB dense / ~35 GB sparse here.
+#   From this mesh's own smoke (2026-09-15, euclid cell, PYAUTO_TEST_MODE, measured): peak
+#   RSS 9.3 GB dense and 6.5 GB sparse. On a Delaunay source the DENSE route is the heavier
+#   one, which inverts the base run's ordering — and the euclid cell is the smaller of the
+#   two cells.
+# Neither is a measurement of this cell on this mesh, and the two orderings cannot both be
+# right, so 96gb is ~3x the largest estimate on the table. The gpu partition's nodes carry
+# 885 GB, so the request is not what makes this job wait.
 
 # Proof of what the job actually got. A four-second CUDA init failure and a healthy run
 # look identical in sacct; they do not look identical here.
