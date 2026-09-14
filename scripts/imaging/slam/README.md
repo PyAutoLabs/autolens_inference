@@ -4,14 +4,17 @@ Full **SLaM pipeline** runs on imaging data — the science chains as they are a
 to end, stage by stage.
 
 The first leaf landed in phase 3: [`hst.py`](hst.py), the backend-parameterised base-run
-driver, exercised by the phase-4 Cortex task `slam_hst_base`.
+driver, exercised by the phase-4 Cortex task `slam_hst_base`. [`hst_delaunay.py`](hst_delaunay.py)
+joined it: the same chain and the same runner, with the two pixelized source stages on a
+1250-vertex Delaunay mesh — the `delaunay_1250` **run variant**.
 
 ## Running a leg
 
 ```bash
 python3 scripts/imaging/slam/hst.py \
     --backend {jax_cpu,numba_cpu,jax_gpu} --inversion {dense,sparse} \
-    --config-name <config> [--seed 0] [--cores N] [--stages source_lp] [--output-dir DIR]
+    --config-name <config> [--seed 0] [--cores N] [--stages source_lp] [--output-dir DIR] \
+    [--mesh {rect,delaunay}] [--mesh-pixels N]
 ```
 
 - The **instrument is a flag** (`--instrument hst`, the default), never a directory. The HST
@@ -23,21 +26,33 @@ python3 scripts/imaging/slam/hst.py \
   config name that lies about its run makes the whole parity row a lie.
 - `--cores` defaults to `SLURM_CPUS_PER_TASK`, else `os.cpu_count()`. `--stages <name>` stops
   the chain after that stage (used to measure a per-backend rate from a `source_lp` leg).
+- The **mesh is a run variant**, not a config (see below): `--mesh` / `--mesh-pixels` choose
+  the source pixelization, and the variant they resolve to is a directory level and a field
+  of the target id. Each leaf carries its own default — `hst.py` is `rect` at 28, the
+  workspace default; `hst_delaunay.py` is `delaunay` at 1250 — so neither flag is normally
+  typed.
 - `--output-dir` overrides the **PyAutoFit run-output root** for this leaf (default
-  `output/slam/imaging/hst/<config_name>/seed_<n>/`); the result row always lands under
-  `results/`.
+  `output/slam/imaging/hst/<variant>/<config_name>/seed_<n>/`); the result row always lands
+  under `results/`.
 - `--backend jax_gpu` asserts `jax.default_backend() == "gpu"` and exits 2 otherwise. There is
   no silent CPU fallback: a "GPU" leg that ran on CPU reports a wall clock that is nothing of
   the kind.
 
 ## What a leg writes
 
-- One result row per `(config_name, seed)`:
-  `results/slam/imaging/hst/<config_name>/stages_seed<n>.json`, schema version 1, with a
-  `stages` list of five rows (`source_lp[1]`, `source_pix[1]`, `source_pix[2]`, `light[1]`,
+- One result row per `(variant, config_name, seed)`:
+  `results/slam/imaging/hst/<variant>/<config_name>/stages_seed<n>.json`, schema version 2,
+  with a `stages` list of five rows (`source_lp[1]`, `source_pix[1]`, `source_pix[2]`, `light[1]`,
   `mass_total[1]`) carrying wall clock, reject-inclusive likelihood evals, log evidence,
   posterior (median + 1σ), `truth_delta_sigma` against `dataset/imaging/hst/tracer.json`,
   `positions_info_present`, `completed` and `resumed`. A wall-per-stage PNG sits beside it.
+  Schema v2 added the variant fields — `variant`, `mesh`, `mesh_pixels`, `mesh_areas_factor`,
+  `mesh_zeroed_pixels`, `image_mesh`, `image_mesh_weight_power`, `image_mesh_weight_floor`,
+  `image_mesh_edge_points` and `regularization` (the resolved scheme name), with `mesh_shape`
+  `null` on a family that has no shape. The image-mesh fields are the Delaunay recipe and are
+  `null` on the rectangular family: a row saying only "delaunay, 1250" could not be
+  reproduced, because what places those 1250 vertices is the image mesh and its weights. v1 rows still read: every reader treats an absent `variant` as `slam_base`,
+  which is what those rows are.
 - The full PyAutoFit output tree under `output/` (gitignored — see `AGENTS.md`, "Outputs are
   KEPT"). Budget ~150 MB per 5-stage lens per leg.
 
@@ -46,10 +61,100 @@ python3 scripts/imaging/slam/hst.py \
 each cell the difference from the alphabetically-first config in units of that reference leg's
 1σ.
 
+## Run variants: the mesh is not a config
+
+```
+results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/stages_seed<n>.json
+output/slam/<dataset_class>/<instrument>/<variant>/<config_name>/seed_<n>/
+```
+
+The `<variant>` level between the instrument and the config name is **what was fitted**; the
+config name is **what ran it**. It has to exist because rows group into a parity row by the
+payload's `target`, so without it a second experiment on this cell would share both the
+directory and the parity group with the base run and read as another backend of the same
+fit. Only the backend may be a column of one table.
+
+| variant | mesh | source stages | regularization | leaf |
+|---|---|---|---|---|
+| `slam_base` | `rect`, 28x28 = 784 cells | `RectangularBilinearAdaptDensity` then `…AdaptImage` | `al.reg.Adapt` (class) | [`hst.py`](hst.py) |
+| `delaunay_1250` | `delaunay`, 1250 interior vertices (+30 zeroed edge) drawn by `al.image_mesh.Hilbert` | `al.mesh.Delaunay` on both | `al.reg.AdaptSplit` (class) | [`hst_delaunay.py`](hst_delaunay.py) |
+
+`--mesh-pixels` means a different thing per family and the two numbers are not comparable:
+the side of the square mesh under `rect`, the vertex count outright under `delaunay`. The
+workspace default (`rect` at 28) is the one variant not named after its mesh — it is
+`slam_base`, the baseline, and the name the rows already on disk were written under. Every
+other combination names itself: `delaunay_1250`, `rect_40`. Its target id says so too —
+`hst/slam5/seed0` for the base run, `hst/slam5_delaunay_1250/seed0` for the variant.
+
+### Why `hst_delaunay.py` is a separate leaf
+
+Not because the code differs — it is one line, `run_slam(..., default_mesh="delaunay")` —
+but because **the wall gate derives a submit's cell from the script path it invokes**, and
+`wall/rates.py` keys measured step rates by that cell. Cell id = cost profile = rate key. A
+1250-vertex Delaunay chain costs a different amount per likelihood evaluation from a
+784-cell rectangular one, so a `--time` justified from `imaging/slam/hst`'s rate would be a
+number measured on a different model — the carry that killed 35 of 39 arms of an overnight
+A100 block. Its own leaf gives it its own cell, `imaging/slam/hst_delaunay`, and the gate
+then demands its own measurement.
+
+### The Delaunay recipe, and why none of it is a free choice
+
+The production group-SLaM recipe, verbatim
+(`autolens_workspace/scripts/group/slam.py`), at 1250 interior vertices:
+
+```python
+image_mesh = al.image_mesh.Hilbert(pixels=1250, weight_power=3.5, weight_floor=0.01)
+grid = image_mesh.image_plane_mesh_grid_from(mask=mask, adapt_data=source_adapt_image)
+grid = al.image_mesh.append_with_circle_edge_points(
+    image_plane_mesh_grid=grid, centre=mask.mask_centre,
+    radius=mask_radius + mask.pixel_scale / 2.0, n_points=30,
+)
+adapt_images = al.AdaptImages(
+    galaxy_name_image_dict=…,
+    galaxy_name_image_plane_mesh_grid_dict={"('galaxies', 'source')": grid},
+)
+mesh = al.mesh.Delaunay(pixels=1250, zeroed_pixels=30, areas_factor=0.5)
+```
+
+rebuilt at **every** pixelized stage from that stage's own S/N-capped source adapt image, as
+production does — `light[1]` and `mass_total[1]` inherit the source pixelization and need the
+grid too. Four things about it are constraints rather than preferences:
+
+- **Not `al.reg.Adapt`**, which is what the rectangular legs run under. That scheme takes
+  its pixel neighbours from a `scipy.spatial.Delaunay` call on the *traced* source grid,
+  which raises `TracerArrayConversionError` under `jax.jit`. The mesh family, not the
+  regularization alone, decides what can be traced; the Split schemes are the traceable
+  pairing for this family.
+- **The regularization is the class, not a fixed instance.** The stage helpers build
+  `af.Model(al.Pixelization, mesh=..., regularization=...)`, so a class leaves the
+  coefficients free exactly as `Adapt` does on the rectangular legs — which is what makes
+  the two runs comparable. `_inference_cli.delaunay_regularization()`'s fixed-coefficient
+  `AdaptSplit` (built for the profiling-style cells) would silently drop free parameters.
+- **The mesh does not place its own vertices.** `al.mesh.Delaunay` alone raises
+  `MeshException: the mesh Delaunay was not given an image-plane mesh grid`. The points are
+  drawn by an *image mesh* from the capped adapt image and reach the fit only through
+  `adapt_images`; `Delaunay.pixels` is documented as a *description* of that grid rather than
+  a control over it. The Hilbert weights are production's (3.5 / 0.01), **not** the library
+  defaults (0.0 / 0.0), which would draw a mesh that does not adapt to the source at all.
+- **The edge ring and `zeroed_pixels` are one number written twice.**
+  `Delaunay.total_pixels` is `pixels + zeroed_pixels`, and the grid the mapper receives is
+  the 1250 interior vertices plus the appended 30-point circle = 1280. So the ring size is
+  not a free knob: change `MESH_EDGE_POINTS` and `zeroed_pixels` follows it, or the
+  accounting breaks silently. Those last 30 vertices are fixed to zero, which keeps poorly
+  constrained boundary pixels from absorbing flux.
+- **The mesh itself is an instance, not an `af.Model`.** It has no free parameters,
+  and `af.Model` asks PyAutoFit to prior every constructor argument the caller did not pin —
+  including `areas_factor`, which no `config/priors` tree in this stack defines, so
+  `source_pix[1]` dies at its first `search.fit` with `ConfigException: No prior config
+  found for class: Delaunay … areas_factor`. Production passes the instance
+  (`autolens_workspace/scripts/group/slam.py`, the `autolens_profiling` Delaunay cells), and
+  so does this. `areas_factor` is passed explicitly at the library default 0.5 and recorded
+  in the row as `mesh_areas_factor`, rather than inherited silently.
+
 ## The six legs of the parity row
 
-One cell — `imaging/slam/hst` — run six ways. The backend is a column, never a reason to
-split the table.
+One cell — `imaging/slam/hst` — on the `slam_base` variant, run six ways. The backend is a
+column, never a reason to split the table.
 
 | leg | `--backend` | `--inversion` | `--config-name` | where it runs |
 |---|---|---|---|---|
@@ -157,8 +262,8 @@ because the workspace script never faced them:
 4. **`--output-dir` moves the PyAutoFit run-output root, not the results directory.** A
    leg's bulk state is the run tree (~150 MB per 5-stage lens), and that is what a RAL job
    or a scratch disk needs to redirect. The small result row always lands under
-   `results/slam/<dataset_class>/<instrument>/<config_name>/`, so a pulled run and a local
-   one are read from the same place.
+   `results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/`, so a pulled run and
+   a local one are read from the same place.
 
 Everything else — flags, the config-name grammar and the backend facts that make a leg honest —
 is in [`../../../_inference_cli.py`](../../../_inference_cli.py),

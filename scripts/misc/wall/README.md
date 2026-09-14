@@ -63,7 +63,13 @@ flag, never a directory), so `imaging/slam/hst.py` and
 `imaging/searches/nautilus/hst.py` would otherwise both be the cell
 `imaging/hst` — two pipelines sharing one rate row, which is the carry this gate
 exists to prevent. The rate-table key splits the id as `(dataset, task, leaf)`,
-and the leaf doubles as the instrument the `--instrument` check reads. Prose
+and the leaf doubles as the instrument the `--instrument` check reads — or names
+a run *variant* of that instrument's cell (`imaging/slam/hst_delaunay`, the HST
+cell with a Delaunay source mesh), which is still run with `--instrument hst`, so
+the instrument check also accepts the leaf's first `_`-separated component. Only
+that check is relaxed: the rate key keeps the whole leaf, which is what stops a
+1250-vertex Delaunay chain and a 784-cell rectangular one from sharing a rate.
+Prose
 lines inside the block are ignored, so the human "why" can sit next to the
 machine-checked "what".
 

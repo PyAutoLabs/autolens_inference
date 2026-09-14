@@ -39,6 +39,8 @@ the payload is ignored, and a row missing a key renders an em dash rather than
 failing the build:
 
     target          the thing being fitted — dataset + model + pipeline
+    variant         the run variant (slam_base / delaunay_1250 / ...), schema v2+
+    status          complete / stopped_early / failed: ... — only complete rows render
     config_name     {local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
     instrument      hst / euclid / sma / ...
     sampler         nautilus / prodigy / nuts / ... (searches only)
@@ -187,6 +189,52 @@ def _scan_rows(root: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Rendering
 # ---------------------------------------------------------------------------
+
+
+#: The run variant a row belongs to when its payload does not say. Kept here
+#: rather than imported from ``_inference_cli.BASE_VARIANT`` so this tool stays
+#: pure stdlib and runs on a checkout with no modelling stack; the two are the
+#: same string and mean the same thing.
+DEFAULT_VARIANT = "slam_base"
+
+#: Number of path segments a SLaM result row has once the variant level exists:
+#: ``slam/<dataset_class>/<instrument>/<variant>/<config_name>/<file>``. A schema
+#: v1 row has five — no variant level — and is the base variant by definition.
+_SLAM_PATH_PARTS_WITH_VARIANT = 6
+
+
+def _variant_of(row: dict) -> str:
+    """The run variant of a row, for a payload of either schema version.
+
+    Schema v2 says so outright. A v1 row predates the field entirely, so the
+    variant is read back off its path — and a v1 row written before the variant
+    level existed has no such segment, which makes it the base variant, which is
+    what it is.
+    """
+    variant = row.get("variant")
+    if variant:
+        return str(variant)
+    parts = Path(str(row.get("_path", ""))).parts
+    if len(parts) >= _SLAM_PATH_PARTS_WITH_VARIANT:
+        return parts[3]
+    return DEFAULT_VARIANT
+
+
+def _is_complete(row: dict) -> bool:
+    """Whether a row is a finished run, and so renderable as a result.
+
+    A leg that stopped after one of five stages (``--stages source_lp``, a
+    rate probe) or died mid-chain writes a row with the same ``target`` and
+    ``config_name`` as the completed run beside it. Rendered, it reads as a
+    result and joins that run's parity group with a posterior from a stage the
+    finished leg has a better answer for. Only ``complete`` renders.
+
+    A row with no ``status`` at all is not making a claim of incompleteness —
+    the field is written by every run this repo has ever made, so an absent one
+    means a hand-written or pre-status payload, and it renders.
+    """
+    status = row.get("status")
+    return status is None or status == "complete"
 
 
 def _empty(message: str) -> str:
@@ -371,7 +419,7 @@ def _render_parity(rows: list[dict]) -> str:
 
 def render_slam() -> str:
     """Pipeline runs — one line per (target, stage, config), plus the parity view."""
-    rows = _scan_rows(SLAM_ROOT)
+    rows = [row for row in _scan_rows(SLAM_ROOT) if _is_complete(row)]
     if not rows:
         return _empty(
             "No pipeline runs yet — the first is the HST SLaM base run "
@@ -380,6 +428,7 @@ def render_slam() -> str:
     body = [
         [
             f"`{_cell(row.get('target'))}`",
+            f"`{_variant_of(row)}`",
             _cell(row.get("stage")),
             f"`{_cell(row.get('config_name'))}`",
             _cell(row.get("seed")),
@@ -391,7 +440,7 @@ def render_slam() -> str:
         for row in sorted(rows, key=_stage_sort_key)
     ]
     table = _render_table(
-        ["Target", "Stage", "Config", "Seed", "Wall", "Evals", "log Z", "Version"],
+        ["Target", "Variant", "Stage", "Config", "Seed", "Wall", "Evals", "log Z", "Version"],
         body,
     )
     return table + _render_parity(rows)

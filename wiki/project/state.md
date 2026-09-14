@@ -35,12 +35,23 @@ pending).**
   (`scripts/misc/slam/_runner.py` + the `scripts/imaging/slam/hst.py` leaf), the per-stage
   result writer and its parity view, the six production submits plus the A100 rate probe,
   and the first measured rows in `wall/rates.py`.
-- Phase 4 — **next**: the first Cortex task, `slam_hst_base` — the base run above, six
-  legs × two seeds.
+- Phase 4 — **running**: the first Cortex task, `slam_hst_base` — the base run above, six
+  legs × two seeds. **The two A100 legs are in**: `jax_gpu` × {dense, sparse} × seeds 0 and
+  1, all five stages, `status: complete`, committed under
+  `results/slam/imaging/hst/slam_base/`. The four CPU legs have not run.
 
-The first numbers measured in this repo landed with phase 3. They are **rates, not
-results**: one stage (`source_lp[1]`) per backend, measured to size the submits. No parity
-row exists yet, so nothing here answers the science question above.
+`results/` therefore holds this repo's first real measurements — four complete chains, not
+rates. They are **one backend of the parity row**, so they still do not answer the science
+question above: with nothing to compare against, "the same answer under every backend" has
+no second term. What they do establish is that the chain runs end to end on an A100 and
+recovers the truth (worst `truth_delta_sigma` at `mass_total[1]` across the four legs:
+1.33σ), and what a chain costs there.
+
+The cell also grew a **run-variant level** (`results/.../<instrument>/<variant>/<config>/`):
+the base run is `slam_base`, and the mesh under test is `delaunay_1250`, whose two A100
+legs are being submitted — both inversion routes proven end to end in test mode, on a
+Hilbert-drawn mesh of 1250 interior vertices plus a 30-point zeroed edge ring, and asking for
+8 CPUs because this mesh's host callback deadlocks a narrow thread pool.
 
 ## Journal
 
@@ -122,3 +133,156 @@ no `positions.info` beside it is not citable here, and the phase-4 witness reads
 **Next.** Re-check RAL job 342695 for the A100 rate, then submit the six production legs
 (`hpc/sync submit --gpu|--cpu submit_slam_hst_*`) and open the phase-4 Cortex task
 `slam_hst_base` against them.
+
+### 2026-09-14 — the A100 base legs land, and the cell grows a variant level
+
+**What ran.** The first four production legs of the base run, on RAL's `gpu` partition:
+`scripts/imaging/slam/hst.py --backend jax_gpu --inversion {dense,sparse}`, seeds 0 and 1,
+fp64, all five stages, `status: complete`, no stage resumed. Search wall per stage
+(seed 0 / seed 1), and reject-inclusive likelihood evaluations:
+
+| stage | n_live/n_batch | dense wall | dense evals | sparse wall | sparse evals |
+|---|---|---|---|---|---|
+| `source_lp[1]` | 200 / 50 | 923 s / 835 s | 95,950 / 96,150 | 808 s / 798 s | 92,300 / 96,150 |
+| `source_pix[1]` | 150 / 20 | 762 s / 749 s | 32,820 / 33,000 | **1,931 s / 1,904 s** | 33,140 / 33,020 |
+| `source_pix[2]` | 75 / 20 | 132 s / 362 s | 3,720 / 13,800 | 179 s / 188 s | 3,260 / 3,580 |
+| `light[1]` | 150 / 20 | 237 s / 267 s | 9,620 / 12,200 | 268 s / 254 s | 11,320 / 9,980 |
+| `mass_total[1]` | 150 / 20 | 517 s / 650 s | 20,080 / 25,820 | 800 s / 868 s | 20,780 / 21,640 |
+| **chain** | | **2,571 s / 2,863 s** | 162,190 / 180,970 | **3,985 s / 4,012 s** | 160,800 / 164,370 |
+
+Wall including visualisation and output is 4,144 s / 4,485 s dense and 5,567 s / 5,576 s
+sparse — a run is roughly 60% search and 40% writing pictures of itself. `mass_total[1]`
+log evidence: **31,592.70** and **31,596.11** dense, **31,589.52** and **31,592.44** sparse
+(nautilus 1.0.5 exposes no `log_z_err`, so the row carries `null` and says why). The worst
+`truth_delta_sigma` on any of the four is 1.33σ (`gamma_2`), and every pixelized stage has
+its `positions.info` beside it.
+
+**What we learned.**
+
+1. **The chain costs ~43 minutes of search on an A100, and the sparse operator buys nothing
+   here.** Sparse is 1.4–1.55× *slower* over the chain, and the whole difference is one
+   stage: `source_pix[1]` costs 1,931 s sparse against 762 s dense for the same ~33,000
+   evaluations — 2.5×. This is a single-dataset, single-mesh observation on the largest
+   pixelized stage; it is not a ruling about the operator, and the CPU legs may well say the
+   opposite, since the operator exists to avoid a dense mapping matrix that a GPU holds
+   comfortably.
+2. **The 92,800-evaluation floor was a floor on the wrong thing.** It was derived as 128
+   evaluations per live point over the chain's 725 live points; in the event `source_lp[1]`
+   *alone* cost 92,300–96,150, and the chain 160,800–180,970. The floor held, but only by
+   accident of its own conservatism — the honest reading is that the parametric opening
+   stage is over half the chain's evaluations and under a third of its wall.
+3. **These are one backend, not a parity row.** Four legs, one device, one mesh, two seeds.
+   Seed-to-seed spread on `mass_total[1]` log evidence is 3.4 nats dense and 2.9 sparse, and
+   dense-vs-sparse at fixed seed is 3.2 and 3.7 — so the two inversions already agree to
+   about the size of the seed noise, which is the first thing the parity row exists to check
+   and the only part of it that can be checked yet. The four CPU legs (`ral` partition, 5-day
+   containment) have not run.
+4. **A second experiment on this cell needed a level in the path.** Rows group into a parity
+   row by the payload's `target`, and a target was `<instrument>/slam5/seed<n>` — the mesh
+   was nowhere in it. A Delaunay run would therefore have landed in the base run's directory
+   *and* its parity group, and been rendered as a seventh column of a table whose whole
+   premise is that the columns differ only in backend. So the results path, the PyAutoFit
+   `path_prefix` and the target id all gained a `<variant>` segment between the instrument
+   and the config name: `slam_base` for the workspace-default 28x28 rectangular mesh (the
+   name the rows above were written under), `delaunay_1250` for the mesh under test. Result
+   schema v2 carries `variant`, `mesh`, `mesh_pixels`, `mesh_areas_factor` and
+   `regularization`; v1 rows still read, and an absent `variant` means `slam_base`.
+5. **The Delaunay variant's model is constrained at both ends, and neither constraint is a
+   preference.** `al.reg.Adapt` — what the rectangular legs run under — takes its pixel
+   neighbours from a `scipy.spatial.Delaunay` call on the *traced* source grid and raises
+   `TracerArrayConversionError` under jit on this mesh family, so the pairing is
+   `al.reg.AdaptSplit`; and it is the **class**, not
+   `_inference_cli.delaunay_regularization()`'s fixed-coefficient instance, so the
+   coefficients stay free exactly as `Adapt`'s are on the rectangular legs. Comparability is
+   the point: a variant that quietly drops free parameters is not the same experiment run
+   differently.
+6. **The mesh itself has to be an instance, and the smoke is what found it.**
+   `af.Model(al.mesh.Delaunay, pixels=1250, zeroed_pixels=0)` asks PyAutoFit to give every
+   unpinned constructor argument a prior, and `areas_factor` has no entry in any
+   `config/priors` tree in this stack: both test-mode legs died at the first `search.fit` of
+   `source_pix[1]` with `ConfigException: No prior config found for class: Delaunay …
+   areas_factor`. The fix is what production does — pass the instance
+   (`al.mesh.Delaunay(pixels=1250, zeroed_pixels=0, areas_factor=0.5)`), with `areas_factor`
+   stated explicitly at the library default and recorded in the row rather than inherited
+   silently. **Do not re-introduce `af.Model` here**: the mesh has no free parameters, and
+   wrapping it only invites PyAutoFit to invent some. The regularization stays a class; the
+   mesh is an instance; the asymmetry is real and this is why.
+7. **A different mesh is a different cell, not a flag.** `scripts/imaging/slam/hst_delaunay.py`
+   exists because the wall gate reads a submit's cell from the script path it invokes and
+   `wall/rates.py` keys step rates by that cell. A 1250-vertex Delaunay chain is a different
+   cost profile from a 784-cell rectangular one, so sharing `imaging/slam/hst` would let a
+   `--time` be justified by a rate measured on another model — the carry that cost 35 of 39
+   arms of an overnight A100 block. (The gate's instrument check learned that a leaf may
+   carry a variant suffix: `imaging/slam/hst_delaunay` runs `--instrument hst`. Only that
+   check was relaxed; the rate key keeps the whole leaf.)
+
+**Both Delaunay routes were run end to end before either submit was cleared, and it took
+four attempts to get there.** The legs ran on the euclid cell under `PYAUTO_TEST_MODE` —
+the HST cell does not fit on this laptop under JAX, and the euclid cell is the same code
+path on a smaller grid, which is why CI uses it. Every failure is worth keeping, because
+three of the four are properties of the mesh family rather than accidents:
+
+1. `ConfigException: No prior config found for class: Delaunay … areas_factor` at the first
+   `search.fit` of `source_pix[1]` — item 6 above; the mesh had been wrapped in `af.Model`.
+2. With the mesh an instance: `MeshException: The mesh Delaunay was not given an image-plane
+   mesh grid`. **`al.mesh.Delaunay` does not place its own vertices**; they are drawn by an
+   *image mesh* from the S/N-capped source adapt image and reach the fit only through
+   `adapt_images`. `Delaunay.pixels` is documented as *a description of that grid rather
+   than a control over it*. The answer is the production group-SLaM recipe verbatim
+   (`autolens_workspace/scripts/group/slam.py`) at 1250 interior vertices:
+   `al.image_mesh.Hilbert(pixels=1250, weight_power=3.5, weight_floor=0.01)` on that stage's
+   own capped adapt image, a 30-point circle ring appended at the mask radius, handed over
+   as `AdaptImages(galaxy_name_image_plane_mesh_grid_dict={source: grid})`, and
+   `al.mesh.Delaunay(pixels=1250, zeroed_pixels=30, areas_factor=0.5)`. The Hilbert weights
+   are production's, **not** the library defaults (0.0 / 0.0), which would draw a mesh that
+   does not adapt to the source at all. **The edge ring and `zeroed_pixels` are one number
+   written twice**: `total_pixels` is `pixels + zeroed_pixels`, the grid is 1250 + 30 = 1280,
+   and changing one without the other breaks the accounting silently. The grid is rebuilt at
+   every pixelized stage from that stage's own adapt image, as production does — `light[1]`
+   and `mass_total[1]` inherit the source pixelization and need it too.
+3. **A Delaunay leg needs a wider CPU thread pool than a rectangular one of the same size,
+   and that is a property of the mesh family.** The Delaunay interpolator reaches qhull
+   through a `jax.pure_callback`, so the fit calls back into the host *while* an XLA
+   computation is in flight; a thread pool narrower than that callback depth deadlocks — the
+   pool waits on the callback the pool has to run. At `--cores 2` the sparse leg sat at
+   `source_pix[1]` with all 32 threads in `futex_wait` and **zero CPU for 22 minutes**, while
+   autofit's `jax_compile` heartbeat kept printing "still compiling, Ns elapsed" — that line
+   is a timer thread and proves only that a timer is alive, never that work is happening.
+   Judge a suspected hang on CPU time, not on the heartbeat. At `--cores 8` both legs ran.
+   The rectangular legs have no callback at all, which is why nothing like this was ever seen
+   on the base run — and why the two Delaunay submits ask for `--cpus-per-task=8` where the
+   base legs ask for 4.
+4. **Two legs do not fit in 15 GB at once.** Run concurrently, the dense leg was OOM-killed
+   by the kernel at `source_pix[1]` (`anon-rss` 6.7 GB) with no traceback, its log simply
+   stopping. Run one at a time, both complete. The euclid smoke is a one-leg-at-a-time job on
+   this laptop.
+
+**The jit compile is a line item, and one stage dominates it.** In `PYAUTO_TEST_MODE` every
+stage makes a *single* likelihood call, so a stage's wall clock essentially *is* its compile.
+On the small euclid cell `source_pix[1]` cost **1,471.7 s dense and 2,058.7 s sparse** — 25
+and 34 minutes to compile one stage, against seconds on the rectangular legs, which have no
+qhull callback to trace around. The other three pixelized stages compile in 70-170 s
+(per-stage: 49.6 / 22.2 / 30.9 / 43.1 s dense, 85.8 / 31.3 / 54.1 / 85.7 s sparse), so the
+cost is concentrated in one stage and is paid once per stage rather than per evaluation — but
+the A100 legs pay it on a cell of 15,361 masked pixels with a graph never compiled on that
+backend, which is why their `--time` is a 24 h containment rather than the base legs' 12 h.
+
+Run alone at `--cores 8`, each leg ran all five stages to `status: complete` and wrote a
+schema-v2 row at the variant path carrying the whole recipe (`mesh_pixels`,
+`mesh_zeroed_pixels`, `mesh_areas_factor`, `image_mesh`, its weight power and floor, the ring
+size, `mesh_shape: null`): a row saying only "delaunay, 1250" could not be reproduced,
+because what places those vertices is the image mesh and its weights. Measured there, and
+worth carrying to the A100 because **the compile is a real line item and every pixelized
+stage pays it**: per-stage jit compile 49.6 / 22.2 / 30.9 / 43.1 s dense and 85.8 / 31.3 /
+54.1 / 85.7 s sparse, against seconds for the rectangular legs; peak RSS 9.3 GB dense and
+6.5 GB sparse on the *euclid* cell. `source_pix[1]` has **10 free parameters** on both, the
+same as the rectangular branch (mass 5 + shear 2 + 3 regularization coefficients) — the mesh
+contributes none on either side, which is what keeps the two runs comparable. `source_pix[2]`
+does differ, 3 against the rectangular branch's 5: the rectangular *image* mesh has free
+`weight_power` and `weight_floor`, where the Hilbert weights here are fixed at 3.5 / 0.01.
+
+**Next.** Submit the two A100 Delaunay legs — `submit_slam_delaunay1250_hst_jax_gpu_{dense,
+sparse}`, seeds 0–1, `--mem` 64gb/96gb, `--cpus-per-task=8`, 24 h containment, both declaring
+`source: unmeasured  probe-first: yes` because nothing has been measured on this cell and
+the base run's walls belong to a different one. Then the four CPU legs, which are what turn
+four completed runs into a parity row.

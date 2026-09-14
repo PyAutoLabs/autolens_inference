@@ -1,0 +1,138 @@
+#!/bin/bash -l
+#
+# SLaM Delaunay-1250 variant on HST — the A100 leg, dense inversion, seeds 0-1.
+#
+# This is the `delaunay_1250` run VARIANT, not another backend of the base run: the two
+# pixelized source stages are `al.mesh.Delaunay` at 1250 Hilbert-drawn vertices (plus a
+# 30-point zeroed edge ring) under the `AdaptSplit` class, where `slam_base` runs a 28x28
+# (784-cell) adaptive rectangular mesh under `reg.Adapt`. The variant is a directory level and a field of the target id
+# (`hst/slam5_delaunay_1250/seed<n>`), so these rows never join the base run's parity row —
+# a mesh is a different model, and only the backend may be a column of one table.
+# See AGENTS.md, "Config names and parity rows", and scripts/imaging/slam/README.md.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This submit runs ONE cell, `imaging/slam/hst_delaunay`, all five stages of it, and it
+#   declares itself `unmeasured` on purpose. Nothing has ever been measured on this cell.
+#   The completed A100 base legs are NOT the basis and must never be used as one: they ran
+#   the cell `imaging/slam/hst` at 784 rectangular pixels, and a rate is never carried
+#   across a cell boundary — carrying one is what killed 35 of 39 arms of an overnight A100
+#   block. They are named here only as CONTEXT for why 24 h is a sane containment: on the
+#   same A100, the whole five-stage base chain cost 2571 s and 2863 s of search wall per
+#   seed dense, 3985 s and 4012 s sparse (4144-5576 s per seed including visualisation),
+#   for 160800-180970 likelihood evaluations. A 1250-vertex Delaunay chain is a heavier
+#   per-evaluation inversion than a 784-cell rectangular one, by an unknown factor; 24 h
+#   leaves that factor a lot of room without pretending to know it.
+#   `steps:` below is a FLOOR, not an estimate, and it is the chain's floor rather than this
+#   mesh's: Nautilus had spent 128 evaluations per live point on `source_lp[1]` when the
+#   longer of the two local probes was stopped, and it had still not left its exploration
+#   phase. 128 x the chain's 725 live points (200+150+75+150+150) = 92800 evaluations is
+#   therefore the fewest this chain can possibly cost. No `wall:` is offered: multiplying a
+#   floor by a rate measured on a different mesh would be an invention, and inventing a
+#   number to satisfy a linter is the disease rather than the cure.
+#   `--time` below is a CONTAINMENT sized against that floor and the partition's 27-day
+#   limit, not a derived budget. The first arm of this submit IS the probe: read its
+#   `stages[*].wall_s / stages[*].likelihood_evals` out of the result row and replace this
+#   block with `source: measured-wall`.
+#   24 h, not the base legs' 12 h, and the reason is a measurement rather than nerves. In
+#   `PYAUTO_TEST_MODE` every stage makes a SINGLE likelihood call, so the stage wall IS the
+#   jit compile — and on the small euclid cell `source_pix[1]` still cost 1471.7 s dense and
+#   2058.7 s sparse, 25 and 34 minutes to compile one stage, against seconds on the
+#   rectangular legs. The other three pixelized stages compile in 70-170 s, so the cost is
+#   one stage and it is one-time, but the A100 legs pay it on a bigger cell (15,361 masked
+#   pixels) with a graph never compiled on that backend. The base rect chain ran 43-67 min
+#   per seed; this one plausibly lands at 3-5 h. 24 h keeps ~5x headroom on that estimate
+#   and still contains a runaway; the partition's limit is 27 days and being wrong about a
+#   containment kills the run at the wall.
+#   cell: imaging/slam/hst_delaunay  device: a100  precision: fp64
+#   lanes: 1  steps: 92800  source: unmeasured  probe-first: yes
+#
+#SBATCH -J slam_delaunay1250_hst_jax_gpu_dense
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96gb
+#SBATCH --time=24:00:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_inference
+source $AP_ROOT/activate.sh
+
+# JAX_PLATFORMS and JAX_ENABLE_X64 are exported EXPLICITLY, never inherited: without the
+# first, this job can silently fall back to CPU and report a "GPU" wall clock that is
+# nothing of the kind; without the second, an fp64 config runs in fp32. The driver also
+# asserts jax.default_backend() == "gpu" and exits 2 rather than fall back silently.
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# --cpus-per-task=8, where the base legs ask for 4, and this is a requirement of the MESH
+# rather than a preference. The Delaunay interpolator reaches qhull through a
+# `jax.pure_callback`: the fit calls back into the host WHILE an XLA computation is in
+# flight, so a CPU thread pool narrower than that callback depth can deadlock — the pool is
+# waiting on the callback the pool has to run. Measured on the laptop, euclid cell, this
+# exact chain: at `--cores 2` the process sat with all 32 threads in `futex_wait` and ZERO
+# CPU for 22 minutes at `source_pix[1]` (the "still compiling" heartbeat kept printing — it
+# is a timer thread and proves nothing); the same leg at `--cores 8`, alone, ran the chain.
+# The rectangular legs have no callback at all, which is why 4 is fine for them. `--cores
+# $SLURM_CPUS_PER_TASK` below keeps the two numbers moving together.
+
+# --mem=96gb on BOTH legs. There are two independent estimates here and they disagree about
+# which route is the heavier one, so the request is a margin over the larger of them rather
+# than a derived figure, and neither leg is given less than the other.
+#   From the base run (2026-09-11, HST cell, 784 rectangular cells): ~13 GB RSS at
+#   source_pix[1] dense, ~21.6 GB sparse. Scaling by the mesh alone, 1250/784 = 1.6x,
+#   expects ~21 GB dense / ~35 GB sparse here.
+#   From this mesh's own smoke (2026-09-15, euclid cell, PYAUTO_TEST_MODE, measured): peak
+#   RSS 9.3 GB dense and 6.5 GB sparse. On a Delaunay source the DENSE route is the heavier
+#   one, which inverts the base run's ordering — and the euclid cell is the smaller of the
+#   two cells.
+# Neither is a measurement of this cell on this mesh, and the two orderings cannot both be
+# right, so 96gb is ~3x the largest estimate on the table. The gpu partition's nodes carry
+# 885 GB, so the request is not what makes this job wait.
+
+# Proof of what the job actually got. A four-second CUDA init failure and a healthy run
+# look identical in sacct; they do not look identical here.
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       imaging/slam/hst_delaunay"
+echo "Instrument: hst"
+echo "Variant:    delaunay_1250"
+echo "Config:     hpc_a100_jax_gpu_dense_fp64"
+echo "Seed:       $SLURM_ARRAY_TASK_ID"
+
+cd $AP_ROOT
+
+# One seed per array task: one run says the search CAN find the answer, a spread of seeds
+# says how often it does. The seed reaches the result filename (stages_seed<n>.json) AND the
+# output tree (seed_<n>/), so the two arms never overwrite each other. `seed` is a PyAutoFit
+# identifier field and neither `--config-name` nor the variant is, which is why both live in
+# the path_prefix — without that, two backends at one seed, or the base and Delaunay legs of
+# one config, would hash to the same identifier and silently resume each other's fit.
+#
+# --mesh-pixels 1250 is the leaf's own default (scripts/imaging/slam/hst_delaunay.py). It is
+# passed anyway so that the submit states on its face what it runs: this file is the record
+# of what went to the queue, and a default that moves must not move what this job claims.
+python3 scripts/imaging/slam/hst_delaunay.py \
+    --instrument hst \
+    --backend jax_gpu \
+    --inversion dense \
+    --mesh-pixels 1250 \
+    --seed $SLURM_ARRAY_TASK_ID \
+    --config-name hpc_a100_jax_gpu_dense_fp64 \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date

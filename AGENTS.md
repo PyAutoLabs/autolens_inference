@@ -45,14 +45,37 @@ _inference_cli.py           Shared CLI / JSON / auto-simulate helper imported by
 instruments/                Instrument definitions (pixel scale, shape) used to frame results
 config/                     PyAutoConf overrides for runs launched from this repo
 hpc/                        hpc/sync (laptop-side RAL driver) + SLURM submit scripts
-results/                    Committed result rows: results/slam/, results/searches/
-output/                     PyAutoFit run output — KEPT here (see below), gitignored
+results/                    Committed result rows:
+                            results/slam/<dataset_class>/<instrument>/<variant>/
+                              <config_name>/stages_seed<n>.json  (+ results/searches/)
+output/                     PyAutoFit run output — KEPT here (see below), gitignored;
+                            mirrors the same grammar:
+                            output/slam/<dataset_class>/<instrument>/<variant>/
+                              <config_name>/seed_<n>/
 wiki/project/               The Cortex ledger (state.md) + its journal-entry template
 ```
 
 **The instrument is a flag, never a directory.** `--instrument hst` selects the preset;
 there is no `scripts/imaging/slam/hst/`. Instruments are columns in a table, and putting
 one in a path forces the tree to be re-cut every time a preset is added.
+
+**A leaf may name a run *variant* of an instrument's cell.** `scripts/imaging/slam/` holds
+two leaves: `hst.py` (the workspace-default 28x28 rectangular mesh) and `hst_delaunay.py`
+(1250-vertex Delaunay). They are one runner and differ by one argument, so the second exists
+for a reason that has nothing to do with code reuse: **the wall gate derives a submit's cell
+from the script path it invokes, and `scripts/misc/wall/rates.py` keys measured step rates by
+that cell**. Cell id = cost profile = rate key, so a model whose per-evaluation cost differs
+needs its own leaf or it inherits a `--time` justified on someone else's measurement. Split a
+leaf when the cost profile changes; never merely because a flag changed.
+
+**The run variant is a path level, `<variant>`, between the instrument and the config name**
+— in `results/`, in the PyAutoFit `output/` tree, and as a field of the `target` id
+(`hst/slam5_delaunay_1250/seed0`). It says *what was fitted*, where the config name says
+*what ran it*. It exists because rows group into a parity row by `target`: without it, a
+mesh experiment would sit in the base run's directory and its parity group and read as just
+another backend of the same fit. `--mesh {rect,delaunay}` / `--mesh-pixels N` resolve it;
+`rect` at 28 is `slam_base`, the baseline, and everything else names itself
+(`delaunay_1250`, `rect_40`).
 
 **Import model.** Leaves sit several levels below the repo root, so each finds the root by
 walking up to the directory containing `ruff.toml` (a depth-proof sentinel) and puts both
@@ -116,7 +139,8 @@ output:
 
 Budget roughly **150 MB per 5-stage lens per leg**. `output/` is gitignored: it is bulk
 run state, kept on disk and pulled from RAL, never committed. What *is* committed is the
-small result row under `results/slam/` or `results/searches/`.
+small result row under `results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/`
+or `results/searches/`.
 
 ## RAL, and getting runs back
 

@@ -50,10 +50,26 @@ OTHER_POSTERIOR = {
 }
 
 
-def _payload(config_name: str, backend: str, inversion: str, posterior: dict) -> dict:
-    return {
-        "schema_version": 1,
-        "target": "hst/slam5/seed0",
+def _payload(
+    config_name: str,
+    backend: str,
+    inversion: str,
+    posterior: dict,
+    *,
+    variant: str | None = None,
+    target: str = "hst/slam5/seed0",
+    status: str | None = None,
+    stage_names=STAGE_NAMES,
+) -> dict:
+    """One result payload.
+
+    ``variant=None`` is a **schema v1** row: the field did not exist, and the
+    row sits one directory shallower. Those are the four A100 base-run rows
+    already committed, so every renderer has to keep reading them.
+    """
+    payload = {
+        "schema_version": 1 if variant is None else 2,
+        "target": target,
         "config_name": config_name,
         "backend": backend,
         "inversion": inversion,
@@ -76,15 +92,25 @@ def _payload(config_name: str, backend: str, inversion: str, posterior: dict) ->
                 "positions_info_present": name != "source_lp[1]",
                 "posterior": posterior if name == build_readme.PARITY_STAGE else {},
             }
-            for index, name in enumerate(STAGE_NAMES)
+            for index, name in enumerate(stage_names)
         ],
     }
+    if variant is not None:
+        payload["variant"] = variant
+    if status is not None:
+        payload["status"] = status
+    return payload
 
 
 def _write_results(tmp_path: Path, *payloads: dict) -> Path:
     slam_root = tmp_path / "results" / "slam" / "imaging" / "hst"
     for payload in payloads:
-        directory = slam_root / payload["config_name"]
+        # A v1 payload also lands at the v1 path — one level shallower, with no
+        # variant segment — because that is what is on disk for those rows.
+        directory = slam_root
+        if "variant" in payload:
+            directory = directory / payload["variant"]
+        directory = directory / payload["config_name"]
         directory.mkdir(parents=True, exist_ok=True)
         (directory / f"stages_seed{payload['seed']}.json").write_text(json.dumps(payload))
     return slam_root
@@ -126,11 +152,13 @@ def test_flat_table_lists_every_stage_in_chain_order(monkeypatch, tmp_path):
 
     rendered = build_readme.render_slam()
 
-    assert "| Target | Stage | Config | Seed | Wall | Evals | log Z | Version |" in rendered
+    assert (
+        "| Target | Variant | Stage | Config | Seed | Wall | Evals | log Z | Version |"
+    ) in rendered
     body = [line for line in rendered.splitlines() if line.startswith("| `hst/slam5")]
     assert len(body) == 10
     # Chain order, not alphabetical: source_lp[1] leads, mass_total[1] closes.
-    stages_in_order = [line.split("|")[2].strip() for line in body]
+    stages_in_order = [line.split("|")[3].strip() for line in body]
     assert stages_in_order[0] == "source_lp[1]"
     assert stages_in_order[-1] == "mass_total[1]"
 
@@ -193,3 +221,102 @@ def test_rendering_a_stage_payload_is_a_fixed_point(monkeypatch, tmp_path):
     _point_renderer_at(monkeypatch, tmp_path, slam_root)
 
     assert build_readme.render_slam() == build_readme.render_slam()
+
+
+# ---------------------------------------------------------------------------
+# Run variants: the column, the v1 fallback, and the incomplete-row skip
+# ---------------------------------------------------------------------------
+
+
+def test_a_v1_row_with_no_variant_field_renders_as_the_base_variant(monkeypatch, tmp_path):
+    """The four committed A100 rows are schema v1 at the v1 path. They predate
+    the field entirely, and a row with no variant segment in its path is the
+    base variant, which is what those rows are."""
+    slam_root = _write_results(
+        tmp_path,
+        _payload(REFERENCE_CONFIG, "jax_cpu", "dense", REFERENCE_POSTERIOR),
+    )
+    _point_renderer_at(monkeypatch, tmp_path, slam_root)
+
+    rendered = build_readme.render_slam()
+
+    body = [line for line in rendered.splitlines() if line.startswith("| `hst/slam5")]
+    assert len(body) == 5
+    assert {line.split("|")[2].strip() for line in body} == {"`slam_base`"}
+
+
+def test_a_v2_row_renders_its_variant_and_never_joins_the_base_parity_row(monkeypatch, tmp_path):
+    slam_root = _write_results(
+        tmp_path,
+        _payload(REFERENCE_CONFIG, "jax_cpu", "dense", REFERENCE_POSTERIOR),
+        _payload(OTHER_CONFIG, "numba_cpu", "sparse", OTHER_POSTERIOR),
+        _payload(
+            REFERENCE_CONFIG,
+            "jax_cpu",
+            "dense",
+            OTHER_POSTERIOR,
+            variant="delaunay_1250",
+            target="hst/slam5_delaunay_1250/seed0",
+        ),
+    )
+    _point_renderer_at(monkeypatch, tmp_path, slam_root)
+
+    rendered = build_readme.render_slam()
+
+    variants = {
+        line.split("|")[2].strip()
+        for line in rendered.splitlines()
+        if line.startswith("| `hst/slam5")
+    }
+    assert variants == {"`slam_base`", "`delaunay_1250`"}
+
+    # Two targets, two parity groups. The Delaunay leg is a different
+    # experiment, so it is a group of one and says so rather than sitting in the
+    # base run's group as if it were a third backend.
+    assert "**Parity — `hst/slam5/seed0` (seed 0)" in rendered
+    assert "**Parity — `hst/slam5_delaunay_1250/seed0` (seed 0)" in rendered
+    delaunay_block = rendered.split("**Parity — `hst/slam5_delaunay_1250/seed0`")[1]
+    assert "a parity view needs at least two legs" in delaunay_block
+
+
+def test_a_row_that_did_not_complete_is_not_rendered_as_a_result(monkeypatch, tmp_path):
+    """A `--stages source_lp` probe writes one stage of five under the same
+    target as the finished run beside it. Rendered, it reads as a result and
+    joins that run's parity group."""
+    slam_root = _write_results(
+        tmp_path,
+        _payload(REFERENCE_CONFIG, "jax_cpu", "dense", REFERENCE_POSTERIOR, status="complete"),
+        _payload(
+            OTHER_CONFIG,
+            "numba_cpu",
+            "sparse",
+            OTHER_POSTERIOR,
+            status="stopped_early",
+            stage_names=STAGE_NAMES[:1],
+        ),
+    )
+    _point_renderer_at(monkeypatch, tmp_path, slam_root)
+
+    rendered = build_readme.render_slam()
+
+    body = [line for line in rendered.splitlines() if line.startswith("| `hst/slam5")]
+    assert len(body) == 5, "only the completed leg's five stages render"
+    assert OTHER_CONFIG not in rendered
+    assert "a parity view needs at least two legs" in rendered
+
+
+def test_a_failed_row_is_skipped_too(monkeypatch, tmp_path):
+    slam_root = _write_results(
+        tmp_path,
+        _payload(
+            REFERENCE_CONFIG,
+            "jax_cpu",
+            "dense",
+            REFERENCE_POSTERIOR,
+            status="failed: RuntimeError: boom",
+            stage_names=STAGE_NAMES[:2],
+        ),
+    )
+    _point_renderer_at(monkeypatch, tmp_path, slam_root)
+
+    assert "No pipeline runs yet" in build_readme.render_slam()

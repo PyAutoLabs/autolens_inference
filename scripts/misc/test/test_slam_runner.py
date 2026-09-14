@@ -32,6 +32,8 @@ for _path in (str(REPO_ROOT), str(REPO_ROOT / "scripts" / "misc")):
 
 from slam import _runner  # noqa: E402
 
+from _inference_cli import variant_name  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Import graph
 # ---------------------------------------------------------------------------
@@ -263,6 +265,8 @@ def _cli(**overrides):
         "seed": 0,
         "use_sparse_operator": False,
         "rect_mesh": "bilinear",
+        "mesh": "rect",
+        "mesh_pixels": 28,
         "regularization": None,
         "memo": "off",
         "cores": 4,
@@ -297,6 +301,218 @@ def test_a_malformed_config_name_is_refused():
 
 def test_a_missing_config_name_is_refused():
     assert "required" in _runner.validate_config_name(_cli(config_name=None))
+
+
+# ---------------------------------------------------------------------------
+# Run variant: the name, the two paths and the target id
+# ---------------------------------------------------------------------------
+
+
+def test_the_workspace_default_mesh_is_the_base_variant():
+    """28x28 rect is `slam_base`, and nothing else is.
+
+    The four A100 rows already on disk were written under that name and carry
+    the bare `hst/slam5/seed<n>` target; a rename would orphan them.
+    """
+    assert variant_name(_cli()) == "slam_base"
+    assert variant_name(_cli(mesh_pixels=40)) == "rect_40"
+    assert variant_name(_cli(mesh="delaunay", mesh_pixels=1250)) == "delaunay_1250"
+
+
+def test_the_variant_is_a_directory_level_in_the_results_path(tmp_path):
+    json_path, png_path = _runner.results_paths(
+        tmp_path, "imaging", "hst", "slam_base", "hpc_a100_jax_gpu_dense_fp64", 0
+    )
+    assert json_path.relative_to(tmp_path) == Path(
+        "results/slam/imaging/hst/slam_base/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json"
+    )
+    assert png_path.name == "stages_seed0.png"
+
+    delaunay, _ = _runner.results_paths(
+        tmp_path, "imaging", "hst", "delaunay_1250", "hpc_a100_jax_gpu_dense_fp64", 1
+    )
+    assert delaunay.relative_to(tmp_path) == Path(
+        "results/slam/imaging/hst/delaunay_1250/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json"
+    )
+
+
+def test_the_variant_is_a_directory_level_in_the_output_tree():
+    """Neither `config_name` nor the mesh is an autofit identifier field, so two
+    legs differing only in those must be kept apart by the path or they resume
+    each other's fit."""
+    assert _runner.output_path_prefix(
+        "imaging", "hst", "slam_base", "local_jax_cpu_dense_fp64", 0
+    ) == Path("slam/imaging/hst/slam_base/local_jax_cpu_dense_fp64/seed_0")
+    assert _runner.output_path_prefix(
+        "imaging", "hst", "delaunay_1250", "local_jax_cpu_dense_fp64", 0
+    ) == Path("slam/imaging/hst/delaunay_1250/local_jax_cpu_dense_fp64/seed_0")
+
+
+def test_only_the_base_variant_keeps_the_bare_target_id():
+    """The dashboard groups legs into a parity row by `target`. A second
+    experiment on this cell must not land in the base run's group claiming to be
+    the same run under a different backend."""
+    assert _runner.target_id("hst", "slam_base", 0) == "hst/slam5/seed0"
+    assert _runner.target_id("hst", "delaunay_1250", 0) == "hst/slam5_delaunay_1250/seed0"
+    assert _runner.target_id("hst", "rect_40", 1) == "hst/slam5_rect_40/seed1"
+    assert _runner.target_id("euclid", "delaunay_1250", 2) == "euclid/slam5_delaunay_1250/seed2"
+
+
+# ---------------------------------------------------------------------------
+# Mesh models: which pixelization and which regularization each stage gets
+# ---------------------------------------------------------------------------
+
+
+class _StubModel:
+    """Stands in for ``af.Model`` — records the class and kwargs it was built from."""
+
+    def __init__(self, cls, **kwargs):
+        self.cls = cls
+        self.kwargs = kwargs
+
+
+class _StubAf:
+    Model = _StubModel
+
+
+class _StubMesh:
+    class Delaunay:
+        """Constructed directly — the Delaunay mesh is an instance, not an ``af.Model``."""
+
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    class RectangularBilinearAdaptDensity:
+        pass
+
+    class RectangularBilinearAdaptImage:
+        pass
+
+    class RectangularRTUAdaptDensity:
+        pass
+
+    class RectangularRTUAdaptImage:
+        pass
+
+
+class _StubReg:
+    class Adapt:
+        pass
+
+    class AdaptSplit:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+
+class _StubAl:
+    """The modelling namespace as far as ``mesh_models`` is concerned.
+
+    Stubbed rather than imported: ``_runner`` exists to set the backend
+    environment before autolens loads, and a unit test that imports the stack
+    would be testing a different process from the one the driver runs.
+    """
+
+    mesh = _StubMesh
+    reg = _StubReg
+
+
+def test_the_rect_branch_is_the_workspace_default_and_is_unchanged():
+    meshes = _runner.mesh_models(_StubAf, _StubAl, _cli())
+
+    assert meshes.mesh_init.cls is _StubMesh.RectangularBilinearAdaptDensity
+    assert meshes.mesh_init.kwargs == {"shape": (28, 28)}
+    assert meshes.mesh.cls is _StubMesh.RectangularBilinearAdaptImage
+    assert meshes.mesh.kwargs == {"shape": (28, 28)}
+    assert meshes.regularization is _StubReg.Adapt
+    assert meshes.scheme == "adapt"
+    assert meshes.shape == (28, 28)
+    # A rectangular row has no areas_factor, no image mesh and no edge ring to
+    # record, and must not invent any of them.
+    assert meshes.areas_factor is None
+    assert meshes.image_mesh is None
+    assert (meshes.weight_power, meshes.weight_floor) == (None, None)
+    assert (meshes.edge_points, meshes.zeroed_pixels, meshes.pixels) == (None, None, None)
+
+
+def test_the_rect_branch_still_honours_rect_mesh_and_mesh_pixels():
+    meshes = _runner.mesh_models(_StubAf, _StubAl, _cli(rect_mesh="rtu", mesh_pixels=40))
+    assert meshes.mesh_init.cls is _StubMesh.RectangularRTUAdaptDensity
+    assert meshes.mesh.cls is _StubMesh.RectangularRTUAdaptImage
+    assert meshes.shape == (40, 40)
+    assert meshes.regularization is _StubReg.Adapt
+
+
+def test_the_delaunay_mesh_is_an_instance_not_a_model():
+    """An ``af.Model`` here asks PyAutoFit to prior every unpinned argument.
+
+    ``al.mesh.Delaunay(pixels, zeroed_pixels, areas_factor)`` has no free
+    parameters in this chain, and no ``config/priors`` tree in the stack defines
+    one for ``areas_factor`` — so ``af.Model(al.mesh.Delaunay, pixels=...,
+    zeroed_pixels=0)`` raises ``ConfigException: No prior config found for
+    class: Delaunay ... areas_factor`` at the first ``search.fit`` of
+    ``source_pix[1]``, which is exactly what the pre-submit smoke caught.
+    Production passes the instance, and so does this.
+    """
+    cli = _cli(mesh="delaunay", mesh_pixels=1250)
+    meshes = _runner.mesh_models(_StubAf, _StubAl, cli)
+
+    for mesh in (meshes.mesh_init, meshes.mesh):
+        assert isinstance(mesh, _StubMesh.Delaunay), "an af.Model would need a prior it has none of"
+        assert mesh.kwargs == {"pixels": 1250, "zeroed_pixels": 30, "areas_factor": 0.5}
+    # Two searches, two objects: sharing one would share its state.
+    assert meshes.mesh_init is not meshes.mesh
+    # The knobs are recorded rather than inherited, and the row carries them.
+    assert meshes.areas_factor == _runner.MESH_AREAS_FACTOR == 0.5
+
+
+def test_the_edge_ring_and_zeroed_pixels_are_one_number():
+    """``Delaunay.total_pixels`` is ``pixels + zeroed_pixels``, and the mesh grid
+    handed to the mapper is the Hilbert interior vertices plus the appended ring.
+    The two counts are therefore the same number written twice; a reader who
+    changes one must change the other, and this test is what says so."""
+    meshes = _runner.mesh_models(_StubAf, _StubAl, _cli(mesh="delaunay", mesh_pixels=1250))
+    assert meshes.edge_points == meshes.zeroed_pixels == _runner.MESH_EDGE_POINTS == 30
+    assert meshes.mesh_init.kwargs["zeroed_pixels"] == meshes.edge_points
+    assert meshes.mesh_init.kwargs["pixels"] + meshes.edge_points == 1280
+
+
+def test_the_delaunay_recipe_is_the_production_one():
+    """The Hilbert weights are production's (group SLaM), not the library defaults.
+
+    ``weight_power`` / ``weight_floor`` default to 0.0 / 0.0, which draws a mesh
+    that does not adapt to the source at all — a uniform mesh wearing the name of
+    an adaptive one. The recipe is recorded in the row for the same reason.
+    """
+    meshes = _runner.mesh_models(_StubAf, _StubAl, _cli(mesh="delaunay", mesh_pixels=1250))
+    assert meshes.image_mesh == "hilbert"
+    assert meshes.pixels == 1250
+    assert (meshes.weight_power, meshes.weight_floor) == (3.5, 0.01)
+
+
+def test_the_delaunay_branch_pairs_delaunay_with_the_adaptsplit_class():
+    """The regularization half of the pairing is load-bearing too.
+
+    ``al.reg.Adapt`` — what the rectangular legs run under — takes its
+    neighbours from a ``scipy.spatial.Delaunay`` call on the traced source grid
+    and raises ``TracerArrayConversionError`` under jit on this mesh family. And
+    it must be the **class**: the stage helpers build
+    ``af.Model(al.Pixelization, regularization=...)``, so a class leaves the
+    coefficients free exactly as ``Adapt`` does on the rectangular legs, while
+    ``delaunay_regularization()``'s fixed instance would silently drop free
+    parameters and make the two runs incomparable.
+    """
+    cli = _cli(mesh="delaunay", mesh_pixels=1250)
+    meshes = _runner.mesh_models(_StubAf, _StubAl, cli)
+
+    assert meshes.regularization is _StubReg.AdaptSplit
+    assert meshes.regularization is not _StubReg.Adapt
+    assert isinstance(meshes.regularization, type), (
+        "the regularization must be the class, not a fixed-coefficient instance — "
+        "an instance drops the coefficients from the model"
+    )
+    assert meshes.scheme == "adapt_split"
+    # A vertex count is not a shape, and the row must not invent one.
+    assert meshes.shape is None
 
 
 # ---------------------------------------------------------------------------
