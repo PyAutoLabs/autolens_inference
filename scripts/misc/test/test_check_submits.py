@@ -78,6 +78,37 @@ def test_rate_key_splits_the_id_as_dataset_task_leaf():
     assert problems == []
 
 
+def test_a_variant_leaf_may_still_run_its_instruments_flag():
+    """`imaging/slam/hst_delaunay` is the HST cell with another mesh: --instrument hst."""
+    problems = check_submits.check_text(
+        _submit(
+            cell="imaging/slam/hst_delaunay",
+            script="scripts/imaging/slam/hst_delaunay.py",
+        ),
+        "submit_slam_delaunay1250_hst_jax_gpu_dense",
+    )
+    assert problems == []
+
+
+def test_a_variant_leaf_is_still_its_own_cell():
+    """The relaxation is the instrument check only — the rate key keeps the whole leaf."""
+    problems = check_submits.check_text(
+        _submit(cell="imaging/slam/hst", script="scripts/imaging/slam/hst_delaunay.py"),
+        "submit_slam_delaunay1250_hst_jax_gpu_dense",
+    )
+    joined = " ".join(problems)
+    assert "imaging/slam/hst_delaunay is RUN by this submit but has no WALL-BASIS row" in joined
+
+
+def test_an_unrelated_instrument_is_still_caught():
+    problems = check_submits.check_text(
+        _submit(cell="imaging/slam/euclid", script="scripts/imaging/slam/euclid.py"),
+        "submit_x",
+    )
+    joined = " ".join(problems)
+    assert "declared instrument `euclid` is not one this submit runs" in joined
+
+
 def test_commented_out_invocations_are_not_cells():
     text = _submit().replace("python3 scripts", "# python3 scripts")
     cells, _ = check_submits.cells_run(text)

@@ -50,10 +50,15 @@ everything later is improvement *against*.
 
 The driver that runs it landed **2026-09-11** (phase 3):
 [`scripts/imaging/slam/hst.py`](scripts/imaging/slam/README.md), one leaf over one chain,
-switched by `--backend` and `--inversion`, with six SLURM submits behind it. The base run
-itself is phase 4 and has not been run, so the tables below are still empty and
-`scripts/misc/wall/rates.py` holds only the two `source_lp[1]` rates the submits had to be
-sized against. The ledger is [`wiki/project/state.md`](wiki/project/state.md).
+switched by `--backend` and `--inversion`, with six SLURM submits behind it. The first four
+legs came back on **2026-09-14** — A100, dense and sparse, seeds 0 and 1, all five stages —
+and are the rows in the table below. They are one backend of the parity row: the CPU legs
+have not run, so there is still nothing to compare them *to*.
+`scripts/misc/wall/rates.py` still holds only the two `source_lp[1]` rates the submits had
+to be sized against, because a completed wall on one cell is not a step rate for another.
+A **run variant** level now sits between the instrument and the config name
+(`slam_base`, `delaunay_1250`) so that a second mesh is a second experiment rather than a
+seventh column. The ledger is [`wiki/project/state.md`](wiki/project/state.md).
 
 ## Pipeline runs
 

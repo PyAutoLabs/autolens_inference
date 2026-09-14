@@ -156,6 +156,32 @@ ADAPT_IMAGE_SNR_CAP = 3.0
 #: Pixelization Over-Sampling__").
 OVER_SAMPLE_SNR_THRESHOLD = 3.0
 
+#: ``al.mesh.Delaunay``'s ``areas_factor`` — the multiplier on the sqrt of each
+#: vertex's dual-cell area that sets the interpolation's split step. 0.5 is the
+#: library default, and it is passed EXPLICITLY rather than inherited: it is a
+#: science-relevant knob of the mesh under test, so the run states it and the
+#: result row records it (``mesh_areas_factor``) instead of leaving a future
+#: reader to look up what the library's default was on the day.
+MESH_AREAS_FACTOR = 0.5
+
+#: The circle of edge points appended to the Delaunay image-plane mesh grid
+#: (``al.image_mesh.append_with_circle_edge_points``), and — the same number
+#: written twice — the mesh's ``zeroed_pixels``. These two MUST move together:
+#: ``Delaunay.total_pixels`` is ``pixels + zeroed_pixels`` and the mesh grid the
+#: mapper receives has to be exactly that long, so 1250 Hilbert-drawn interior
+#: vertices plus this 30-point ring is 1280 = 1250 + 30. Changing the ring size
+#: without changing ``zeroed_pixels`` breaks the accounting silently — the ring
+#: is not a free knob, it IS ``zeroed_pixels``.
+MESH_EDGE_POINTS = 30
+
+#: The Hilbert image-mesh weights that draw the Delaunay vertices, as production
+#: runs them (``autolens_workspace/scripts/group/slam.py``). They are NOT the
+#: library defaults, which are 0.0 / 0.0 and would draw a mesh that does not
+#: adapt to the source at all — stating them here is the difference between the
+#: production recipe and a uniform mesh wearing its name.
+MESH_HILBERT_WEIGHT_POWER = 3.5
+MESH_HILBERT_WEIGHT_FLOOR = 0.01
+
 #: ``result.positions_likelihood_from`` arguments used on every pixelized stage.
 POSITIONS_FACTOR = 3.0
 POSITIONS_MINIMUM_THRESHOLD = 0.2
@@ -563,13 +589,33 @@ def truth_delta_sigma_from(posterior: dict, truths: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _adapt_images(al, result):
-    """The S/N-capped adapt images built from ``result``.
+def _adapt_images(al, result, *, meshes, dataset, mask_radius: float):
+    """The S/N-capped adapt images built from ``result`` — and, for the Delaunay
+    family, the image-plane mesh grid that places its vertices.
 
     The cap is applied to an explicit copy so the raw S/N image is untouched:
     without it the brightest peak dominates the mesh-density and regularization
     weights (which scale as a power of the adapt image) and fainter multiply
     imaged features get too few source pixels.
+
+    **The Delaunay mesh does not place its own vertices.** Passing
+    ``al.mesh.Delaunay`` alone raises ``MeshException: the mesh Delaunay was not
+    given an image-plane mesh grid``: the points are drawn by an *image mesh*
+    from the capped source adapt image, and reach the fit only through
+    ``adapt_images``. ``Delaunay.pixels`` is documented as a description of that
+    grid rather than a control over it. So this helper is mesh-aware, and builds
+    the production recipe (``autolens_workspace/scripts/group/slam.py``):
+    ``al.image_mesh.Hilbert`` at :data:`MESH_HILBERT_WEIGHT_POWER` /
+    :data:`MESH_HILBERT_WEIGHT_FLOOR`, then a :data:`MESH_EDGE_POINTS`-point
+    circle edge ring appended at the mask's radius.
+
+    It is called at **every** pixelized stage, and the grid is rebuilt each time
+    from *that* stage's own adapt image, as production does — ``light[1]`` and
+    ``mass_total[1]`` inherit the source pixelization and so need the grid too.
+
+    ``dataset`` and ``mask_radius`` are threaded in explicitly rather than read
+    from anything ambient: the ring's radius is the mask's, and a helper that
+    guessed it would silently drift from the mask the fit actually uses.
     """
     galaxy_image_name_dict = al.galaxy_name_image_dict_via_result_from(result=result)
 
@@ -577,7 +623,33 @@ def _adapt_images(al, result):
     source_adapt_image[source_adapt_image > ADAPT_IMAGE_SNR_CAP] = ADAPT_IMAGE_SNR_CAP
     galaxy_image_name_dict["('galaxies', 'source')"] = source_adapt_image
 
-    return al.AdaptImages(galaxy_name_image_dict=galaxy_image_name_dict)
+    if meshes.image_mesh is None:
+        return al.AdaptImages(galaxy_name_image_dict=galaxy_image_name_dict)
+
+    mask = dataset.mask
+    image_mesh = al.image_mesh.Hilbert(
+        pixels=meshes.pixels,
+        weight_power=meshes.weight_power,
+        weight_floor=meshes.weight_floor,
+    )
+    image_plane_mesh_grid = image_mesh.image_plane_mesh_grid_from(
+        mask=mask,
+        adapt_data=source_adapt_image,
+    )
+    # The ring is appended just outside the mask edge, and is exactly the mesh's
+    # `zeroed_pixels`: pixels + MESH_EDGE_POINTS is the length the mapper expects
+    # (`Delaunay.total_pixels`), and those last points are fixed to zero.
+    image_plane_mesh_grid = al.image_mesh.append_with_circle_edge_points(
+        image_plane_mesh_grid=image_plane_mesh_grid,
+        centre=mask.mask_centre,
+        radius=mask_radius + mask.pixel_scale / 2.0,
+        n_points=meshes.edge_points,
+    )
+
+    return al.AdaptImages(
+        galaxy_name_image_dict=galaxy_image_name_dict,
+        galaxy_name_image_plane_mesh_grid_dict={"('galaxies', 'source')": image_plane_mesh_grid},
+    )
 
 
 def positions_likelihood_from(al, result, *, fallback_positions, stage: str):
@@ -684,12 +756,22 @@ class MeshModels(NamedTuple):
     """What the two pixelized source stages are built from, for one ``--mesh``.
 
     ``mesh_init`` goes to ``source_pix[1]`` and ``mesh`` to ``source_pix[2]``
-    (two distinct ``af.Model`` objects — the rectangular family uses a different
-    class for each, and sharing one model between two searches would share its
-    priors). ``regularization`` is the **class**, which is what the stage
-    helpers hand ``af.Model(al.Pixelization, ...)``; ``scheme`` is the name the
-    result row records, and ``shape`` is the mesh shape for a family that has
-    one and ``None`` for a family that does not.
+    (two distinct objects — the rectangular family uses a different class for
+    each, and sharing one between two searches would share its priors). The
+    rectangular family hands over ``af.Model``s (its shape is a free parameter
+    with a prior configured for it); the Delaunay family hands over plain
+    **instances**, because its mesh has no free parameters — see
+    :func:`mesh_models`. ``regularization`` is always the **class**, which is
+    what the stage helpers hand ``af.Model(al.Pixelization, ...)``; ``scheme``
+    is the name the result row records; ``shape`` is the mesh shape for a family
+    that has one and ``None`` for a family that does not.
+
+    The remaining fields are the Delaunay recipe, ``None`` on the rectangular
+    family, and they are carried rather than recomputed because they are the
+    *identity of the experiment*: the result row records every one of them. A
+    row that said only "delaunay, 1250" could not be reproduced —
+    ``image_mesh`` is what actually places the vertices, and its weights decide
+    where they go.
     """
 
     mesh_init: object
@@ -697,6 +779,16 @@ class MeshModels(NamedTuple):
     regularization: object
     scheme: str
     shape: tuple[int, int] | None
+    areas_factor: float | None = None
+    #: The image mesh that draws the vertices, and its arguments. ``pixels`` is
+    #: the interior vertex count; ``edge_points`` the appended ring, which is
+    #: also ``zeroed_pixels`` (see :data:`MESH_EDGE_POINTS`).
+    image_mesh: str | None = None
+    pixels: int | None = None
+    weight_power: float | None = None
+    weight_floor: float | None = None
+    edge_points: int | None = None
+    zeroed_pixels: int | None = None
 
 
 def mesh_models(af, al, cli: InferenceCLI) -> MeshModels:
@@ -706,9 +798,11 @@ def mesh_models(af, al, cli: InferenceCLI) -> MeshModels:
     then the adaptive rectangular image mesh (``--rect-mesh`` picks the family),
     at ``mesh_pixels x mesh_pixels``, under ``al.reg.Adapt``.
 
-    ``delaunay`` is ``al.mesh.Delaunay(pixels=mesh_pixels, zeroed_pixels=0)`` on
-    both stages, under ``al.reg.AdaptSplit``. Two things about that pairing are
-    not free choices:
+    ``delaunay`` is
+    ``al.mesh.Delaunay(pixels=mesh_pixels, zeroed_pixels=30, areas_factor=0.5)``
+    on both stages, under ``al.reg.AdaptSplit``, with its vertices drawn by the
+    ``al.image_mesh.Hilbert`` recipe :func:`_adapt_images` builds. Three things
+    about that pairing are not free choices:
 
     - **It cannot be ``al.reg.Adapt``.** That scheme takes its pixel
       neighbours from a ``scipy.spatial.Delaunay`` call on the *traced* source
@@ -716,7 +810,18 @@ def mesh_models(af, al, cli: InferenceCLI) -> MeshModels:
       mesh family, not the regularization alone, decides what can be traced:
       the same ``Adapt`` is exactly what the rectangular legs run under. The
       Split schemes are the traceable pairing for this family.
-    - **It is the class, not a fixed instance.** The stage helpers build
+    - **The mesh is an instance, not an ``af.Model``.** This mesh has no free
+      parameters — no more than the rectangular family's shape is meant to be
+      one here — and wrapping it in ``af.Model`` asks PyAutoFit to give every
+      constructor argument the caller did not pin a prior, which for
+      ``areas_factor`` no ``config/priors`` tree in this stack defines:
+      ``ConfigException: No prior config found for class: Delaunay ... for
+      parameter name and path: areas_factor``, raised at the first
+      ``search.fit`` of ``source_pix[1]``. Production passes the instance
+      (``autolens_workspace/scripts/group/slam.py``, every ``autolens_profiling``
+      Delaunay cell), and so does this. The rectangular branch keeps its
+      ``af.Model`` because its ``shape`` *is* configured and pinned.
+    - **The regularization is the class, not a fixed instance.** The stage helpers build
       ``af.Model(al.Pixelization, mesh=..., regularization=...)``, so a class
       leaves the regularization's coefficients as free parameters, exactly as
       ``al.reg.Adapt`` does on the rectangular legs — which is what makes the
@@ -728,12 +833,29 @@ def mesh_models(af, al, cli: InferenceCLI) -> MeshModels:
     every pixelized stage, so nothing else has to be plumbed through.
     """
     if cli.mesh == "delaunay":
+        # zeroed_pixels IS the edge ring: the mesh grid handed to the mapper is
+        # `pixels` Hilbert-drawn interior vertices plus MESH_EDGE_POINTS appended
+        # circle points, and `Delaunay.total_pixels` is pixels + zeroed_pixels.
+        # The ring is fixed to zero rather than solved for, which is what keeps
+        # poorly constrained boundary vertices from absorbing flux.
+        kwargs = dict(
+            pixels=cli.mesh_pixels,
+            zeroed_pixels=MESH_EDGE_POINTS,
+            areas_factor=MESH_AREAS_FACTOR,
+        )
         return MeshModels(
-            mesh_init=af.Model(al.mesh.Delaunay, pixels=cli.mesh_pixels, zeroed_pixels=0),
-            mesh=af.Model(al.mesh.Delaunay, pixels=cli.mesh_pixels, zeroed_pixels=0),
+            mesh_init=al.mesh.Delaunay(**kwargs),
+            mesh=al.mesh.Delaunay(**kwargs),
             regularization=al.reg.AdaptSplit,
             scheme="adapt_split",
             shape=None,
+            areas_factor=MESH_AREAS_FACTOR,
+            image_mesh="hilbert",
+            pixels=cli.mesh_pixels,
+            weight_power=MESH_HILBERT_WEIGHT_POWER,
+            weight_floor=MESH_HILBERT_WEIGHT_FLOOR,
+            edge_points=MESH_EDGE_POINTS,
+            zeroed_pixels=MESH_EDGE_POINTS,
         )
 
     density_cls, image_cls = rect_mesh_classes(cli, al=al)
@@ -744,6 +866,7 @@ def mesh_models(af, al, cli: InferenceCLI) -> MeshModels:
         regularization=al.reg.Adapt,
         scheme="adapt",
         shape=shape,
+        areas_factor=None,
     )
 
 
@@ -756,6 +879,8 @@ def source_pix_1(
     mesh_init,
     regularization_init,
     *,
+    meshes,
+    mask_radius: float,
     use_jax: bool,
     seed: int,
     positions_likelihood,
@@ -764,7 +889,9 @@ def source_pix_1(
     n_batch: int = 20,
 ):
     """Build the high-quality adapt image: a pixelized source on the SOURCE LP mass."""
-    adapt_images = _adapt_images(al, source_lp_result)
+    adapt_images = _adapt_images(
+        al, source_lp_result, meshes=meshes, dataset=dataset, mask_radius=mask_radius
+    )
 
     analysis = al.AnalysisImaging(
         dataset=dataset,
@@ -822,6 +949,8 @@ def source_pix_2(
     mesh,
     regularization,
     *,
+    meshes,
+    mask_radius: float,
     use_jax: bool,
     seed: int,
     positions_likelihood,
@@ -833,7 +962,9 @@ def source_pix_2(
 
     Departure from ``slam_start_here.py``: a positions likelihood is attached
     here too (see the module docstring, departure 1)."""
-    adapt_images = _adapt_images(al, source_pix_result_1)
+    adapt_images = _adapt_images(
+        al, source_pix_result_1, meshes=meshes, dataset=dataset, mask_radius=mask_radius
+    )
 
     analysis = al.AnalysisImaging(
         dataset=dataset,
@@ -881,6 +1012,7 @@ def light_lp(
     source_result_for_lens,
     source_result_for_source,
     *,
+    meshes,
     use_jax: bool,
     seed: int,
     positions_likelihood,
@@ -892,7 +1024,9 @@ def light_lp(
 
     Departure from ``slam_start_here.py``: a positions likelihood is attached
     here too (see the module docstring, departure 1)."""
-    adapt_images = _adapt_images(al, source_result_for_lens)
+    adapt_images = _adapt_images(
+        al, source_result_for_lens, meshes=meshes, dataset=dataset, mask_radius=mask_radius
+    )
 
     analysis = al.AnalysisImaging(
         dataset=dataset,
@@ -948,6 +1082,8 @@ def mass_total(
     source_result_for_source,
     light_result,
     *,
+    meshes,
+    mask_radius: float,
     use_jax: bool,
     seed: int,
     positions_likelihood,
@@ -958,7 +1094,9 @@ def mass_total(
     """The headline stage: a ``PowerLaw`` mass, priors chained from the SOURCE PIX
     ``Isothermal`` with the mass centre unfixed. This is the stage the parity
     view reads."""
-    adapt_images = _adapt_images(al, source_result_for_lens)
+    adapt_images = _adapt_images(
+        al, source_result_for_lens, meshes=meshes, dataset=dataset, mask_radius=mask_radius
+    )
 
     analysis = al.AnalysisImaging(
         dataset=dataset,
@@ -1368,6 +1506,18 @@ def run_slam(
             "memo": cli.memo,
             "mesh": cli.mesh,
             "mesh_pixels": cli.mesh_pixels,
+            # The Delaunay split-step knob, recorded rather than inherited; a
+            # family without one says null rather than borrowing a number.
+            "mesh_areas_factor": meshes.areas_factor,
+            # The rest of the recipe: which image mesh placed the vertices and
+            # how. Without these a row cannot be reproduced — "delaunay, 1250"
+            # says nothing about where the 1250 went. Null on the rectangular
+            # family, which draws no vertices.
+            "mesh_zeroed_pixels": meshes.zeroed_pixels,
+            "image_mesh": meshes.image_mesh,
+            "image_mesh_weight_power": meshes.weight_power,
+            "image_mesh_weight_floor": meshes.weight_floor,
+            "image_mesh_edge_points": meshes.edge_points,
             "regularization": meshes.scheme,
             # A mesh family with no shape (Delaunay takes a vertex count) says
             # so rather than inventing one.
@@ -1422,6 +1572,8 @@ def run_slam(
                 source_lp_result,
                 mesh_init=meshes.mesh_init,
                 regularization_init=meshes.regularization,
+                meshes=meshes,
+                mask_radius=mask_radius,
                 use_jax=use_jax,
                 seed=seed,
                 settings=settings,
@@ -1466,6 +1618,8 @@ def run_slam(
                 source_pix_result_1,
                 mesh=meshes.mesh,
                 regularization=meshes.regularization,
+                meshes=meshes,
+                mask_radius=mask_radius,
                 use_jax=use_jax,
                 seed=seed,
                 settings=settings,
@@ -1491,6 +1645,7 @@ def run_slam(
                 mask_radius=mask_radius,
                 source_result_for_lens=source_pix_result_1,
                 source_result_for_source=source_pix_result_2,
+                meshes=meshes,
                 use_jax=use_jax,
                 seed=seed,
                 settings=settings,
@@ -1516,6 +1671,8 @@ def run_slam(
                 source_result_for_lens=source_pix_result_1,
                 source_result_for_source=source_pix_result_2,
                 light_result=light_result,
+                meshes=meshes,
+                mask_radius=mask_radius,
                 use_jax=use_jax,
                 seed=seed,
                 settings=settings,

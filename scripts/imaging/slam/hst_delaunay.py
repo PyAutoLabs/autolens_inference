@@ -4,7 +4,10 @@ SLaM Delaunay variant: HST imaging
 
 The same 5-stage imaging SLaM chain as ``hst.py``, with the two pixelized source
 stages on ``al.mesh.Delaunay`` at 1250 vertices instead of the 28x28 (784-cell)
-adaptive rectangular mesh — the ``delaunay_1250`` run variant, which lands in
+adaptive rectangular mesh. The vertices are drawn by an ``al.image_mesh.Hilbert``
+image mesh from the S/N-capped source adapt image and given a 30-point circle
+edge ring (which is the mesh's ``zeroed_pixels``), exactly as production group
+SLaM does — see ``scripts/imaging/slam/README.md``, "The Delaunay recipe". — the ``delaunay_1250`` run variant, which lands in
 its own ``results/slam/imaging/hst/delaunay_1250/`` tree and its own
 ``hst/slam5_delaunay_1250/seed<n>`` parity group rather than joining the base
 run's.

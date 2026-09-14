@@ -377,7 +377,10 @@ class _StubAf:
 
 class _StubMesh:
     class Delaunay:
-        pass
+        """Constructed directly — the Delaunay mesh is an instance, not an ``af.Model``."""
+
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
 
     class RectangularBilinearAdaptDensity:
         pass
@@ -423,6 +426,12 @@ def test_the_rect_branch_is_the_workspace_default_and_is_unchanged():
     assert meshes.regularization is _StubReg.Adapt
     assert meshes.scheme == "adapt"
     assert meshes.shape == (28, 28)
+    # A rectangular row has no areas_factor, no image mesh and no edge ring to
+    # record, and must not invent any of them.
+    assert meshes.areas_factor is None
+    assert meshes.image_mesh is None
+    assert (meshes.weight_power, meshes.weight_floor) == (None, None)
+    assert (meshes.edge_points, meshes.zeroed_pixels, meshes.pixels) == (None, None, None)
 
 
 def test_the_rect_branch_still_honours_rect_mesh_and_mesh_pixels():
@@ -433,8 +442,55 @@ def test_the_rect_branch_still_honours_rect_mesh_and_mesh_pixels():
     assert meshes.regularization is _StubReg.Adapt
 
 
+def test_the_delaunay_mesh_is_an_instance_not_a_model():
+    """An ``af.Model`` here asks PyAutoFit to prior every unpinned argument.
+
+    ``al.mesh.Delaunay(pixels, zeroed_pixels, areas_factor)`` has no free
+    parameters in this chain, and no ``config/priors`` tree in the stack defines
+    one for ``areas_factor`` — so ``af.Model(al.mesh.Delaunay, pixels=...,
+    zeroed_pixels=0)`` raises ``ConfigException: No prior config found for
+    class: Delaunay ... areas_factor`` at the first ``search.fit`` of
+    ``source_pix[1]``, which is exactly what the pre-submit smoke caught.
+    Production passes the instance, and so does this.
+    """
+    cli = _cli(mesh="delaunay", mesh_pixels=1250)
+    meshes = _runner.mesh_models(_StubAf, _StubAl, cli)
+
+    for mesh in (meshes.mesh_init, meshes.mesh):
+        assert isinstance(mesh, _StubMesh.Delaunay), "an af.Model would need a prior it has none of"
+        assert mesh.kwargs == {"pixels": 1250, "zeroed_pixels": 30, "areas_factor": 0.5}
+    # Two searches, two objects: sharing one would share its state.
+    assert meshes.mesh_init is not meshes.mesh
+    # The knobs are recorded rather than inherited, and the row carries them.
+    assert meshes.areas_factor == _runner.MESH_AREAS_FACTOR == 0.5
+
+
+def test_the_edge_ring_and_zeroed_pixels_are_one_number():
+    """``Delaunay.total_pixels`` is ``pixels + zeroed_pixels``, and the mesh grid
+    handed to the mapper is the Hilbert interior vertices plus the appended ring.
+    The two counts are therefore the same number written twice; a reader who
+    changes one must change the other, and this test is what says so."""
+    meshes = _runner.mesh_models(_StubAf, _StubAl, _cli(mesh="delaunay", mesh_pixels=1250))
+    assert meshes.edge_points == meshes.zeroed_pixels == _runner.MESH_EDGE_POINTS == 30
+    assert meshes.mesh_init.kwargs["zeroed_pixels"] == meshes.edge_points
+    assert meshes.mesh_init.kwargs["pixels"] + meshes.edge_points == 1280
+
+
+def test_the_delaunay_recipe_is_the_production_one():
+    """The Hilbert weights are production's (group SLaM), not the library defaults.
+
+    ``weight_power`` / ``weight_floor`` default to 0.0 / 0.0, which draws a mesh
+    that does not adapt to the source at all — a uniform mesh wearing the name of
+    an adaptive one. The recipe is recorded in the row for the same reason.
+    """
+    meshes = _runner.mesh_models(_StubAf, _StubAl, _cli(mesh="delaunay", mesh_pixels=1250))
+    assert meshes.image_mesh == "hilbert"
+    assert meshes.pixels == 1250
+    assert (meshes.weight_power, meshes.weight_floor) == (3.5, 0.01)
+
+
 def test_the_delaunay_branch_pairs_delaunay_with_the_adaptsplit_class():
-    """Both halves of this pairing are load-bearing.
+    """The regularization half of the pairing is load-bearing too.
 
     ``al.reg.Adapt`` — what the rectangular legs run under — takes its
     neighbours from a ``scipy.spatial.Delaunay`` call on the traced source grid
@@ -447,12 +503,6 @@ def test_the_delaunay_branch_pairs_delaunay_with_the_adaptsplit_class():
     """
     cli = _cli(mesh="delaunay", mesh_pixels=1250)
     meshes = _runner.mesh_models(_StubAf, _StubAl, cli)
-
-    for model in (meshes.mesh_init, meshes.mesh):
-        assert model.cls is _StubMesh.Delaunay
-        assert model.kwargs == {"pixels": 1250, "zeroed_pixels": 0}
-    # Two searches, two models: sharing one would share its priors.
-    assert meshes.mesh_init is not meshes.mesh
 
     assert meshes.regularization is _StubReg.AdaptSplit
     assert meshes.regularization is not _StubReg.Adapt

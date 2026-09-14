@@ -33,7 +33,9 @@ A ``cell:`` is the runnable script's path below ``scripts/``, with the ``.py``
 dropped: ``scripts/imaging/slam/hst.py`` is the cell ``imaging/slam/hst``. That
 is ``<dataset_class>/<task>/<leaf>``, and because this repo names a leaf for the
 target it runs (``AGENTS.md``: "the instrument is a flag, never a directory"),
-its last component doubles as the instrument the ``--instrument`` check reads.
+its last component doubles as the instrument the ``--instrument`` check reads —
+or names a run variant of that instrument's cell, ``imaging/slam/hst_delaunay``,
+which is still run with ``--instrument hst`` (see `_instrument_matches`).
 Deeper trees (``scripts/imaging/searches/<sampler>/hst.py``) simply carry more
 components; the rate-table key always splits the id as
 ``(dataset, task..., leaf)``.
@@ -346,6 +348,23 @@ def _row_wall(row: dict[str, str], where: str, problems: list[Problem]) -> float
     return None
 
 
+def _instrument_matches(leaf: str, run_instruments: set[str]) -> bool:
+    """Does a cell's leaf name agree with the ``--instrument`` the submit passes?
+
+    Usually the leaf *is* the instrument: ``imaging/slam/hst`` runs
+    ``--instrument hst``. A leaf may also name a run VARIANT of one instrument's
+    cell — ``imaging/slam/hst_delaunay`` is the HST cell with a Delaunay source
+    mesh, and it exists as its own leaf precisely so that it gets its own rate
+    row — and such a leaf still passes ``--instrument hst``. So a leaf matches
+    outright, or by its first ``_``-separated component.
+
+    The rate-table key is deliberately NOT relaxed with it: that key keeps the
+    whole leaf, which is what stops a 1250-vertex Delaunay chain and a 784-cell
+    rectangular one from ever sharing a measured rate.
+    """
+    return leaf in run_instruments or leaf.split("_")[0] in run_instruments
+
+
 def check_text(text: str, name: str) -> list[Problem]:
     """Every violation in one submit script."""
     problems: list[Problem] = []
@@ -391,7 +410,7 @@ def check_text(text: str, name: str) -> list[Problem]:
 
         if run_cells and cell_field not in run_cells:
             problems.append(Problem(f"{where}: declared, but this submit never runs {cell_field}"))
-        if run_instruments and instrument not in run_instruments:
+        if run_instruments and not _instrument_matches(instrument, run_instruments):
             problems.append(
                 Problem(
                     f"{where}: declared instrument `{instrument}` is not one this submit runs "

@@ -194,8 +194,12 @@ at ~12% of budget — an entire overnight A100 block. An array submit is sized b
 
 `scripts/misc/wall/rates.py` started **empty** in this repo: it inherits no rates from the
 retired `inference_programme`. Its first two rows landed 2026-09-11, and both are the
-`source_lp[1]` stage of `imaging/slam/hst` measured on a laptop — which is why **all seven
-submits here still declare `source: unmeasured  probe-first: yes`**. A parametric rate
+`source_lp[1]` stage of `imaging/slam/hst` measured on a laptop — which is why **all nine
+submits here still declare `source: unmeasured  probe-first: yes`**. The four completed
+A100 base legs did not change that: they are a measured *wall* for `imaging/slam/hst`, and
+citing them on `imaging/slam/hst_delaunay` would be the cross-cell carry this gate exists
+to stop — the Delaunay submits name them as context for their containment and still
+declare themselves unmeasured. A parametric rate
 cannot size a mostly-pixelized chain, and a laptop rate cannot size a RAL node; the device
 keys (`laptop_numba_cpu`, `laptop_jax_cpu` vs `ral_numba_cpu`, `ral_jax_cpu`, `a100`) make
 that a mismatch the gate catches rather than a judgement call. A truncated arm still
@@ -205,20 +209,41 @@ are in [`../scripts/misc/wall/README.md`](../scripts/misc/wall/README.md).
 
 ## The submits that exist today
 
-All seven run the one cell `imaging/slam/hst` — `scripts/imaging/slam/hst.py`, the
-backend-parameterised SLaM driver. The six production submits are the six legs of the
-first parity row; the seventh is the rate probe that had to run before any of them could
-be sized.
+Nine, over **two cells**. Seven run `imaging/slam/hst` (`scripts/imaging/slam/hst.py`, the
+backend-parameterised SLaM driver): six are the six legs of the first parity row, and the
+seventh is the rate probe that had to run before any of them could be sized. Two run
+`imaging/slam/hst_delaunay` (`scripts/imaging/slam/hst_delaunay.py`) — the same five-stage
+chain on the `delaunay_1250` run variant.
 
-| submit | partition | array | what it runs |
-|---|---|---|---|
-| `batch_gpu/submit_slam_hst_rate_jax_gpu` | `gpu` | — | **the rate probe**: `--stages source_lp`, one stage, to measure A100 s/eval |
-| `batch_gpu/submit_slam_hst_jax_gpu_dense` | `gpu` | `0-1` | full chain, `jax_gpu` × dense |
-| `batch_gpu/submit_slam_hst_jax_gpu_sparse` | `gpu` | `0-1` | full chain, `jax_gpu` × sparse |
-| `batch_cpu/submit_slam_hst_jax_cpu_dense` | `ral` | `0-1` | full chain, `jax_cpu` × dense |
-| `batch_cpu/submit_slam_hst_jax_cpu_sparse` | `ral` | `0-1` | full chain, `jax_cpu` × sparse |
-| `batch_cpu/submit_slam_hst_numba_cpu_dense` | `ral` | `0-1` | full chain, `numba_cpu` × dense |
-| `batch_cpu/submit_slam_hst_numba_cpu_sparse` | `ral` | `0-1` | full chain, `numba_cpu` × sparse |
+| submit | cell | partition | array | what it runs |
+|---|---|---|---|---|
+| `batch_gpu/submit_slam_hst_rate_jax_gpu` | `imaging/slam/hst` | `gpu` | — | **the rate probe**: `--stages source_lp`, one stage, to measure A100 s/eval |
+| `batch_gpu/submit_slam_hst_jax_gpu_dense` | `imaging/slam/hst` | `gpu` | `0-1` | full chain, `jax_gpu` × dense |
+| `batch_gpu/submit_slam_hst_jax_gpu_sparse` | `imaging/slam/hst` | `gpu` | `0-1` | full chain, `jax_gpu` × sparse |
+| `batch_cpu/submit_slam_hst_jax_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | full chain, `jax_cpu` × dense |
+| `batch_cpu/submit_slam_hst_jax_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | full chain, `jax_cpu` × sparse |
+| `batch_cpu/submit_slam_hst_numba_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | full chain, `numba_cpu` × dense |
+| `batch_cpu/submit_slam_hst_numba_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | full chain, `numba_cpu` × sparse |
+| `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_dense` | `imaging/slam/hst_delaunay` | `gpu` | `0-1` | full chain on `delaunay_1250`, `jax_gpu` × dense |
+| `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_sparse` | `imaging/slam/hst_delaunay` | `gpu` | `0-1` | full chain on `delaunay_1250`, `jax_gpu` × sparse |
+
+### Why the second cell exists
+
+`hst_delaunay.py` is not a copy of `hst.py`; it is the same runner with
+`default_mesh="delaunay"`, and it exists as a separate **file** because the wall gate reads
+a submit's cell from the script path it invokes, and `wall/rates.py` keys its measured step
+rates by that cell. **Cell id = cost profile = rate key.** A 1250-vertex Delaunay chain
+costs a different amount per evaluation from a 784-cell rectangular one, so a `--time`
+justified from the rectangular cell's rate would be a number measured on a different model
+— the exact carry that killed 35 of 39 arms of an overnight A100 block. Its own leaf gives
+it its own cell id and forces it to be measured on its own terms.
+
+The mesh is a **run variant**, not a config: `--mesh` / `--mesh-pixels` name a directory
+level between the instrument and the config name
+(`results/slam/imaging/hst/<variant>/<config_name>/`) and a field of the target id, so
+these two submits' rows never join the base run's parity row. The config name still says
+only which backend ran. See
+[`../scripts/imaging/slam/README.md`](../scripts/imaging/slam/README.md).
 
 Submit one with `hpc/sync submit --gpu|--cpu <full submit filename>` — the argument is the
 file's name including the `submit_` prefix, because `sbatch` is handed it verbatim.
@@ -234,7 +259,7 @@ while `--config-name` is not, which is why the config name lives in the `path_pr
 without that, two backends at one seed would hash to the same identifier and silently
 resume each other's fit.
 
-### Memory: why every one of these asks for `--mem=64gb`
+### Memory: why the base submits all ask for `--mem=64gb`
 
 The HST cell is **15,361 masked pixels**, and the memory cost is in the Nautilus batch,
 not the dataset. Measured on 2026-09-11, a `jax_cpu` leg's vmap over `n_batch=20` at
@@ -252,6 +277,12 @@ only as RAL jobs and why the local rate measurements are `--stages source_lp` on
 ~6.3 GB across nine processes; their pixelized-stage figure is **not** measured, so they
 keep the same request rather than a smaller one guessed from a mechanism. `--mem=64gb` is the template's figure and it stays: it clears the worst measured
 leg by 3x, and a leg killed by the OOM killer at stage two costs a whole night.
+
+The two `delaunay_1250` submits scale those same measured figures by the mesh: 1250
+vertices against 784 rectangular cells is ~1.6x, so ~21 GB dense and ~35 GB sparse. Dense
+therefore keeps `--mem=64gb` (~3x its expected peak) and **sparse asks for `--mem=96gb`**
+(~2.7x). The `gpu` nodes carry 885 GB, so the request is not what makes a job queue —
+under-asking is the only expensive mistake here.
 
 ## Array submits (repeated-seed campaigns)
 
