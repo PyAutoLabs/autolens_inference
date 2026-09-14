@@ -1,9 +1,9 @@
 # profile.yml — the PYAUTO_TEST_MODE witness for the SLaM driver.
 #
 # `workflow_dispatch` only, and NOT a PR gate. It answers exactly one question:
-# does the 5-stage chain still run end to end, in every backend x inversion
-# combination a hosted runner can hold, and does it still write a result row
-# with five stages in it? It answers nothing scientific — under
+# does the 5-stage chain still run end to end, in every backend x inversion x
+# run-variant combination a hosted runner can hold, and does it still write a
+# result row with five stages in it? It answers nothing scientific — under
 # PYAUTO_TEST_MODE each stage stops after a single likelihood call, so the
 # posteriors are prior draws and the wall clocks are meaningless. The rows it
 # uploads are witnesses of the plumbing, never results, and they are never
@@ -39,7 +39,7 @@ permissions:
 
 jobs:
   witness:
-    name: "test-mode witness — ${{ matrix.backend }} / ${{ matrix.inversion }}"
+    name: "test-mode witness — ${{ matrix.variant }} / ${{ matrix.backend }} / ${{ matrix.inversion }}"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -47,16 +47,35 @@ jobs:
       # backend x inversion combinations still run.
       fail-fast: false
       matrix:
+        # `script` is the leaf and `variant` is the run-variant directory that
+        # leaf's mesh resolves to — asserted below as a literal on purpose, so a
+        # changed `--mesh-pixels` default fails here rather than quietly writing
+        # rows into a folder nothing reads.
         include:
           - backend: numba_cpu
             inversion: dense
+            script: scripts/imaging/slam/hst.py
+            variant: slam_base
           - backend: numba_cpu
             inversion: sparse
+            script: scripts/imaging/slam/hst.py
+            variant: slam_base
           # jax_cpu x sparse is deliberately absent: it is the 21.6 GB leg on
           # HST and the heaviest here too, and a hosted runner has no headroom
           # to spare. It is witnessed locally and on RAL instead.
           - backend: jax_cpu
             inversion: dense
+            script: scripts/imaging/slam/hst.py
+            variant: slam_base
+          # The Delaunay route, and the only CI check holding its regularization
+          # pairing in place: `al.mesh.Delaunay` under `al.reg.Adapt` raises
+          # TracerArrayConversionError once jit traces the source grid, so this
+          # leg goes red the moment `reg.Adapt` creeps back in on this mesh
+          # family. jax_cpu because there is nothing to trace on a numba leg.
+          - backend: jax_cpu
+            inversion: dense
+            script: scripts/imaging/slam/hst_delaunay.py
+            variant: delaunay_1250
 
     steps:
       - name: Checkout autolens_inference
@@ -105,7 +124,7 @@ jobs:
             pip install "./$r[optional]"
           done
 
-      - name: Witness — ${{ matrix.backend }} × ${{ matrix.inversion }} (euclid, test mode)
+      - name: Witness — ${{ matrix.variant }} × ${{ matrix.backend }} × ${{ matrix.inversion }} (euclid, test mode)
         working-directory: autolens_inference
         env:
           PYAUTO_TEST_MODE: "1"
@@ -115,8 +134,11 @@ jobs:
         run: |
           # The euclid dataset is gitignored and auto-simulated on first use
           # (_inference_cli.auto_simulate_if_missing), so there is nothing to
-          # fetch. --cores 2 keeps the numba legs off a runner-sized pool.
-          python scripts/imaging/slam/hst.py \
+          # fetch. --cores 2 keeps the numba legs off a runner-sized pool. The
+          # mesh is the leaf's own default and never a flag here: the leaf IS
+          # the cell, and a mesh passed by flag would put one cell's wall clock
+          # under another cell's name.
+          python ${{ matrix.script }} \
             --instrument euclid \
             --backend ${{ matrix.backend }} \
             --inversion ${{ matrix.inversion }} \
@@ -135,13 +157,14 @@ jobs:
           from pathlib import Path
 
           config = "local_${{ matrix.backend }}_${{ matrix.inversion }}_fp64"
-          row = Path("results/slam/imaging/euclid") / config / "stages_seed0.json"
+          variant = "${{ matrix.variant }}"
+          row = Path("results/slam/imaging/euclid") / variant / config / "stages_seed0.json"
           if not row.exists():
               sys.exit(f"no result row at {row}")
           data = json.loads(row.read_text())
           stages = data.get("stages", [])
           names = [s.get("name") for s in stages]
-          print(f"{config}: {len(stages)} stage(s) -> {names}")
+          print(f"{variant} / {config}: {len(stages)} stage(s) -> {names}")
           if len(stages) != 5:
               sys.exit(f"expected 5 stages, got {len(stages)}: {names}")
           incomplete = [s["name"] for s in stages if not s.get("completed")]
@@ -153,6 +176,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: slam-witness-${{ matrix.backend }}-${{ matrix.inversion }}
+          name: slam-witness-${{ matrix.variant }}-${{ matrix.backend }}-${{ matrix.inversion }}
           path: autolens_inference/results/slam/**
           if-no-files-found: warn

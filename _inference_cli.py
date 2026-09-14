@@ -48,6 +48,28 @@ CONFIG_NAME_RE = re.compile(
     r"^(local|hpc_a100)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse)_(fp64|mp)$"
 )
 
+#: The ``--mesh`` vocabulary — which source pixelization family the pixelized
+#: stages are built from. A folder and a payload field, never part of the
+#: config-name grammar: the config name says which *backend* ran, the mesh says
+#: which *model* ran, and conflating them would make one label carry two
+#: independent axes.
+MESHES = ("rect", "delaunay")
+
+#: The mesh family a run uses when neither the leaf nor ``--mesh`` names one.
+MESH_DEFAULT = "rect"
+
+#: What ``--mesh-pixels`` resolves to per family. 28 for ``rect`` is the 28x28
+#: shape of the workspace default (``slam_start_here.py``); 1250 for
+#: ``delaunay`` is a vertex count, not a shape — the two numbers are not
+#: comparable and are not meant to be.
+MESH_PIXELS_DEFAULT = {"rect": 28, "delaunay": 1250}
+
+#: The variant name of the workspace-default run: a 28x28 rectangular mesh. It
+#: is the one variant whose name is not derived from the mesh, because it is the
+#: baseline every other variant is measured against — and because the rows
+#: already on disk were written under it.
+BASE_VARIANT = "slam_base"
+
 #: The ``--stages`` vocabulary — the SLaM chain in order. ``--stages <name>``
 #: stops the driver after that stage, which is how a per-backend rate is
 #: measured from a ``source_lp``-only leg without paying for the whole chain.
@@ -80,16 +102,30 @@ class InferenceCLI:
     seed: int
     use_sparse_operator: bool
     rect_mesh: str
+    mesh: str
+    mesh_pixels: int
     regularization: str | None
     memo: str
     cores: int = 1
     stages: str | None = None
 
 
-def parse_inference_cli(default_config_name: str | None = None) -> InferenceCLI:
+def parse_inference_cli(
+    default_config_name: str | None = None,
+    default_mesh: str | None = None,
+    default_mesh_pixels: int | None = None,
+) -> InferenceCLI:
     """Parse the run flags accepted by every leaf script.
 
     When ``--config-name`` is omitted, falls back to ``default_config_name``.
+
+    ``default_mesh`` / ``default_mesh_pixels`` are the leaf's own mesh defaults,
+    in the style of ``default_instrument``: a leaf that exists to run one mesh
+    (``scripts/imaging/slam/hst_delaunay.py``) names it once here rather than
+    making every caller pass ``--mesh`` and get it right. ``--mesh-pixels``
+    still overrides, and the leaf's pixel count applies only while the leaf's
+    own mesh is the one in force — asking a Delaunay leaf for ``--mesh rect``
+    must not hand the rectangular mesh a vertex count meant for Delaunay.
 
     ``--instrument`` is optional; when omitted (None) leaf scripts keep their
     module-level default (typically ``"hst"``).
@@ -224,6 +260,39 @@ def parse_inference_cli(default_config_name: str | None = None) -> InferenceCLI:
         ),
     )
     parser.add_argument(
+        "--mesh",
+        choices=MESHES,
+        default=None,
+        help=(
+            "Which source pixelization family the two pixelized source stages "
+            "are built from. 'rect' — the adaptive rectangular mesh selected by "
+            "--rect-mesh, the workspace default, at a --mesh-pixels x "
+            "--mesh-pixels shape — or 'delaunay' — al.mesh.Delaunay at "
+            "--mesh-pixels VERTICES, paired with a Split regularization because "
+            "al.reg.Adapt cannot be traced on this mesh family under jit. The "
+            "mesh is NOT part of the config-name grammar: it names the model "
+            "under test, while the config name names the backend that ran it. "
+            "It is instead a run-VARIANT folder under "
+            "results/slam/<dataset_class>/<instrument>/ and a field of the "
+            "target id, so a mesh experiment never joins the base run's parity "
+            "row. Omitted = the leaf script's own default (usually 'rect')."
+        ),
+    )
+    parser.add_argument(
+        "--mesh-pixels",
+        type=int,
+        default=None,
+        help=(
+            "How many pixels the source mesh gets. The number means a different "
+            "thing per family and the two are not comparable: under '--mesh "
+            "rect' it is the side of the square mesh (28 -> 28x28 = 784 cells, "
+            "the workspace default), under '--mesh delaunay' it is the vertex "
+            "count outright (default 1250). Non-default values name their own "
+            "variant folder (rect_40, delaunay_1250), so a mesh-resolution "
+            "sweep never overwrites the base run."
+        ),
+    )
+    parser.add_argument(
         "--memo",
         choices=("off", "on"),
         default="off",
@@ -266,6 +335,16 @@ def parse_inference_cli(default_config_name: str | None = None) -> InferenceCLI:
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
+    mesh = args.mesh or default_mesh or MESH_DEFAULT
+    # The leaf's pixel count is only its own mesh's; asking a Delaunay leaf for
+    # `--mesh rect` falls back to the rectangular family's default rather than
+    # building a 1250x1250 rectangular mesh.
+    if args.mesh_pixels is not None:
+        mesh_pixels = int(args.mesh_pixels)
+    elif default_mesh_pixels is not None and mesh == (default_mesh or MESH_DEFAULT):
+        mesh_pixels = int(default_mesh_pixels)
+    else:
+        mesh_pixels = MESH_PIXELS_DEFAULT[mesh]
     return InferenceCLI(
         config_name=config_name,
         output_dir=output_dir,
@@ -276,11 +355,31 @@ def parse_inference_cli(default_config_name: str | None = None) -> InferenceCLI:
         seed=int(args.seed),
         use_sparse_operator=bool(args.sparse) or args.inversion == "sparse",
         rect_mesh=args.rect_mesh,
+        mesh=mesh,
+        mesh_pixels=mesh_pixels,
         regularization=args.regularization,
         memo=args.memo,
         cores=int(args.cores) if args.cores else default_cores(),
         stages=args.stages,
     )
+
+
+def variant_name(cli: InferenceCLI) -> str:
+    """The run-variant name for this leg — one directory level and one target field.
+
+    A variant is *what was fitted*, as distinct from the config name, which is
+    *what ran it*. Every leg of one variant is a parity row; two variants are
+    two experiments and must not be compared as if a backend were the only
+    thing between them.
+
+    ``rect`` at the workspace-default 28x28 shape is :data:`BASE_VARIANT`
+    (``"slam_base"``) — the baseline, and the name the result rows already on
+    disk were written under. Anything else names its mesh and its pixel count:
+    ``rect_40``, ``delaunay_1250``.
+    """
+    if cli.mesh == "rect" and cli.mesh_pixels == MESH_PIXELS_DEFAULT["rect"]:
+        return BASE_VARIANT
+    return f"{cli.mesh}_{cli.mesh_pixels}"
 
 
 #: What ``--regularization`` resolves to for the Delaunay-family models when
@@ -333,16 +432,22 @@ def delaunay_regularization(cli: InferenceCLI):
     )
 
 
-def rect_mesh_classes(cli: InferenceCLI):
+def rect_mesh_classes(cli: InferenceCLI, al=None):
     """Resolve the explicit adaptive rectangular mesh classes for this run.
 
     Returns ``(density_cls, image_cls)`` for ``cli.rect_mesh``:
     ``RectangularBilinearAdaptDensity/AdaptImage`` (rank-CDF, the workspace
     default) or ``RectangularRTUAdaptDensity/AdaptImage`` (kernel-CDF, the
-    pre-split behaviour). Imports autolens lazily so ``_inference_cli`` stays
-    importable without the modelling stack.
+    pre-split behaviour).
+
+    ``al`` is the already-imported modelling namespace, which callers that have
+    one pass in — a driver that has imported autolens after setting the backend
+    environment must not re-enter the import, and a unit test can hand this a
+    namespace of its own. When it is ``None`` autolens is imported lazily, so
+    ``_inference_cli`` stays importable without the modelling stack.
     """
-    import autolens as al
+    if al is None:
+        import autolens as al
 
     if cli.rect_mesh == "rtu":
         return al.mesh.RectangularRTUAdaptDensity, al.mesh.RectangularRTUAdaptImage

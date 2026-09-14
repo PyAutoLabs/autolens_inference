@@ -58,7 +58,56 @@ sized against. The ledger is [`wiki/project/state.md`](wiki/project/state.md).
 ## Pipeline runs
 
 <!-- BEGIN auto-table:slam -->
-_No pipeline runs yet — the first is the HST SLaM base run (`results/slam/`, phase 4 of the autolens-inference epic)._
+| Target | Variant | Stage | Config | Seed | Wall | Evals | log Z | Version |
+|---|---|---|---|---|---|---|---|---|
+| `hst/slam5/seed0` | `slam_base` | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 923.3 s | 95,950 | 31,968.39 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | source_lp[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 808.2 s | 92,300 | 31,968.28 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 761.9 s | 32,820 | 31,418.34 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | source_pix[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 1930.8 s | 33,140 | 31,422.23 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 131.5 s | 3,720 | 31,618.43 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | source_pix[2] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 178.6 s | 3,260 | 31,615.93 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 237.3 s | 9,620 | 31,611.07 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | light[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 267.5 s | 11,320 | 31,608.94 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 516.6 s | 20,080 | 31,592.70 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | mass_total[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 800.3 s | 20,780 | 31,589.52 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 834.8 s | 96,150 | 31,968.40 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | source_lp[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 798.2 s | 96,150 | 31,968.53 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 748.7 s | 33,000 | 31,437.89 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | source_pix[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 1904.3 s | 33,020 | 31,432.37 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 362.3 s | 13,800 | 31,620.54 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | source_pix[2] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 187.8 s | 3,580 | 31,618.61 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 267.4 s | 12,200 | 31,618.61 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | light[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 253.9 s | 9,980 | 31,611.35 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 650.2 s | 25,820 | 31,596.11 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | mass_total[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 868.1 s | 21,640 | 31,592.44 | 2026.8.17.1 |
+
+**Parity — `hst/slam5/seed0` (seed 0), `mass_total[1]`**
+
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_a100_jax_gpu_sparse_fp64` |
+|---|---|---|
+| `einstein_radius` | 1.605 ± 0.0041 | -0.03σ |
+| `slope` | 2.054 ± 0.051 | -0.04σ |
+| `shear_magnitude` | 0.07295 ± 0.0025 | +0.00σ |
+| `centre_0` | -0.0001093 ± 0.00058 | -0.31σ |
+| `centre_1` | -0.0005402 ± 0.00044 | -0.00σ |
+| `ell_comps_0` | 0.05506 ± 0.0024 | +0.06σ |
+| `ell_comps_1` | -0.0007526 ± 0.00093 | +0.10σ |
+| `gamma_1` | 0.05205 ± 0.0027 | -0.01σ |
+| `gamma_2` | 0.05106 ± 0.00098 | +0.21σ |
+
+**Parity — `hst/slam5/seed1` (seed 1), `mass_total[1]`**
+
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_a100_jax_gpu_sparse_fp64` |
+|---|---|---|
+| `einstein_radius` | 1.601 ± 0.0039 | +0.66σ |
+| `slope` | 2.008 ± 0.049 | +0.67σ |
+| `shear_magnitude` | 0.07161 ± 0.0022 | +0.36σ |
+| `centre_0` | -0.0008513 ± 0.00031 | +2.22σ |
+| `centre_1` | -8.889e-05 ± 0.00032 | -1.49σ |
+| `ell_comps_0` | 0.05365 ± 0.0022 | +0.54σ |
+| `ell_comps_1` | 0.001321 ± 0.00081 | -2.58σ |
+| `gamma_1` | 0.05075 ± 0.0022 | +0.24σ |
+| `gamma_2` | 0.05052 ± 0.00093 | +0.65σ |
 <!-- END auto-table:slam -->
 
 ## Search runs

@@ -12,7 +12,10 @@ The chain mirrors ``autolens_workspace/scripts/guides/modeling/slam_start_here.p
 50) -> ``source_pix[1]`` (150/20) -> ``source_pix[2]`` (75/20) -> ``light[1]``
 (150/20) -> ``mass_total[1]`` (150/20), with a 28x28
 ``RectangularBilinearAdaptDensity`` then ``RectangularBilinearAdaptImage`` mesh
-under ``reg.Adapt``, MGE 20x2 lens light / 20x1 source, the S/N 3.0 adapt-image
+under ``reg.Adapt`` (the ``slam_base`` **run variant**; ``--mesh delaunay``
+swaps both stages for ``al.mesh.Delaunay`` under ``reg.AdaptSplit`` and names
+its own variant folder — see :func:`mesh_models` and :func:`target_id`),
+MGE 20x2 lens light / 20x1 source, the S/N 3.0 adapt-image
 cap, and ``Isothermal + ExternalShear`` chained into a ``PowerLaw`` via
 ``al.util.chaining.mass_from(..., unfix_mass_centre=True)``.
 
@@ -38,7 +41,8 @@ Deliberate departures from ``slam_start_here.py``
    results directory (which is what ``_inference_cli.resolve_output_paths``
    means by it for the single-JSON leaves). A SLaM leg's bulk state is the run
    tree, and that is the thing a RAL job needs to redirect; the small result row
-   always lands under ``results/slam/<dataset_class>/<instrument>/``.
+   always lands under
+   ``results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/``.
 
 4. **The JAX compile probe is skipped under ``PYAUTO_TEST_MODE``.** In
    production ``compile_s`` is one timed ``analysis.log_likelihood_function``
@@ -91,12 +95,14 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import NamedTuple
 
 _ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from _inference_cli import (  # noqa: E402
+    BASE_VARIANT,
     CONFIG_NAME_RE,
     STAGES,
     InferenceCLI,
@@ -104,10 +110,17 @@ from _inference_cli import (  # noqa: E402
     device_info_dict,
     parse_inference_cli,
     rect_mesh_classes,
+    variant_name,
 )
 
 #: Version of the ``stages_seed<n>.json`` schema written by :func:`_write_results`.
-SCHEMA_VERSION = 1
+#:
+#: v2 added the run variant and the mesh it is named after: ``variant``,
+#: ``mesh``, ``mesh_pixels`` and ``regularization`` (the resolved scheme name),
+#: with ``mesh_shape`` now ``null`` on a row whose mesh has no shape (Delaunay
+#: takes a vertex count). v1 rows are still read — every reader falls back to
+#: the base variant when the field is absent, which is what those rows are.
+SCHEMA_VERSION = 2
 
 #: Search name per stage key, in chain order. These are the names that appear in
 #: the output tree and in every result row, so they are the citable identity of a
@@ -142,9 +155,6 @@ ADAPT_IMAGE_SNR_CAP = 3.0
 #: over-sampling 4, the rest get 2 (``slam_start_here.py``, "__Adaptive
 #: Pixelization Over-Sampling__").
 OVER_SAMPLE_SNR_THRESHOLD = 3.0
-
-#: Fixed mesh shape, as in the workspace default.
-MESH_PIXELS_YX = 28
 
 #: ``result.positions_likelihood_from`` arguments used on every pixelized stage.
 POSITIONS_FACTOR = 3.0
@@ -670,6 +680,73 @@ def source_lp(
     return model, analysis, search
 
 
+class MeshModels(NamedTuple):
+    """What the two pixelized source stages are built from, for one ``--mesh``.
+
+    ``mesh_init`` goes to ``source_pix[1]`` and ``mesh`` to ``source_pix[2]``
+    (two distinct ``af.Model`` objects — the rectangular family uses a different
+    class for each, and sharing one model between two searches would share its
+    priors). ``regularization`` is the **class**, which is what the stage
+    helpers hand ``af.Model(al.Pixelization, ...)``; ``scheme`` is the name the
+    result row records, and ``shape`` is the mesh shape for a family that has
+    one and ``None`` for a family that does not.
+    """
+
+    mesh_init: object
+    mesh: object
+    regularization: object
+    scheme: str
+    shape: tuple[int, int] | None
+
+
+def mesh_models(af, al, cli: InferenceCLI) -> MeshModels:
+    """Resolve ``--mesh`` / ``--mesh-pixels`` into the two stages' pixelization models.
+
+    ``rect`` is the workspace default: the adaptive rectangular density mesh
+    then the adaptive rectangular image mesh (``--rect-mesh`` picks the family),
+    at ``mesh_pixels x mesh_pixels``, under ``al.reg.Adapt``.
+
+    ``delaunay`` is ``al.mesh.Delaunay(pixels=mesh_pixels, zeroed_pixels=0)`` on
+    both stages, under ``al.reg.AdaptSplit``. Two things about that pairing are
+    not free choices:
+
+    - **It cannot be ``al.reg.Adapt``.** That scheme takes its pixel
+      neighbours from a ``scipy.spatial.Delaunay`` call on the *traced* source
+      grid, which raises ``TracerArrayConversionError`` under ``jax.jit``. The
+      mesh family, not the regularization alone, decides what can be traced:
+      the same ``Adapt`` is exactly what the rectangular legs run under. The
+      Split schemes are the traceable pairing for this family.
+    - **It is the class, not a fixed instance.** The stage helpers build
+      ``af.Model(al.Pixelization, mesh=..., regularization=...)``, so a class
+      leaves the regularization's coefficients as free parameters, exactly as
+      ``al.reg.Adapt`` does on the rectangular legs — which is what makes the
+      two runs comparable. ``_inference_cli.delaunay_regularization()`` builds a
+      *fixed-coefficient* ``AdaptSplit`` for the profiling-style cells, and
+      using it here would silently drop free parameters from the model.
+
+    Delaunay needs an adapt image, which :func:`_adapt_images` already builds at
+    every pixelized stage, so nothing else has to be plumbed through.
+    """
+    if cli.mesh == "delaunay":
+        return MeshModels(
+            mesh_init=af.Model(al.mesh.Delaunay, pixels=cli.mesh_pixels, zeroed_pixels=0),
+            mesh=af.Model(al.mesh.Delaunay, pixels=cli.mesh_pixels, zeroed_pixels=0),
+            regularization=al.reg.AdaptSplit,
+            scheme="adapt_split",
+            shape=None,
+        )
+
+    density_cls, image_cls = rect_mesh_classes(cli, al=al)
+    shape = (cli.mesh_pixels, cli.mesh_pixels)
+    return MeshModels(
+        mesh_init=af.Model(density_cls, shape=shape),
+        mesh=af.Model(image_cls, shape=shape),
+        regularization=al.reg.Adapt,
+        scheme="adapt",
+        shape=shape,
+    )
+
+
 def source_pix_1(
     af,
     al,
@@ -929,16 +1006,58 @@ def mass_total(
 # ---------------------------------------------------------------------------
 
 
-def results_paths(root: Path, dataset_class: str, instrument: str, config_name: str, seed: int):
-    """``(json_path, png_path)`` for one ``(config_name, seed)``.
+def results_paths(
+    root: Path,
+    dataset_class: str,
+    instrument: str,
+    variant: str,
+    config_name: str,
+    seed: int,
+):
+    """``(json_path, png_path)`` for one ``(variant, config_name, seed)``.
+
+    ``results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/stages_seed<n>.json``.
 
     One file per ``(config_name, seed)`` — the seed is in the *filename*, not
     only in the payload, so a reliability sweep over seeds does not overwrite
-    itself.
+    itself. The ``<variant>`` level above it separates *experiments*: the legs
+    of one variant are a parity row, and two variants sharing a directory would
+    read as backends of one run rather than as two different models.
     """
-    directory = root / "results" / "slam" / dataset_class / instrument / config_name
+    directory = root / "results" / "slam" / dataset_class / instrument / variant / config_name
     directory.mkdir(parents=True, exist_ok=True)
     return directory / f"stages_seed{seed}.json", directory / f"stages_seed{seed}.png"
+
+
+def output_path_prefix(
+    dataset_class: str, instrument: str, variant: str, config_name: str, seed: int
+) -> Path:
+    """The PyAutoFit ``path_prefix`` for one leg.
+
+    ``config_name`` and ``seed_<n>`` live in the PATH, not only in the payload:
+    ``seed`` is an autofit identifier field but ``config_name`` is not, so two
+    backends run at one seed would otherwise hash to the same identifier and
+    resume each other's completed fit in seconds, re-stamping it as their own.
+    The same argument makes ``variant`` a path level — the mesh is not an
+    identifier field either, so a Delaunay leg and a rectangular leg of the same
+    config and seed would collide in exactly the same way.
+    """
+    return Path("slam") / dataset_class / instrument / variant / config_name / f"seed_{seed}"
+
+
+def target_id(instrument: str, variant: str, seed: int) -> str:
+    """The ``target`` every result row of this leg carries.
+
+    The dashboard groups rows into a **parity row** by ``target``, so the target
+    is what decides which legs are claimed to be the same run under different
+    backends. A different experiment must never land in the base run's parity
+    group: only :data:`BASE_VARIANT` keeps the bare ``<instrument>/slam5/seed<n>``
+    id (the rows already on disk were written with it), and every other variant
+    says so in the id — ``hst/slam5_delaunay_1250/seed0``.
+    """
+    if variant == BASE_VARIANT:
+        return f"{instrument}/slam5/seed{seed}"
+    return f"{instrument}/slam5_{variant}/seed{seed}"
 
 
 def _write_results(json_path: Path, payload: dict) -> None:
@@ -989,15 +1108,25 @@ def _plot_stages(png_path: Path, payload: dict) -> None:
 # ---------------------------------------------------------------------------
 
 
-def run_slam(dataset_class: str = "imaging", default_instrument: str = "hst") -> int:
-    """Run the 5-stage SLaM chain for one ``(backend, inversion, seed)`` leg.
+def run_slam(
+    dataset_class: str = "imaging",
+    default_instrument: str = "hst",
+    default_mesh: str | None = None,
+    default_mesh_pixels: int | None = None,
+) -> int:
+    """Run the 5-stage SLaM chain for one ``(variant, backend, inversion, seed)`` leg.
+
+    ``default_mesh`` / ``default_mesh_pixels`` are the leaf's mesh defaults, in
+    the style of ``default_instrument``: a leaf that exists to run one mesh
+    names it once, and ``--mesh`` / ``--mesh-pixels`` still override.
 
     Returns the process exit code: 0 on success, 2 on a flag / environment
     refusal (a malformed config name, a config name that disagrees with the
     flags, or ``--backend jax_gpu`` on a host with no GPU).
     """
-    cli = parse_inference_cli()
+    cli = parse_inference_cli(default_mesh=default_mesh, default_mesh_pixels=default_mesh_pixels)
     instrument = cli.instrument or default_instrument
+    variant = variant_name(cli)
     cores = cli.cores
 
     error = validate_config_name(cli)
@@ -1060,8 +1189,9 @@ def run_slam(dataset_class: str = "imaging", default_instrument: str = "hst") ->
     af.conf.instance.push(new_path=root / "config", output_path=output_root)
 
     print("=" * 78)
-    print(f"SLaM base run — {dataset_class} / {instrument} / {config_name} / seed {seed}")
+    print(f"SLaM run — {dataset_class} / {instrument} / {variant} / {config_name} / seed {seed}")
     print("=" * 78)
+    print(f"  variant:    {variant}  (mesh={cli.mesh}, mesh_pixels={cli.mesh_pixels})")
     print(f"  backend:    {cli.backend}  (use_jax={use_jax}, cores={cores})")
     print(f"  inversion:  {cli.inversion}")
     print(f"  precision:  {precision}")
@@ -1129,11 +1259,11 @@ def run_slam(dataset_class: str = "imaging", default_instrument: str = "hst") ->
     )
 
     # --- search settings --------------------------------------------------
-    # config_name and seed_<n> live in the PATH, not only in the payload: `seed`
-    # is an autofit identifier field but `config_name` is not, so two backends
-    # run at one seed would otherwise hash to the same identifier and resume
-    # each other's completed fit in seconds, re-stamping it as their own.
-    path_prefix = Path("slam") / dataset_class / instrument / config_name / f"seed_{seed}"
+    # See `output_path_prefix`: config_name, variant and seed_<n> live in the
+    # PATH because `seed` is an autofit identifier field and the other two are
+    # not, so legs that differ only in those would hash to one identifier and
+    # resume each other's completed fit.
+    path_prefix = output_path_prefix(dataset_class, instrument, variant, config_name, seed)
     settings_search = af.SettingsSearch(
         path_prefix=path_prefix,
         unique_tag=None,
@@ -1146,8 +1276,7 @@ def run_slam(dataset_class: str = "imaging", default_instrument: str = "hst") ->
     )
     search_root = with_test_mode_segment(output_root) / path_prefix
 
-    mesh_shape = (MESH_PIXELS_YX, MESH_PIXELS_YX)
-    density_cls, image_cls = rect_mesh_classes(cli)
+    meshes = mesh_models(af, al, cli)
 
     stages: list[dict] = []
     stop_after = cli.stages
@@ -1217,10 +1346,13 @@ def run_slam(dataset_class: str = "imaging", default_instrument: str = "hst") ->
         return result, row
 
     def write(status: str) -> None:
-        json_path, png_path = results_paths(root, dataset_class, instrument, config_name, seed)
+        json_path, png_path = results_paths(
+            root, dataset_class, instrument, variant, config_name, seed
+        )
         payload = {
             "schema_version": SCHEMA_VERSION,
-            "target": f"{instrument}/slam5/seed{seed}",
+            "target": target_id(instrument, variant, seed),
+            "variant": variant,
             "config_name": config_name,
             "backend": cli.backend,
             "inversion": cli.inversion,
@@ -1234,7 +1366,12 @@ def run_slam(dataset_class: str = "imaging", default_instrument: str = "hst") ->
             "use_jax": use_jax,
             "rect_mesh": cli.rect_mesh,
             "memo": cli.memo,
-            "mesh_shape": list(mesh_shape),
+            "mesh": cli.mesh,
+            "mesh_pixels": cli.mesh_pixels,
+            "regularization": meshes.scheme,
+            # A mesh family with no shape (Delaunay takes a vertex count) says
+            # so rather than inventing one.
+            "mesh_shape": list(meshes.shape) if meshes.shape is not None else None,
             "stages_requested": stop_after,
             "test_mode": bool(is_test_mode()),
             "status": status,
@@ -1283,8 +1420,8 @@ def run_slam(dataset_class: str = "imaging", default_instrument: str = "hst") ->
                 settings_search,
                 dataset,
                 source_lp_result,
-                mesh_init=af.Model(density_cls, shape=mesh_shape),
-                regularization_init=al.reg.Adapt,
+                mesh_init=meshes.mesh_init,
+                regularization_init=meshes.regularization,
                 use_jax=use_jax,
                 seed=seed,
                 settings=settings,
@@ -1327,8 +1464,8 @@ def run_slam(dataset_class: str = "imaging", default_instrument: str = "hst") ->
                 dataset,
                 source_lp_result,
                 source_pix_result_1,
-                mesh=af.Model(image_cls, shape=mesh_shape),
-                regularization=al.reg.Adapt,
+                mesh=meshes.mesh,
+                regularization=meshes.regularization,
                 use_jax=use_jax,
                 seed=seed,
                 settings=settings,

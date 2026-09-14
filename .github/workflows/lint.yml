@@ -142,3 +142,9 @@ jobs:
           # ahead of auto_simulate_if_missing.
           python scripts/imaging/slam/hst.py \
             --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
+          # The Delaunay leaf is its own cell (its own wall-basis row, its own
+          # variant folder), so its import graph and flag handling are smoked
+          # separately. The mesh itself is witnessed by profile.yml, which is
+          # the only place a jit trace actually happens.
+          python scripts/imaging/slam/hst_delaunay.py \
+            --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
