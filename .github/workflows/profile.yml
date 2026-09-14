@@ -56,10 +56,12 @@ jobs:
             inversion: dense
             script: scripts/imaging/slam/hst.py
             variant: slam_base
+            cores: 2
           - backend: numba_cpu
             inversion: sparse
             script: scripts/imaging/slam/hst.py
             variant: slam_base
+            cores: 2
           # jax_cpu x sparse is deliberately absent: it is the 21.6 GB leg on
           # HST and the heaviest here too, and a hosted runner has no headroom
           # to spare. It is witnessed locally and on RAL instead.
@@ -67,6 +69,7 @@ jobs:
             inversion: dense
             script: scripts/imaging/slam/hst.py
             variant: slam_base
+            cores: 2
           # The Delaunay route, and the only CI check holding its regularization
           # pairing in place: `al.mesh.Delaunay` under `al.reg.Adapt` raises
           # TracerArrayConversionError once jit traces the source grid, so this
@@ -76,6 +79,15 @@ jobs:
             inversion: dense
             script: scripts/imaging/slam/hst_delaunay.py
             variant: delaunay_1250
+            # NOT 2. The Delaunay mesh reaches qhull through a
+            # `jax.pure_callback`, so the fit calls back into the host while an
+            # XLA computation is in flight, and a CPU thread pool narrower than
+            # that callback depth deadlocks: measured 2026-09-15, `--cores 2`
+            # hung for 22 minutes with every thread in `futex_wait` and zero
+            # CPU, while `--cores 8` ran the same leg to completion. The bracket
+            # is therefore (2, 8]; 4 is what a hosted runner has. A leg that
+            # hangs here to the 60-minute timeout is this number, not the mesh.
+            cores: 4
 
     steps:
       - name: Checkout autolens_inference
@@ -134,7 +146,8 @@ jobs:
         run: |
           # The euclid dataset is gitignored and auto-simulated on first use
           # (_inference_cli.auto_simulate_if_missing), so there is nothing to
-          # fetch. --cores 2 keeps the numba legs off a runner-sized pool. The
+          # fetch. `matrix.cores` keeps the numba legs off a runner-sized pool
+          # and gives the Delaunay leg the wider pool its host callback needs. The
           # mesh is the leaf's own default and never a flag here: the leaf IS
           # the cell, and a mesh passed by flag would put one cell's wall clock
           # under another cell's name.
@@ -143,7 +156,7 @@ jobs:
             --backend ${{ matrix.backend }} \
             --inversion ${{ matrix.inversion }} \
             --seed 0 \
-            --cores 2 \
+            --cores ${{ matrix.cores }} \
             --config-name local_${{ matrix.backend }}_${{ matrix.inversion }}_fp64
 
       - name: Assert the row has all five stages
