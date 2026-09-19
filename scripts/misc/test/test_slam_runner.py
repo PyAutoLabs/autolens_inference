@@ -22,6 +22,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -515,6 +516,134 @@ def test_the_delaunay_branch_pairs_delaunay_with_the_adaptsplit_class():
     assert meshes.shape is None
 
 
+def test_all_five_slam_stage_models_carry_the_expected_flat_field(monkeypatch):
+    """Exercise the real model builders without running a likelihood or search."""
+    import autofit as af
+    import autolens as al
+
+    monkeypatch.setattr(al, "AnalysisImaging", lambda **kwargs: kwargs)
+    monkeypatch.setattr(
+        al.model_util,
+        "mge_model_from",
+        lambda **kwargs: af.Model(al.lp.Sersic),
+    )
+    monkeypatch.setattr(af, "Nautilus", lambda **kwargs: kwargs)
+    monkeypatch.setattr(_runner, "_adapt_images", lambda *args, **kwargs: object())
+    monkeypatch.setattr(
+        al.util.chaining,
+        "source_custom_model_from",
+        lambda **kwargs: af.Model(
+            al.Galaxy,
+            redshift=1.0,
+            bulge=af.Model(al.lp.Sersic),
+        ),
+    )
+    monkeypatch.setattr(
+        al.util.chaining,
+        "source_from",
+        lambda **kwargs: af.Model(
+            al.Galaxy,
+            redshift=1.0,
+            bulge=af.Model(al.lp.Sersic),
+        ),
+    )
+
+    def result(model):
+        return SimpleNamespace(
+            model=model,
+            instance=model.instance_from_prior_medians(),
+        )
+
+    settings_search = SimpleNamespace(search_dict={})
+    dataset = SimpleNamespace(pixel_scales=(0.1,))
+    common = dict(use_jax=False, seed=1)
+
+    source_lp_model, _, _ = _runner.source_lp(
+        af,
+        al,
+        settings_search,
+        dataset,
+        3.0,
+        0.5,
+        1.0,
+        **common,
+    )
+    source_lp_result = result(source_lp_model)
+
+    source_pix_1_model, _, _ = _runner.source_pix_1(
+        af,
+        al,
+        settings_search,
+        dataset,
+        source_lp_result,
+        af.Model(al.mesh.RectangularBilinearAdaptDensity, shape=(3, 3)),
+        al.reg.Adapt,
+        meshes=None,
+        mask_radius=3.0,
+        positions_likelihood=object(),
+        **common,
+    )
+    source_pix_1_result = result(source_pix_1_model)
+
+    source_pix_2_model, _, _ = _runner.source_pix_2(
+        af,
+        al,
+        settings_search,
+        dataset,
+        source_lp_result,
+        source_pix_1_result,
+        af.Model(al.mesh.RectangularBilinearAdaptImage, shape=(3, 3)),
+        al.reg.Adapt,
+        meshes=None,
+        mask_radius=3.0,
+        positions_likelihood=object(),
+        **common,
+    )
+    source_pix_2_result = result(source_pix_2_model)
+
+    light_model, _, _ = _runner.light_lp(
+        af,
+        al,
+        settings_search,
+        dataset,
+        3.0,
+        source_pix_2_result,
+        source_pix_2_result,
+        meshes=None,
+        positions_likelihood=object(),
+        **common,
+    )
+    light_result = result(light_model)
+
+    mass_total_model, _, _ = _runner.mass_total(
+        af,
+        al,
+        settings_search,
+        dataset,
+        source_pix_1_result,
+        source_pix_2_result,
+        light_result,
+        meshes=None,
+        mask_radius=3.0,
+        positions_likelihood=object(),
+        **common,
+    )
+
+    models = (
+        source_lp_model,
+        source_pix_1_model,
+        source_pix_2_model,
+        light_model,
+        mass_total_model,
+    )
+    free_field = (True, True, False, False, True)
+
+    for model, is_free in zip(models, free_field, strict=True):
+        assert not hasattr(model.galaxies.lens, "shear")
+        assert isinstance(model.instance_from_prior_medians().fields, al.MassField)
+        assert (("fields", "shear", "gamma_1") in model.unique_prior_paths) is is_free
+
+
 # ---------------------------------------------------------------------------
 # Backend environment
 # ---------------------------------------------------------------------------
@@ -575,7 +704,7 @@ def test_autofit_alias_tuples_resolve_to_their_leaf():
         ("galaxies.lens.mass.einstein_radius",),
         ("galaxies.lens.mass.centre_0",),
         ("galaxies.lens.bulge.centre_0",),
-        ("galaxies.lens.shear.gamma_1",),
+        ("fields.shear.gamma_1",),
     ]
     assert _runner.posterior_keys(names) == [
         "einstein_radius",

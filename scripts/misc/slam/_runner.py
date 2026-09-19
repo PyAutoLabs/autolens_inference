@@ -17,7 +17,7 @@ swaps both stages for ``al.mesh.Delaunay`` under ``reg.AdaptSplit`` and names
 its own variant folder — see :func:`mesh_models` and :func:`target_id`),
 MGE 20x2 lens light / 20x1 source, the S/N 3.0 adapt-image
 cap, and ``Isothermal + ExternalShear`` chained into a ``PowerLaw`` via
-``al.util.chaining.mass_from(..., unfix_mass_centre=True)``.
+``al.util.chaining.mass_and_fields_from(..., unfix_mass_centre=True)``.
 
 Deliberate departures from ``slam_start_here.py``
 -------------------------------------------------
@@ -726,6 +726,11 @@ def source_lp(
     source_bulge = al.model_util.mge_model_from(
         mask_radius=mask_radius, total_gaussians=20, centre_prior_is_uniform=False
     )
+    field = af.Model(
+        al.MassField,
+        redshift=redshift_lens,
+        shear=af.Model(al.mp.ExternalShear),
+    )
 
     model = af.Collection(
         galaxies=af.Collection(
@@ -735,10 +740,10 @@ def source_lp(
                 bulge=lens_bulge,
                 disk=None,
                 mass=af.Model(al.mp.Isothermal),
-                shear=af.Model(al.mp.ExternalShear),
             ),
             source=af.Model(al.Galaxy, redshift=redshift_source, bulge=source_bulge),
         ),
+        fields=field,
     )
 
     search = af.Nautilus(
@@ -901,12 +906,12 @@ def source_pix_1(
         settings=settings,
     )
 
-    mass = al.util.chaining.mass_from(
+    mass, field = al.util.chaining.mass_and_fields_from(
         mass=source_lp_result.model.galaxies.lens.mass,
         mass_result=source_lp_result.model.galaxies.lens.mass,
+        fields_result=source_lp_result.model.fields,
         unfix_mass_centre=True,
     )
-    shear = source_lp_result.model.galaxies.lens.shear
 
     model = af.Collection(
         galaxies=af.Collection(
@@ -916,7 +921,6 @@ def source_pix_1(
                 bulge=source_lp_result.instance.galaxies.lens.bulge,
                 disk=source_lp_result.instance.galaxies.lens.disk,
                 mass=mass,
-                shear=shear,
             ),
             source=af.Model(
                 al.Galaxy,
@@ -926,6 +930,7 @@ def source_pix_1(
                 ),
             ),
         ),
+        fields=field,
     )
 
     search = af.Nautilus(
@@ -982,7 +987,6 @@ def source_pix_2(
                 bulge=source_lp_result.instance.galaxies.lens.bulge,
                 disk=source_lp_result.instance.galaxies.lens.disk,
                 mass=source_pix_result_1.instance.galaxies.lens.mass,
-                shear=source_pix_result_1.instance.galaxies.lens.shear,
             ),
             source=af.Model(
                 al.Galaxy,
@@ -990,6 +994,7 @@ def source_pix_2(
                 pixelization=af.Model(al.Pixelization, mesh=mesh, regularization=regularization),
             ),
         ),
+        fields=source_pix_result_1.instance.fields,
     )
 
     search = af.Nautilus(
@@ -1056,10 +1061,10 @@ def light_lp(
                 bulge=lens_bulge,
                 disk=None,
                 mass=source_result_for_lens.instance.galaxies.lens.mass,
-                shear=source_result_for_lens.instance.galaxies.lens.shear,
             ),
             source=source,
         ),
+        fields=source_result_for_lens.instance.fields,
     )
 
     search = af.Nautilus(
@@ -1106,9 +1111,10 @@ def mass_total(
         settings=settings,
     )
 
-    mass = al.util.chaining.mass_from(
+    mass, field = al.util.chaining.mass_and_fields_from(
         mass=af.Model(al.mp.PowerLaw),
         mass_result=source_result_for_lens.model.galaxies.lens.mass,
+        fields_result=source_result_for_lens.model.fields,
         unfix_mass_centre=True,
     )
 
@@ -1122,10 +1128,10 @@ def mass_total(
                 bulge=light_result.instance.galaxies.lens.bulge,
                 disk=light_result.instance.galaxies.lens.disk,
                 mass=mass,
-                shear=source_result_for_lens.model.galaxies.lens.shear,
             ),
             source=source,
         ),
+        fields=field,
     )
 
     search = af.Nautilus(
