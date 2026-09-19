@@ -192,6 +192,9 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
                 einstein_radius=1.6,
                 ell_comps=al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0),
             ),
+        )
+        field = al.MassField(
+            redshift=0.5,
             shear=al.mp.ExternalShear(gamma_1=0.05, gamma_2=0.05),
         )
         source_galaxy = al.Galaxy(
@@ -206,7 +209,7 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
         )
 
     with timer.section("setup_tracer"):
-        tracer = al.Tracer(galaxies=[lens_galaxy, source_galaxy])
+        tracer = al.Tracer(galaxies=[lens_galaxy, source_galaxy], fields=[field])
 
     # === PART 2 — image_2d_from: eager + JIT ===
 
