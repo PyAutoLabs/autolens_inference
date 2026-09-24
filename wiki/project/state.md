@@ -23,6 +23,15 @@ interferometer and point-source data.
 
 ## Where we are
 
+**2026-09-24 — every existing SLaM HST row is archived; the A100 legs and the numba-CPU sparse legs (both variants) are
+re-running on the sped-up library mains.** The four `slam_base` and four `delaunay_1250` A100 rows (plus the
+`342695` rate-probe row) were measured before the autolens_profiling likelihood speedups
+landed, so they now describe code nobody runs. They live on, unchanged, under
+`results/archive/2026-09-24_pre_likelihood_speedup/` (and their PyAutoFit trees under
+`output/archive/…`, locally and on RAL); the dashboard reads only `results/slam/` and
+`results/searches/`, so they are no longer live rows. The live tree is empty until the
+re-runs land — see the 2026-09-24 journal entry for the job ids.
+
 **Born 2026-09-10 — phase 3 of the `autolens-inference` epic shipped 2026-09-11 (PR
 pending).**
 
@@ -286,3 +295,62 @@ sparse}`, seeds 0–1, `--mem` 64gb/96gb, `--cpus-per-task=8`, 24 h containment,
 `source: unmeasured  probe-first: yes` because nothing has been measured on this cell and
 the base run's walls belong to a different one. Then the four CPU legs, which are what turn
 four completed runs into a parity row.
+
+### 2026-09-24 — pre-speedup rows archived, legs re-submitted on the new mains
+
+**What ran.** Nothing new measured yet. Every SLaM HST row this repo held was archived, and
+the runs re-submitted on RAL against today's library mains (PyAutoArray `3de624b5`,
+PyAutoLens `86054bbc1`, PyAutoFit `dd9fbe0aa`, PyAutoGalaxy `70a61e26`, PyAutoNerves
+`1fa613a`, identical on the laptop and the RAL mirror), which carry the likelihood speedups
+landed through the autolens_profiling campaigns.
+
+Archived to `results/archive/2026-09-24_pre_likelihood_speedup/slam/imaging/hst/` (PyAutoFit
+trees to the same path under `output/archive/`, locally and on RAL — moved, never deleted):
+
+| variant / config | seeds | status | what it was |
+|---|---|---|---|
+| `slam_base/hpc_a100_jax_gpu_dense_fp64` | 0, 1 | complete | 2026-09-14 entry above |
+| `slam_base/hpc_a100_jax_gpu_sparse_fp64` | 0, 1 | complete | 2026-09-14 entry above |
+| `slam_base/hpc_a100_jax_gpu_dense_fp64__rate_probe_342695` | 0 | stopped_early | the A100 `source_lp[1]` rate probe, job 342695 |
+| `delaunay_1250/hpc_a100_jax_gpu_dense_fp64` | 0, 1 | complete | RAL job 343143; never committed live |
+| `delaunay_1250/hpc_a100_jax_gpu_sparse_fp64` | 0, 1 | complete | RAL job 343145; never committed live |
+
+For the record, since the Delaunay rows were never journalled: search wall over the chain
+4,770 s / 5,095 s dense and 9,112 s / 8,486 s sparse (seed 0 / 1), no stage resumed,
+`mass_total[1]` log Z 31,512.9 / 31,503.0 dense and 31,515.5 / 31,534.7 sparse — and seed 0
+on both routes has a `mass_total[1]` `truth_delta_sigma` of 5.4σ (dense) / 4.7σ (sparse),
+which the re-runs should confirm or retire before anyone reads a mesh comparison off them.
+
+**Why move rather than overwrite.** `seed` is a PyAutoFit identifier field and the config
+name sits in the `path_prefix`, so a re-submit at the same config name and seed hashes to the
+**same output directory** as the old fit — and PyAutoFit would resume it, report every stage
+complete, and re-run nothing. Moving the old `output/` trees aside is what makes the new
+jobs fit from scratch. The new runs' trees stay at the normal paths on purpose: a later
+variant (lens light fixed to ordinary light profiles from `mass[1]` onwards) resumes from
+them.
+
+**Submitted** (RAL, from `hpc/batch_{gpu,cpu}/`, seeds 0–1 each):
+
+| job | submit | partition | `--time` | state at +1 min |
+|---|---|---|---|---|
+| **350674**_[0-1] | `batch_gpu/submit_slam_hst_jax_gpu_dense` | `gpu` | 12 h | RUNNING, `euclid-ral-gpu-1`; A100 80GB in nvidia-smi, `source_lp[1]` started fresh |
+| **350675**_[0-1] | `batch_gpu/submit_slam_hst_jax_gpu_sparse` | `gpu` | 12 h | RUNNING, `euclid-ral-gpu-1`; A100, sparse operator set up |
+| **350678**_[0-1] | `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_dense` | `gpu` | 24 h | RUNNING, `euclid-ral-gpu-2`; A100 |
+| **350679**_[0-1] | `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_sparse` | `gpu` | 24 h | RUNNING, `euclid-ral-gpu-2`; A100, sparse operator set up |
+| **350682**_[0-1] | `batch_cpu/submit_slam_hst_numba_cpu_sparse` | `ral` | 5 d | RUNNING, `euclid-ral-compute-10-2`; Nautilus sampling `source_lp[1]` |
+| **350684**_[0-1] | `batch_cpu/submit_slam_delaunay1250_hst_numba_cpu_sparse` | `ral` | 5 d | RUNNING, `euclid-ral-compute-10-2` / `euclid-ral-compute-1`; added after the first five, same day |
+
+`350682` is the first CPU leg of the parity row. Its config name is
+`hpc_a100_numba_cpu_sparse_fp64` — the `hpc_a100` "where" token names RAL, not the device —
+because that is what the submit has always written. Before submitting, the same leg ran
+end to end locally as a `PYAUTO_TEST_MODE=1` witness on the euclid cell (`--cores 4`): all
+five stages `completed`, `status: complete`, `use_jax: false`. The witness row was deleted
+and never committed. `350684` is the same leg on the `delaunay_1250` variant (new submit
+`batch_cpu/submit_slam_delaunay1250_hst_numba_cpu_sparse`, 96gb, 8 cpus); its euclid
+test-mode witness also ran all five stages to `status: complete` (~3 min) before submission. The Cortex ledger closes 343143 / 343145 as finished and archived, and
+logs the six new runs.
+
+**Next.** Pull the rows when they land, commit them to the live tree, and compare the new
+per-stage walls against the archived ones — that ratio is the speedup, measured on the
+inference rather than on one likelihood call.
+
