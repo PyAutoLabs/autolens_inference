@@ -331,7 +331,21 @@ them.
 
 **Submitted** (RAL, from `hpc/batch_{gpu,cpu}/`, seeds 0–1 each):
 
-_(job ids follow once the submits are accepted)_
+| job | submit | partition | `--time` | state at +1 min |
+|---|---|---|---|---|
+| **350674**_[0-1] | `batch_gpu/submit_slam_hst_jax_gpu_dense` | `gpu` | 12 h | RUNNING, `euclid-ral-gpu-1`; A100 80GB in nvidia-smi, `source_lp[1]` started fresh |
+| **350675**_[0-1] | `batch_gpu/submit_slam_hst_jax_gpu_sparse` | `gpu` | 12 h | RUNNING, `euclid-ral-gpu-1`; A100, sparse operator set up |
+| **350678**_[0-1] | `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_dense` | `gpu` | 24 h | RUNNING, `euclid-ral-gpu-2`; A100 |
+| **350679**_[0-1] | `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_sparse` | `gpu` | 24 h | RUNNING, `euclid-ral-gpu-2`; A100, sparse operator set up |
+| **350682**_[0-1] | `batch_cpu/submit_slam_hst_numba_cpu_sparse` | `ral` | 5 d | RUNNING, `euclid-ral-compute-10-2`; Nautilus sampling `source_lp[1]` |
+
+`350682` is the first CPU leg of the parity row. Its config name is
+`hpc_a100_numba_cpu_sparse_fp64` — the `hpc_a100` "where" token names RAL, not the device —
+because that is what the submit has always written. Before submitting, the same leg ran
+end to end locally as a `PYAUTO_TEST_MODE=1` witness on the euclid cell (`--cores 4`): all
+five stages `completed`, `status: complete`, `use_jax: false`. The witness row was deleted
+and never committed. The Cortex ledger closes 343143 / 343145 as finished and archived, and
+logs the five new runs.
 
 **Next.** Pull the rows when they land, commit them to the live tree, and compare the new
 per-stage walls against the archived ones — that ratio is the speedup, measured on the
