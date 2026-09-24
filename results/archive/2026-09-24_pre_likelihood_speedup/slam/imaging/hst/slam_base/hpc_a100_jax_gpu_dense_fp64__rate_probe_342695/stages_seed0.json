@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "target": "hst/slam5/seed0",
+  "config_name": "hpc_a100_jax_gpu_dense_fp64",
+  "backend": "jax_gpu",
+  "inversion": "dense",
+  "precision": "fp64",
+  "instrument": "hst",
+  "dataset_class": "imaging",
+  "seed": 0,
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 2621 MiB, 81920 MiB"
+  },
+  "cores": 4,
+  "use_jax": true,
+  "rect_mesh": "bilinear",
+  "memo": "off",
+  "mesh_shape": [
+    28,
+    28
+  ],
+  "stages_requested": "source_lp",
+  "test_mode": false,
+  "status": "stopped_early",
+  "stages": [
+    {
+      "name": "source_lp[1]",
+      "free_parameters": 17,
+      "n_live": 200,
+      "n_batch": 50,
+      "wall_s": 855.3723487854004,
+      "total_wall_s": 1041.4455565372482,
+      "compile_s": 11.759456879924983,
+      "likelihood_evals": 93550,
+      "log_evidence": 31968.373315680932,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": 32068.952581889233,
+      "posterior": {
+        "galaxies.lens.bulge.profile_list.0.centre_0": {
+          "median": 0.00013882964952930326,
+          "sigma": 0.00022079567331118727,
+          "lower_1": -7.795055350320109e-05,
+          "upper_1": 0.00036364079311917345
+        },
+        "galaxies.lens.bulge.profile_list.0.centre_1": {
+          "median": -2.8904558197248365e-05,
+          "sigma": 0.00021715332685679563,
+          "lower_1": -0.00024021133106382324,
+          "upper_1": 0.00019409532264976805
+        },
+        "galaxies.lens.bulge.profile_list.0.ell_comps_0": {
+          "median": 0.04209752996451113,
+          "sigma": 0.0809871678115365,
+          "lower_1": -0.04083790108690556,
+          "upper_1": 0.12113643453616744
+        },
+        "galaxies.lens.bulge.profile_list.0.ell_comps_1": {
+          "median": 0.0912251506727394,
+          "sigma": 0.16881322417070774,
+          "lower_1": -0.12498015498691048,
+          "upper_1": 0.212646293354505
+        },
+        "galaxies.lens.bulge.profile_list.20.ell_comps_0": {
+          "median": 0.05245959687559936,
+          "sigma": 0.0022046410067881085,
+          "lower_1": 0.05006853082082759,
+          "upper_1": 0.05447781283440381
+        },
+        "galaxies.lens.bulge.profile_list.20.ell_comps_1": {
+          "median": -0.0019378583407990606,
+          "sigma": 0.005096152405066287,
+          "lower_1": -0.006024296508881658,
+          "upper_1": 0.004168008301250917
+        },
+        "galaxies.source.bulge.profile_list.0.centre_0": {
+          "median": -0.0003082459302901089,
+          "sigma": 0.00022716170435702009,
+          "lower_1": -0.0005317158653739457,
+          "upper_1": -7.73924566599055e-05
+        },
+        "galaxies.source.bulge.profile_list.0.centre_1": {
+          "median": -0.00026936950259433864,
+          "sigma": 0.00020341279065880672,
+          "lower_1": -0.00047262244198407105,
+          "upper_1": -6.579686066645762e-05
+        },
+        "galaxies.source.bulge.profile_list.0.ell_comps_0": {
+          "median": 0.09754245804139765,
+          "sigma": 0.0020459794865402697,
+          "lower_1": 0.09551567263815622,
+          "upper_1": 0.09960763161123676
+        },
+        "galaxies.source.bulge.profile_list.0.ell_comps_1": {
+          "median": -0.05584462724230999,
+          "sigma": 0.0019018791293077333,
+          "lower_1": -0.057797296227140305,
+          "upper_1": -0.05399353796852484
+        },
+        "galaxies.lens.mass.centre_0": {
+          "median": -7.3101993217768e-05,
+          "sigma": 0.00028727374257408816,
+          "lower_1": -0.0003575645761629297,
+          "upper_1": 0.00021698290898524667
+        },
+        "galaxies.lens.mass.centre_1": {
+          "median": -0.00020490622759399859,
+          "sigma": 0.00026219208347577763,
+          "lower_1": -0.0004613111056668821,
+          "upper_1": 6.307306128467312e-05
+        },
+        "galaxies.lens.mass.ell_comps_0": {
+          "median": 0.05274464994664577,
+          "sigma": 0.0006080853076976048,
+          "lower_1": 0.05215143321275345,
+          "upper_1": 0.05336760382814866
+        },
+        "galaxies.lens.mass.ell_comps_1": {
+          "median": 0.0003963695500667964,
+          "sigma": 0.0009313837461711766,
+          "lower_1": -0.000525595129881913,
+          "upper_1": 0.0013371723624604403
+        },
+        "einstein_radius": {
+          "median": 1.600430536499548,
+          "sigma": 0.00019536429087796403,
+          "lower_1": 1.600228782817256,
+          "upper_1": 1.6006195113990118
+        },
+        "gamma_1": {
+          "median": 0.0500213276687916,
+          "sigma": 0.0003691627904977915,
+          "lower_1": 0.049644736982510825,
+          "upper_1": 0.05038306256350641
+        },
+        "gamma_2": {
+          "median": 0.05011281267247789,
+          "sigma": 0.0003326620505857171,
+          "lower_1": 0.049786861519693776,
+          "upper_1": 0.05045218562086521
+        },
+        "shear_magnitude": {
+          "median": 0.07080256784111373,
+          "sigma": 0.00035478171653022944,
+          "lower_1": 0.07045384371122906,
+          "upper_1": 0.07116340714428952
+        }
+      },
+      "truth_delta_sigma": {
+        "einstein_radius": 2.203762507534026,
+        "gamma_1": 0.057773072857210464,
+        "gamma_2": 0.3391209555741652,
+        "shear_magnitude": 0.2590035454973506
+      },
+      "inversion_applies": false,
+      "positions_info_present": false,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/autolens_inference/output/slam/imaging/hst/hpc_a100_jax_gpu_dense_fp64/seed_0/source_lp[1]/d1fdbb302c71c6c400dee0e4d2e8026c"
+    }
+  ]
+}

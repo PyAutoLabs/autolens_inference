@@ -320,3 +320,36 @@ def test_a_failed_row_is_skipped_too(monkeypatch, tmp_path):
     _point_renderer_at(monkeypatch, tmp_path, slam_root)
 
     assert "No pipeline runs yet" in build_readme.render_slam()
+
+
+def test_archived_rows_are_never_live_rows(monkeypatch, tmp_path):
+    """``results/archive/`` holds superseded rows kept for the record (the
+    pre-likelihood-speedup A100 legs, 2026-09-24). The renderer scans
+    ``results/slam/`` and ``results/searches/`` only, so an archived row — even
+    a complete one at a full variant/config path — must never reach the
+    dashboard or a parity view."""
+    live = _write_results(
+        tmp_path,
+        _payload(REFERENCE_CONFIG, "jax_cpu", "dense", REFERENCE_POSTERIOR, variant="slam_base"),
+    )
+    archived = tmp_path / "results" / "archive" / "2026-09-24_pre_likelihood_speedup"
+    archived_row = archived / "slam" / "imaging" / "hst" / "slam_base" / OTHER_CONFIG
+    archived_row.mkdir(parents=True)
+    (archived_row / "stages_seed0.json").write_text(
+        json.dumps(
+            _payload(
+                OTHER_CONFIG,
+                "numba_cpu",
+                "sparse",
+                OTHER_POSTERIOR,
+                variant="slam_base",
+                status="complete",
+            )
+        )
+    )
+    _point_renderer_at(monkeypatch, tmp_path, live)
+    monkeypatch.setattr(build_readme, "SEARCHES_ROOT", tmp_path / "results" / "searches")
+
+    assert {row["config_name"] for row in build_readme._scan_rows(live)} == {REFERENCE_CONFIG}
+    assert OTHER_CONFIG not in build_readme.render_slam()
+    assert build_readme._scan_rows(tmp_path / "results" / "searches") == []
