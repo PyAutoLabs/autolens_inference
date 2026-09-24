@@ -23,7 +23,7 @@ interferometer and point-source data.
 
 ## Where we are
 
-**2026-09-24 — every existing SLaM HST row is archived; the A100 legs and the numba-CPU sparse leg are
+**2026-09-24 — every existing SLaM HST row is archived; the A100 legs and the numba-CPU sparse legs (both variants) are
 re-running on the sped-up library mains.** The four `slam_base` and four `delaunay_1250` A100 rows (plus the
 `342695` rate-probe row) were measured before the autolens_profiling likelihood speedups
 landed, so they now describe code nobody runs. They live on, unchanged, under
@@ -338,14 +338,17 @@ them.
 | **350678**_[0-1] | `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_dense` | `gpu` | 24 h | RUNNING, `euclid-ral-gpu-2`; A100 |
 | **350679**_[0-1] | `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_sparse` | `gpu` | 24 h | RUNNING, `euclid-ral-gpu-2`; A100, sparse operator set up |
 | **350682**_[0-1] | `batch_cpu/submit_slam_hst_numba_cpu_sparse` | `ral` | 5 d | RUNNING, `euclid-ral-compute-10-2`; Nautilus sampling `source_lp[1]` |
+| **350684**_[0-1] | `batch_cpu/submit_slam_delaunay1250_hst_numba_cpu_sparse` | `ral` | 5 d | RUNNING, `euclid-ral-compute-10-2` / `euclid-ral-compute-1`; added after the first five, same day |
 
 `350682` is the first CPU leg of the parity row. Its config name is
 `hpc_a100_numba_cpu_sparse_fp64` — the `hpc_a100` "where" token names RAL, not the device —
 because that is what the submit has always written. Before submitting, the same leg ran
 end to end locally as a `PYAUTO_TEST_MODE=1` witness on the euclid cell (`--cores 4`): all
 five stages `completed`, `status: complete`, `use_jax: false`. The witness row was deleted
-and never committed. The Cortex ledger closes 343143 / 343145 as finished and archived, and
-logs the five new runs.
+and never committed. `350684` is the same leg on the `delaunay_1250` variant (new submit
+`batch_cpu/submit_slam_delaunay1250_hst_numba_cpu_sparse`, 96gb, 8 cpus); its euclid
+test-mode witness also ran all five stages to `status: complete` (~3 min) before submission. The Cortex ledger closes 343143 / 343145 as finished and archived, and
+logs the six new runs.
 
 **Next.** Pull the rows when they land, commit them to the live tree, and compare the new
 per-stage walls against the archived ones — that ratio is the speedup, measured on the
