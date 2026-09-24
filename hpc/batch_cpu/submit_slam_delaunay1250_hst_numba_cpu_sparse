@@ -1,0 +1,89 @@
+#!/bin/bash -l
+#
+# SLaM Delaunay-1250 variant on HST — the numba_cpu leg, sparse inversion, seeds 0-1, on the
+# RAL CPU partition.
+#
+# This is the `delaunay_1250` run VARIANT, not another backend of the base run: the two
+# pixelized source stages are `al.mesh.Delaunay` at 1250 Hilbert-drawn vertices (plus a
+# 30-point zeroed edge ring) under the `AdaptSplit` class, where `slam_base` runs a 28x28
+# (784-cell) adaptive rectangular mesh under `reg.Adapt`. Its rows sit beside the A100
+# Delaunay legs in the variant's own parity row, never in the base run's.
+# There is NO `cpu` partition on RAL — this is `--partition=ral`; a submit that asks for
+# `cpu` is rejected by SLURM.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This submit runs ONE cell, `imaging/slam/hst_delaunay`, all five stages of it, and it
+#   declares itself `unmeasured` on purpose. Nothing has ever been measured on this cell on
+#   a CPU: the only numba_cpu rate is 0.06831 s/eval for `source_lp[1]` of the RECTANGULAR
+#   cell, measured on a LAPTOP (wall/rates.py, device `laptop_numba_cpu`), and neither the
+#   cell nor the device matches, so this submit cannot cite it even by accident.
+#   `steps:` below is a FLOOR, not an estimate, and it is the chain's floor rather than this
+#   mesh's: 128 evaluations per live point on `source_lp[1]` x the chain's 725 live points
+#   (200+150+75+150+150) = 92800 evaluations. No `wall:` is offered.
+#   `--time` below is a CONTAINMENT, the same 5 days as the rectangular numba leg, sized
+#   against that floor and the partition's 27-day limit, not a derived budget. The first arm
+#   of this submit IS the probe: read its `stages[*].wall_s / stages[*].likelihood_evals`
+#   out of the result row and replace this block with `source: measured-wall`.
+#   Witnessed 2026-09-24 before submission: this exact leg (`--backend numba_cpu
+#   --inversion sparse`) ran all five stages to `status: complete` on the euclid cell under
+#   PYAUTO_TEST_MODE on the laptop (~3 min), on the post-speedup library mains.
+#   cell: imaging/slam/hst_delaunay  device: ral_numba_cpu  precision: fp64
+#   lanes: 1  steps: 92800  source: unmeasured  probe-first: yes
+#
+#SBATCH -J slam_delaunay1250_hst_numba_cpu_sparse
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96gb
+#SBATCH --time=5-00:00:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/autolens_inference
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=True
+export NUMBA_CACHE_DIR=/tmp/numba_cache
+export MPLCONFIGDIR=/tmp/matplotlib
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# PYAUTO_DISABLE_JAX is the belt to use_jax=False's braces on a numba leg; it is not a
+# substitute for the --backend numba_cpu flag, because it does not change what an Analysis
+# reports about itself.
+export PYAUTO_DISABLE_JAX=1
+
+# --mem=96gb matches the A100 Delaunay legs: no CPU measurement of this cell exists, and the
+# Delaunay smoke's peak RSS (9.3 GB dense / 6.5 GB sparse on the smaller euclid cell) plus
+# the mesh's 1.6x pixel count over the rectangular leg leave 64gb with too thin a margin for
+# a five-day job. --cpus-per-task=8 matches them too.
+
+echo "=========================================="
+date
+echo "Cell:       imaging/slam/hst_delaunay"
+echo "Instrument: hst"
+echo "Variant:    delaunay_1250"
+echo "Config:     hpc_a100_numba_cpu_sparse_fp64"
+echo "Seed:       $SLURM_ARRAY_TASK_ID"
+
+cd $AP_ROOT
+
+# One seed per array task; the seed reaches the result filename and the output tree, and the
+# config name + variant live in the path_prefix so no two legs share a PyAutoFit identifier.
+# --mesh-pixels 1250 is the leaf's own default, passed so this file states what it runs.
+python3 scripts/imaging/slam/hst_delaunay.py \
+    --instrument hst \
+    --backend numba_cpu \
+    --inversion sparse \
+    --mesh-pixels 1250 \
+    --seed $SLURM_ARRAY_TASK_ID \
+    --config-name hpc_a100_numba_cpu_sparse_fp64 \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date
