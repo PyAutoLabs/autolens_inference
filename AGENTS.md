@@ -196,6 +196,10 @@ writable dirs:
 NUMBA_CACHE_DIR=/tmp/numba_cache MPLCONFIGDIR=/tmp/matplotlib python3 scripts/misc/simulators/imaging.py
 ```
 
+This is for local / sandboxed runs only. On RAL, never point caches at `/tmp` or `$HOME`
+(both are the node's small root disk): `activate.sh` already sends every cache variable under
+`/mnt/ral/jnightin/.cache` (`$PYAUTO_HPC_CACHE`), so submit scripts set none of them.
+
 ## Bulk-edit safety
 
 When editing the same region across many scripts in one pass, only rewrite the targeted

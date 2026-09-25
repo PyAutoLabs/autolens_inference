@@ -176,7 +176,13 @@ its config name claims:
 | `JAX_ENABLE_X64=True` | without it, an `fp64` config runs in fp32 |
 | `NPROC=$SLURM_CPUS_PER_TASK` | `NPROC` throttles JAX's CPU thread pool; unset, a job takes the whole node |
 | `XLA_PYTHON_CLIENT_PREALLOCATE=false` (GPU) | stops XLA grabbing the whole card up front |
-| `NUMBA_CACHE_DIR` / `MPLCONFIGDIR` | compute nodes cannot write the default cache locations |
+
+Cache locations (`NUMBA_CACHE_DIR`, `MPLCONFIGDIR`, `XDG_CACHE_HOME`, `PIP_CACHE_DIR`,
+`JAX_COMPILATION_CACHE_DIR`, CUDA/Triton, astropy) are **not** a submit's job: `activate.sh`
+points every unset one under `/mnt/ral/jnightin/.cache` (`$PYAUTO_HPC_CACHE`). Never send
+them to `$HOME` or `/tmp` — on RAL both sit on each node's small root disk, and filling it
+breaks the node (RAL admin, 2026-09-25). A submit may still set its own
+`JAX_COMPILATION_CACHE_DIR` (it wins; an empty value disables the cache).
 
 `PYAUTO_DISABLE_JAX` is deliberately **left to the script**, not set by the template: it
 is process-wide and belongs next to the `--backend numba_cpu` flag that motivates it.

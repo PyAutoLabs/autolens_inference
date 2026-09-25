@@ -58,6 +58,26 @@ BASE=/mnt/ral/jnightin/PyAuto
 
 source "$BASE/PyAuto/bin/activate"
 
+# --- Keep caches OFF $HOME on HPC -------------------------------------------
+# On RAL every node's /home sits on a small root disk (as does /tmp), so tools that
+# default to ~/.cache — the PyAutoNerves JAX compile cache (~/.cache/pyauto_jax), pip,
+# matplotlib, numba, CUDA/Triton kernels — fill it and break the node (RAL admin,
+# 2026-09-25). Send them to the shared project filesystem instead: the cache root sits
+# next to the PyAuto base, i.e. /mnt/ral/jnightin/.cache. Only unset variables are
+# filled, so a submit script's own JAX_COMPILATION_CACHE_DIR still wins (and an
+# explicitly EMPTY one still disables the JAX cache). The `|| true` keeps a failed
+# mkdir from tripping the SLURM `set -eE` guard above.
+export PYAUTO_HPC_CACHE="${PYAUTO_HPC_CACHE:-$(dirname "${PYAUTO_HPC_BASE:-$BASE}")/.cache}"
+mkdir -p "$PYAUTO_HPC_CACHE" 2>/dev/null || true
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$PYAUTO_HPC_CACHE}"
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$PYAUTO_HPC_CACHE/pip}"
+export MPLCONFIGDIR="${MPLCONFIGDIR:-$PYAUTO_HPC_CACHE/matplotlib}"
+export NUMBA_CACHE_DIR="${NUMBA_CACHE_DIR:-$PYAUTO_HPC_CACHE/numba}"
+export CUDA_CACHE_PATH="${CUDA_CACHE_PATH:-$PYAUTO_HPC_CACHE/nv}"
+export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$PYAUTO_HPC_CACHE/triton}"
+export JAX_COMPILATION_CACHE_DIR="${JAX_COMPILATION_CACHE_DIR-$PYAUTO_HPC_CACHE/pyauto_jax}"
+export ASTROPY_CACHE_DIR="${ASTROPY_CACHE_DIR:-$PYAUTO_HPC_CACHE/astropy}"
+
 export PYTHONPATH=$BASE:\
 $BASE/PyAutoNerves:\
 $BASE/PyAutoFit:\

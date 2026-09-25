@@ -70,8 +70,6 @@ export JAX_PLATFORM_NAME=cuda
 export JAX_PLATFORMS=cuda,cpu
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_ENABLE_X64=True
-export NUMBA_CACHE_DIR=/tmp/numba_cache
-export MPLCONFIGDIR=/tmp/matplotlib
 
 # NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
 export NPROC=$SLURM_CPUS_PER_TASK

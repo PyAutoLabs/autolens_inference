@@ -47,8 +47,6 @@ source $AP_ROOT/activate.sh
 
 export JAX_PLATFORMS=cpu
 export JAX_ENABLE_X64=True
-export NUMBA_CACHE_DIR=/tmp/numba_cache
-export MPLCONFIGDIR=/tmp/matplotlib
 
 # NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
 export NPROC=$SLURM_CPUS_PER_TASK
