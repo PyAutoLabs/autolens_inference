@@ -1,0 +1,64 @@
+#!/bin/bash -l
+#
+# Nautilus search on the simple point source, source-plane solved χ² — the SEED SPREAD of
+# the admission-bar measurement, seeds 1-4 (seed 0 is the probe,
+# `submit_search_nautilus_simple_source_plane_probe`, RAL job 366937), so the five rows
+# are seeds 0-4. Re-running seed 0 here would resume the probe's completed fit and
+# overwrite its row, which is why the array starts at 1. jax_cpu, 8 CPUs.
+#
+# Partition, config name and `--inversion dense`: exactly as the probe submit — `gpu`
+# partition WITHOUT --gres, pinned to euclid-ral-gpu-2, `hpc_a100_jax_cpu_dense_fp64`
+# (the jax CPU backend on the RAL A100 host); a point source has no inversion.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   Measured on this cell by the probe, RAL job 366937 (2026-09-28, euclid-ral-gpu-2,
+#   8 CPUs): 139 s of job wall (sacct Elapsed 00:02:19, which includes the auto-simulate,
+#   the admission-bar timing and the fit; the sampler's own wall_s was 56.6 s for 4,850
+#   evaluations). Other seeds draw different live points, so --time leaves far more than
+#   the 1.25x floor. `%1` runs the four arms one at a time, so no arm times its per-call
+#   cost while another shares the node.
+#   cell: point_source/searches/nautilus/simple_source_plane  device: ral_jax_cpu  precision: fp64
+#   lanes: 1  steps: 5000  source: measured-wall  wall: 139  ref: RAL-job-366937
+#
+#SBATCH -J ps_nautilus_seeds
+#SBATCH --partition=gpu
+#SBATCH --nodelist=euclid-ral-gpu-2
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16gb
+#SBATCH --time=0:30:00
+#SBATCH --array=1-4%1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+
+# AP_ROOT defaults to the RAL clone; a branch worktree is run by exporting it at submit
+# (`sbatch --export=ALL,AP_ROOT=<worktree> ...`).
+export AP_ROOT=${AP_ROOT:-/mnt/ral/jnightin/autolens_inference}
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=True
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+echo "=========================================="
+date
+hostname
+echo "Cell:       point_source/searches/nautilus/simple_source_plane"
+echo "Instrument: simple"
+echo "Config:     hpc_a100_jax_cpu_dense_fp64"
+echo "Seed:       $SLURM_ARRAY_TASK_ID"
+
+cd $AP_ROOT
+
+python3 scripts/point_source/searches/nautilus/simple_source_plane.py \
+    --instrument simple \
+    --backend jax_cpu \
+    --inversion dense \
+    --seed $SLURM_ARRAY_TASK_ID \
+    --config-name hpc_a100_jax_cpu_dense_fp64 \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date
