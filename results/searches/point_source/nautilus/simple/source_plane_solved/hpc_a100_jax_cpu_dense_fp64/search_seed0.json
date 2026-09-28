@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "target": "simple/source_plane_solved/seed0",
+  "sampler": "nautilus",
+  "variant": "source_plane_solved",
+  "model": "L5: Isothermal (5 free) + PointSolved source",
+  "fit_positions_cls": "FitPositionsSourceSolved",
+  "priors": {
+    "einstein_radius": "U(0.5, 4.0)",
+    "others": "library-default Isothermal priors"
+  },
+  "config_name": "hpc_a100_jax_cpu_dense_fp64",
+  "backend": "jax_cpu",
+  "inversion": "dense",
+  "precision": "fp64",
+  "instrument": "simple",
+  "dataset_class": "point_source",
+  "seed": 0,
+  "version": "2026.8.17.1",
+  "library_revisions": {
+    "autonerves": "bf10410",
+    "autofit": "404b3e5f7",
+    "autoarray": "9428eca2",
+    "autogalaxy": "c9609825",
+    "autolens": "21b520be4"
+  },
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124
+  },
+  "host": "euclid-ral-gpu-2",
+  "slurm_job_id": "366937",
+  "slurm_array_job_id": null,
+  "slurm_array_task_id": null,
+  "cores": 8,
+  "use_jax": true,
+  "test_mode": false,
+  "status": "complete",
+  "free_parameters": 5,
+  "n_live": 100,
+  "n_batch": 50,
+  "wall_s": 56.56000781059265,
+  "total_wall_s": 65.21035292901797,
+  "compile_s": 1.9011598539655097,
+  "likelihood_evals": 4850,
+  "log_evidence": -7.153937371523832,
+  "log_evidence_err": null,
+  "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+  "max_log_likelihood": 16.48568552789147,
+  "posterior": {
+    "centre_0": {
+      "median": -0.017453424264998282,
+      "sigma": 0.025797484788372172,
+      "lower_1": -0.04216816245874099,
+      "upper_1": 0.00942680711800335
+    },
+    "centre_1": {
+      "median": -0.018067299498348146,
+      "sigma": 0.025791414665263836,
+      "lower_1": -0.04336377661022216,
+      "upper_1": 0.00821905272030551
+    },
+    "ell_comps_0": {
+      "median": 0.06559594956905983,
+      "sigma": 0.01762818058418965,
+      "lower_1": 0.047688746799381704,
+      "upper_1": 0.082945107967761
+    },
+    "ell_comps_1": {
+      "median": 2.4804878302780597e-05,
+      "sigma": 0.00022114345613303182,
+      "lower_1": -0.00019838121507798336,
+      "upper_1": 0.0002439056971880803
+    },
+    "einstein_radius": {
+      "median": 1.6056260743312727,
+      "sigma": 0.01115243788494824,
+      "lower_1": 1.5945063508229387,
+      "upper_1": 1.6168112265928352
+    }
+  },
+  "truth_delta_sigma": {
+    "centre_0": -0.6765552691735727,
+    "centre_1": -0.7005160334489673,
+    "ell_comps_0": 0.7354344119505386,
+    "ell_comps_1": 0.112166458535656,
+    "einstein_radius": 0.5044703578995735
+  },
+  "inversion_applies": false,
+  "positions_info_present": false,
+  "completed": true,
+  "resumed": false,
+  "output_path": "searches/point_source/nautilus/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_0/nautilus/b39f17cc6d57dba03e090e4d9682ce2b",
+  "log_likelihood_at_truth": 15.902398430038737,
+  "truths": {
+    "centre_0": 0.0,
+    "centre_1": 0.0,
+    "ell_comps_0": 0.05263157894736841,
+    "ell_comps_1": 3.2227547345982974e-18,
+    "einstein_radius": 1.6
+  },
+  "per_call_s": 4.723259480670094e-06,
+  "per_call_basis": "batched_vmap",
+  "per_batch_s": 0.00023616297403350472,
+  "per_call_single_s": 0.0002068985195364803,
+  "compile_single_s": 1.3180420650169253,
+  "likelihood_s": 0.02290780848124996,
+  "overhead_s": 56.5371000021114,
+  "likelihood_share": 0.00040501777436034486,
+  "likelihood_share_single": 0.017741472439542348,
+  "timing": {
+    "compile_s": 1.9011598539655097,
+    "batched": {
+      "median_s": 0.00023616297403350472,
+      "p16_s": 0.00021696899784728885,
+      "p84_s": 0.00025908800307661295,
+      "min_s": 0.00019111903384327888,
+      "n": 200,
+      "warmup": 10
+    },
+    "compile_single_s": 1.3180420650169253,
+    "single": {
+      "median_s": 0.0002068985195364803,
+      "p16_s": 0.00019189901649951935,
+      "p84_s": 0.00022341799922287464,
+      "min_s": 0.00016070902347564697,
+      "n": 200,
+      "warmup": 10
+    },
+    "vector": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      2.25
+    ]
+  }
+}
