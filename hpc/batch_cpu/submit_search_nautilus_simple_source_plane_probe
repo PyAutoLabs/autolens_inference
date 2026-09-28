@@ -1,0 +1,67 @@
+#!/bin/bash -l
+#
+# Nautilus search on the simple point source, source-plane solved χ² — the ONE-SEED PROBE
+# (seed 0) of the admission-bar measurement, jax_cpu, 8 CPUs.
+#
+# Partition: `gpu`, WITHOUT --gres, pinned to euclid-ral-gpu-2. The `ral` CPU partition has
+# been saturated for days, and an A100 node's CPUs with no GPU requested are a quiet,
+# dedicated 8-core allocation. That is also why the config name is `hpc_a100_jax_cpu_...`:
+# it is literally the jax CPU backend on the RAL A100 host (the grammar's `where` field
+# names the host, the backend field names what ran), exactly as the existing
+# `submit_slam_hst_jax_cpu_*` legs name their RAL CPU runs. JAX_PLATFORMS=cpu is exported
+# below, and the leaf refuses nothing here because it never asks for a GPU.
+#
+# `--inversion dense` is carried only because the config-name grammar has the field: a
+# point source has no inversion, and the leaf accepts only `dense` (the row records
+# `inversion_applies: false`).
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   Nothing has been measured on this cell on RAL. One local laptop run (2026-09-28,
+#   DESKTOP-H143S82, 8 cores) took 51 s of sampler wall for 4,850 evaluations; a laptop is
+#   not a RAL node, so it is not cited as a wall — this probe IS the measurement, and its
+#   row's `wall_s` becomes the `measured-wall` basis of the seed-spread submit
+#   (`submit_search_nautilus_simple_source_plane_seeds`). `--time` below is containment.
+#   cell: point_source/searches/nautilus/simple_source_plane  device: ral_jax_cpu  precision: fp64
+#   lanes: 1  steps: 5000  source: unmeasured  probe-first: yes
+#
+#SBATCH -J ps_nautilus_probe
+#SBATCH --partition=gpu
+#SBATCH --nodelist=euclid-ral-gpu-2
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16gb
+#SBATCH --time=1:00:00
+#SBATCH -o output/output.%j.out
+#SBATCH -e error/error.%j.err
+
+# AP_ROOT defaults to the RAL clone; a branch worktree is run by exporting it at submit
+# (`sbatch --export=ALL,AP_ROOT=<worktree> ...`).
+export AP_ROOT=${AP_ROOT:-/mnt/ral/jnightin/autolens_inference}
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=True
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+echo "=========================================="
+date
+hostname
+echo "Cell:       point_source/searches/nautilus/simple_source_plane"
+echo "Instrument: simple"
+echo "Config:     hpc_a100_jax_cpu_dense_fp64"
+echo "Seed:       0"
+
+cd $AP_ROOT
+
+python3 scripts/point_source/searches/nautilus/simple_source_plane.py \
+    --instrument simple \
+    --backend jax_cpu \
+    --inversion dense \
+    --seed 0 \
+    --config-name hpc_a100_jax_cpu_dense_fp64 \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date

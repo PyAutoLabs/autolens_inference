@@ -24,7 +24,8 @@ Regions covered today
     Pipeline runs, scanned from ``results/slam/**/*.json``.
 
 ``searches``
-    Single-search runs, scanned from ``results/searches/**/*.json``.
+    Single-search runs, scanned from ``results/searches/**/*.json``, with the
+    admission-bar columns ``per_call_s`` and ``likelihood_share``.
 
 Both render a one-line empty state when nothing has been run yet, which is the
 state this repo was born in — the renderer is deliberately correct on an empty
@@ -46,6 +47,9 @@ failing the build:
     sampler         nautilus / prodigy / nuts / ... (searches only)
     stage           pipeline stage name (slam only)
     wall_s          total wall-clock seconds
+    likelihood_evals the sampler's reject-inclusive evaluation count
+    per_call_s      steady-state seconds per likelihood evaluation (searches only)
+    likelihood_share per_call_s * likelihood_evals / wall_s (searches only)
     log_evidence    the search's log evidence, when it reports one
     version         the PyAutoLens version that produced the row
 
@@ -446,9 +450,51 @@ def render_slam() -> str:
     return table + _render_parity(rows)
 
 
+def _format_per_call(seconds) -> str:
+    """A per-evaluation cost, in the unit that keeps it readable (µs / ms / s)."""
+    if not isinstance(seconds, (int, float)) or isinstance(seconds, bool):
+        return "—"
+    if math.isnan(seconds):
+        return "—"
+    if seconds < 1e-3:
+        return f"{seconds * 1e6:.1f} µs"
+    if seconds < 1:
+        return f"{seconds * 1e3:.2f} ms"
+    return f"{seconds:.2f} s"
+
+
+def _format_share(value) -> str:
+    """The likelihood's share of the sampler wall clock, as a percentage."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return "—"
+    if math.isnan(value):
+        return "—"
+    if value < 0.001:
+        return f"{value * 100:.3f}%"
+    return f"{value * 100:.1f}%"
+
+
+def _search_sort_key(row: dict) -> tuple:
+    seed = row.get("seed")
+    return (
+        str(row.get("target", "")).rsplit("/seed", 1)[0],
+        str(row.get("sampler", "")),
+        str(row.get("config_name", "")),
+        seed if isinstance(seed, int) else 10**9,
+    )
+
+
 def render_searches() -> str:
-    """Single-search runs — one line per (target, sampler, config)."""
-    rows = _scan_rows(SEARCHES_ROOT)
+    """Single-search runs — one line per (target, sampler, config, seed).
+
+    Only ``complete`` rows render (see :func:`_is_complete`). ``Per call`` and
+    ``Share`` are the admission bar: the steady-state cost of one likelihood
+    evaluation as the sampler makes it, and that cost times the evaluation count
+    as a fraction of the sampler's wall clock (defined in
+    ``scripts/misc/searches/_point_runner.py``). A row that predates them
+    renders an em dash.
+    """
+    rows = [row for row in _scan_rows(SEARCHES_ROOT) if _is_complete(row)]
     if not rows:
         return _empty("No search runs yet — results land under `results/searches/`.")
     body = [
@@ -457,14 +503,30 @@ def render_searches() -> str:
             _cell(row.get("sampler")),
             _cell(row.get("instrument")),
             f"`{_cell(row.get('config_name'))}`",
+            _cell(row.get("seed")),
             _format_time(row.get("wall_s")),
+            _format_evals(row.get("likelihood_evals")),
+            _format_per_call(row.get("per_call_s")),
+            _format_share(row.get("likelihood_share")),
             _format_evidence(row.get("log_evidence")),
             _cell(row.get("version")),
         ]
-        for row in sorted(rows, key=lambda r: _sort_key(r, "sampler"))
+        for row in sorted(rows, key=_search_sort_key)
     ]
     return _render_table(
-        ["Target", "Sampler", "Instrument", "Config", "Wall", "Log evidence", "Version"],
+        [
+            "Target",
+            "Sampler",
+            "Instrument",
+            "Config",
+            "Seed",
+            "Wall",
+            "Evals",
+            "Per call",
+            "Share",
+            "Log evidence",
+            "Version",
+        ],
         body,
     )
 
