@@ -3,30 +3,20 @@
 # Nautilus search on the simple point source, source-plane solved χ² — the ONE-SEED PROBE
 # (seed 0) of the admission-bar measurement, jax_cpu, 8 CPUs.
 #
-# Partition: `gpu`, WITHOUT --gres, pinned to euclid-ral-gpu-2. The `ral` CPU partition has
-# been saturated for days, and an A100 node's CPUs with no GPU requested are a quiet,
-# dedicated 8-core allocation. That is also why the config name is `hpc_a100_jax_cpu_...`:
-# it is literally the jax CPU backend on the RAL A100 host (the grammar's `where` field
-# names the host, the backend field names what ran), exactly as the existing
-# `submit_slam_hst_jax_cpu_*` legs name their RAL CPU runs. JAX_PLATFORMS=cpu is exported
-# below, and the leaf refuses nothing here because it never asks for a GPU.
-#
-# `--inversion dense` is carried only because the config-name grammar has the field: a
-# point source has no inversion, and the leaf accepts only `dense` (the row records
-# `inversion_applies: false`).
+# CPU runs use `ral` (human rule 2026-09-30). Historical rows from jobs 366937
+# and 367140 used the CPU on euclid-ral-gpu-2 before that rule; preserve their
+# provenance. The legacy config token hpc_a100 names RAL in this repo's grammar,
+# while jax_cpu names the device. A point source has no inversion.
+# Run in a fresh output/results root to avoid resuming or replacing those rows.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   Nothing has been measured on this cell on RAL. One local laptop run (2026-09-28,
-#   DESKTOP-H143S82, 8 cores) took 51 s of sampler wall for 4,850 evaluations; a laptop is
-#   not a RAL node, so it is not cited as a wall — this probe IS the measurement, and its
-#   row's `wall_s` becomes the `measured-wall` basis of the seed-spread submit
-#   (`submit_search_nautilus_simple_source_plane_seeds`). `--time` below is containment.
+#   The existing EPYC gpu-node rows are not a measured wall basis for a new
+#   ral-partition host. Probe there before a new seed spread; --time is containment.
 #   cell: point_source/searches/nautilus/simple_source_plane  device: ral_jax_cpu  precision: fp64
 #   lanes: 1  steps: 5000  source: unmeasured  probe-first: yes
 #
 #SBATCH -J ps_nautilus_probe
-#SBATCH --partition=gpu
-#SBATCH --nodelist=euclid-ral-gpu-2
+#SBATCH --partition=ral
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16gb

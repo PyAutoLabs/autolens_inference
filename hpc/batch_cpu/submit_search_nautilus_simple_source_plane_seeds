@@ -6,23 +6,20 @@
 # are seeds 0-4. Re-running seed 0 here would resume the probe's completed fit and
 # overwrite its row, which is why the array starts at 1. jax_cpu, 8 CPUs.
 #
-# Partition, config name and `--inversion dense`: exactly as the probe submit — `gpu`
-# partition WITHOUT --gres, pinned to euclid-ral-gpu-2, `hpc_a100_jax_cpu_dense_fp64`
-# (the jax CPU backend on the RAL A100 host); a point source has no inversion.
+# CPU runs use `ral` (human rule 2026-09-30). Historical rows from jobs 366937
+# and 367140 used the CPU on euclid-ral-gpu-2 before that rule; preserve their
+# provenance. The legacy config token hpc_a100 names RAL in this repo's grammar,
+# while jax_cpu names the device. A point source has no inversion.
+# Run in a fresh output/results root to avoid resuming or replacing those rows.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   Measured on this cell by the probe, RAL job 366937 (2026-09-28, euclid-ral-gpu-2,
-#   8 CPUs): 139 s of job wall (sacct Elapsed 00:02:19, which includes the auto-simulate,
-#   the admission-bar timing and the fit; the sampler's own wall_s was 56.6 s for 4,850
-#   evaluations). Other seeds draw different live points, so --time leaves far more than
-#   the 1.25x floor. `%1` runs the four arms one at a time, so no arm times its per-call
-#   cost while another shares the node.
+#   The existing EPYC gpu-node rows are not a measured wall basis for a new
+#   ral-partition host. Probe there before a new seed spread; --time is containment.
 #   cell: point_source/searches/nautilus/simple_source_plane  device: ral_jax_cpu  precision: fp64
-#   lanes: 1  steps: 5000  source: measured-wall  wall: 139  ref: RAL-job-366937
+#   lanes: 1  steps: 5000  source: unmeasured  probe-first: yes
 #
 #SBATCH -J ps_nautilus_seeds
-#SBATCH --partition=gpu
-#SBATCH --nodelist=euclid-ral-gpu-2
+#SBATCH --partition=ral
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16gb

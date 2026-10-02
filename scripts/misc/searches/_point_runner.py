@@ -26,9 +26,9 @@ count does, and a σ = 0.005" prior around the answer would measure a fit nobody
 runs. So this leaf takes the **library-default** ``Isothermal`` priors — the
 ones ``autolens_workspace/scripts/point_source/modeling.py`` fits with — with a
 single change: θ_E is bounded to ``U(0.5, 4.0)`` instead of the default
-``U(0, 8)``. The default range reaches a no-ring basin near 2.4" on this lens
-that has captured real fits; bounding it is a statement about which fit is being
-measured, not a hint towards the answer (the truth, 1.6", sits well inside).
+``U(0, 8)``. This records the chosen benchmark prior; it does not exclude the reported
+no-ring basin near 2.4", which remains within these bounds. The truth, 1.6",
+sits well inside the interval.
 
 Nautilus runs at the workspace ``modeling.py`` settings, ``n_live=100`` /
 ``n_batch=50``.
@@ -77,20 +77,21 @@ the fit. Every row therefore carries, beside the sampler's own ``wall_s`` and
     hands it; both are inside ``wall_s``.
 
 ``likelihood_share_single``
-    The same ratio with ``per_call_single_s`` — an over-estimate by
-    construction (the sampler never pays the single-point cost), written so the
-    verdict can be checked against its most pessimistic reading.
+    The same ratio with ``per_call_single_s``, recorded as an alternative
+    timing basis. It is not a proven upper bound across different batch lengths
+    and parameter vectors.
 
 ``likelihood_share``
-    ``per_call_s * likelihood_evals / wall_s``: the fraction of the sampler's
-    wall clock spent evaluating the likelihood at steady state. The rest —
+    ``per_call_s * likelihood_evals / wall_s``: an estimate of the sampler's
+    wall clock spent evaluating the likelihood at steady state. It uses a fixed
+    vector and batch size, rather than timing every evaluation in the fit. The rest —
     ``1 - likelihood_share`` — is sampler overhead (Nautilus's neural-network
     bound training and sampling, the Python per-batch wrapper, compiles,
     checkpointing, output). ``likelihood_s = per_call_s * likelihood_evals`` and
     ``overhead_s = wall_s - likelihood_s`` are written beside it.
 
-    Read it as an upper bound on what a likelihood speed-up can buy: a speed-up
-    of ``k`` on the likelihood shortens the fit by at most
+    Under this cost model and at unchanged evaluation count, a speed-up
+    of ``k`` on the likelihood would shorten the fit by approximately
     ``likelihood_share * (1 - 1/k)``.
 
 ``wall_s`` / ``likelihood_evals`` / ``log_evidence`` are read from
