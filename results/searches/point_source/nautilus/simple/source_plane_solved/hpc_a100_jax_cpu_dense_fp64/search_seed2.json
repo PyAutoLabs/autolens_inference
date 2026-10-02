@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "target": "simple/source_plane_solved/seed2",
+  "sampler": "nautilus",
+  "variant": "source_plane_solved",
+  "model": "L5: Isothermal (5 free) + PointSolved source",
+  "fit_positions_cls": "FitPositionsSourceSolved",
+  "priors": {
+    "einstein_radius": "U(0.5, 4.0)",
+    "others": "library-default Isothermal priors"
+  },
+  "config_name": "hpc_a100_jax_cpu_dense_fp64",
+  "backend": "jax_cpu",
+  "inversion": "dense",
+  "precision": "fp64",
+  "instrument": "simple",
+  "dataset_class": "point_source",
+  "seed": 2,
+  "version": "2026.8.17.1",
+  "library_revisions": {
+    "autonerves": "bf10410",
+    "autofit": "404b3e5f7",
+    "autoarray": "9428eca2",
+    "autogalaxy": "c9609825",
+    "autolens": "21b520be4"
+  },
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124
+  },
+  "host": "euclid-ral-gpu-2",
+  "slurm_job_id": "367445",
+  "slurm_array_job_id": "367140",
+  "slurm_array_task_id": "2",
+  "cores": 8,
+  "use_jax": true,
+  "test_mode": false,
+  "status": "complete",
+  "free_parameters": 5,
+  "n_live": 100,
+  "n_batch": 50,
+  "wall_s": 53.764665603637695,
+  "total_wall_s": 62.157571617048234,
+  "compile_s": 1.9320949129760265,
+  "likelihood_evals": 4800,
+  "log_evidence": -7.127663664789889,
+  "log_evidence_err": null,
+  "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+  "max_log_likelihood": 16.455195490792534,
+  "posterior": {
+    "centre_0": {
+      "median": -0.01645754209509627,
+      "sigma": 0.026327229074754138,
+      "lower_1": -0.044552537407693396,
+      "upper_1": 0.008101920741814879
+    },
+    "centre_1": {
+      "median": -0.017599982212707296,
+      "sigma": 0.02647169499234084,
+      "lower_1": -0.04601578011653029,
+      "upper_1": 0.006927609868151387
+    },
+    "ell_comps_0": {
+      "median": 0.06520642607572252,
+      "sigma": 0.01780926818936322,
+      "lower_1": 0.04839427588028559,
+      "upper_1": 0.08401281225901203
+    },
+    "ell_comps_1": {
+      "median": 3.450858016227866e-05,
+      "sigma": 0.00023448606435910046,
+      "lower_1": -0.00019188612196046327,
+      "upper_1": 0.00027708600675773766
+    },
+    "einstein_radius": {
+      "median": 1.6052381856951654,
+      "sigma": 0.011551766199159097,
+      "lower_1": 1.594529490192973,
+      "upper_1": 1.6176330225912912
+    }
+  },
+  "truth_delta_sigma": {
+    "centre_0": -0.6251148591584154,
+    "centre_1": -0.6648604185640387,
+    "ell_comps_0": 0.7060844384310287,
+    "ell_comps_1": 0.14716687005086895,
+    "einstein_radius": 0.4534532299958279
+  },
+  "inversion_applies": false,
+  "positions_info_present": false,
+  "completed": true,
+  "resumed": false,
+  "output_path": "searches/point_source/nautilus/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_2/nautilus/50fc5826cef9396f305df994ee3fc8c6",
+  "log_likelihood_at_truth": 15.902398430038737,
+  "truths": {
+    "centre_0": 0.0,
+    "centre_1": 0.0,
+    "ell_comps_0": 0.05263157894736841,
+    "ell_comps_1": 3.2227547345982974e-18,
+    "einstein_radius": 1.6
+  },
+  "per_call_s": 4.787669749930501e-06,
+  "per_call_basis": "batched_vmap",
+  "per_batch_s": 0.00023938348749652505,
+  "per_call_single_s": 0.0002106740139424801,
+  "compile_single_s": 1.3133752529975027,
+  "likelihood_s": 0.0229808147996664,
+  "overhead_s": 53.74168478883803,
+  "likelihood_share": 0.0004274334182432175,
+  "likelihood_share_single": 0.018808547501790555,
+  "timing": {
+    "compile_s": 1.9320949129760265,
+    "batched": {
+      "median_s": 0.00023938348749652505,
+      "p16_s": 0.00021848897449672222,
+      "p84_s": 0.0002651280374266207,
+      "min_s": 0.00018467899644747376,
+      "n": 200,
+      "warmup": 10
+    },
+    "compile_single_s": 1.3133752529975027,
+    "single": {
+      "median_s": 0.0002106740139424801,
+      "p16_s": 0.00018793897470459342,
+      "p84_s": 0.00023178901756182313,
+      "min_s": 0.00015419896226376295,
+      "n": 200,
+      "warmup": 10
+    },
+    "vector": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      2.25
+    ]
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "target": "simple/source_plane_solved/seed1",
+  "sampler": "nautilus",
+  "variant": "source_plane_solved",
+  "model": "L5: Isothermal (5 free) + PointSolved source",
+  "fit_positions_cls": "FitPositionsSourceSolved",
+  "priors": {
+    "einstein_radius": "U(0.5, 4.0)",
+    "others": "library-default Isothermal priors"
+  },
+  "config_name": "hpc_a100_jax_cpu_dense_fp64",
+  "backend": "jax_cpu",
+  "inversion": "dense",
+  "precision": "fp64",
+  "instrument": "simple",
+  "dataset_class": "point_source",
+  "seed": 1,
+  "version": "2026.8.17.1",
+  "library_revisions": {
+    "autonerves": "bf10410",
+    "autofit": "404b3e5f7",
+    "autoarray": "9428eca2",
+    "autogalaxy": "c9609825",
+    "autolens": "21b520be4"
+  },
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124
+  },
+  "host": "euclid-ral-gpu-2",
+  "slurm_job_id": "367142",
+  "slurm_array_job_id": "367140",
+  "slurm_array_task_id": "1",
+  "cores": 8,
+  "use_jax": true,
+  "test_mode": false,
+  "status": "complete",
+  "free_parameters": 5,
+  "n_live": 100,
+  "n_batch": 50,
+  "wall_s": 54.18134164810181,
+  "total_wall_s": 62.80253079999238,
+  "compile_s": 1.9216195569606498,
+  "likelihood_evals": 4850,
+  "log_evidence": -7.158348941897645,
+  "log_evidence_err": null,
+  "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+  "max_log_likelihood": 16.471893783907685,
+  "posterior": {
+    "centre_0": {
+      "median": -0.017285637201381637,
+      "sigma": 0.02993531121787803,
+      "lower_1": -0.04856937188459597,
+      "upper_1": 0.011301250551160087
+    },
+    "centre_1": {
+      "median": -0.018977019644291444,
+      "sigma": 0.029723460521518596,
+      "lower_1": -0.04927473815156828,
+      "upper_1": 0.010172182891468916
+    },
+    "ell_comps_0": {
+      "median": 0.06675091014973905,
+      "sigma": 0.019889650208944093,
+      "lower_1": 0.04638198418932514,
+      "upper_1": 0.08616128460721333
+    },
+    "ell_comps_1": {
+      "median": 2.46203758156711e-05,
+      "sigma": 0.00021289849021188594,
+      "lower_1": -0.00018779622671053593,
+      "upper_1": 0.00023800075371323593
+    },
+    "einstein_radius": {
+      "median": 1.6057568326663125,
+      "sigma": 0.012117262851364718,
+      "lower_1": 1.594870045945336,
+      "upper_1": 1.6191045716480654
+    }
+  },
+  "truth_delta_sigma": {
+    "centre_0": -0.5774330213429775,
+    "centre_1": -0.6384525661321582,
+    "ell_comps_0": 0.7098833339975671,
+    "ell_comps_1": 0.11564373139125879,
+    "einstein_radius": 0.4750934874425102
+  },
+  "inversion_applies": false,
+  "positions_info_present": false,
+  "completed": true,
+  "resumed": false,
+  "output_path": "searches/point_source/nautilus/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_1/nautilus/08bb8d044c7b8ef96f88b433289c1945",
+  "log_likelihood_at_truth": 15.902398430038737,
+  "truths": {
+    "centre_0": 0.0,
+    "centre_1": 0.0,
+    "ell_comps_0": 0.05263157894736841,
+    "ell_comps_1": 3.2227547345982974e-18,
+    "einstein_radius": 1.6
+  },
+  "per_call_s": 4.9954705173149704e-06,
+  "per_call_basis": "batched_vmap",
+  "per_batch_s": 0.0002497735258657485,
+  "per_call_single_s": 0.00021802401170134544,
+  "compile_single_s": 1.3229017739649862,
+  "likelihood_s": 0.024228032008977607,
+  "overhead_s": 54.15711361609283,
+  "likelihood_share": 0.00044716559745482814,
+  "likelihood_share_single": 0.019516247191131913,
+  "timing": {
+    "compile_s": 1.9216195569606498,
+    "batched": {
+      "median_s": 0.0002497735258657485,
+      "p16_s": 0.00022290903143584728,
+      "p84_s": 0.00027851801132783294,
+      "min_s": 0.00018407899187877774,
+      "n": 200,
+      "warmup": 10
+    },
+    "compile_single_s": 1.3229017739649862,
+    "single": {
+      "median_s": 0.00021802401170134544,
+      "p16_s": 0.0001976100029423833,
+      "p84_s": 0.0002334390301257372,
+      "min_s": 0.00017516798106953502,
+      "n": 200,
+      "warmup": 10
+    },
+    "vector": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      2.25
+    ]
+  }
+}

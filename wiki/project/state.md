@@ -354,3 +354,23 @@ logs the six new runs.
 per-stage walls against the archived ones — that ratio is the speedup, measured on the
 inference rather than on one likelihood call.
 
+
+### 2026-10-02 — point-source Nautilus admission bar, five seeds recovered
+
+**What ran.** Issue [#15](https://github.com/PyAutoLabs/autolens_inference/issues/15): the single-source L5 Isothermal + PointSolved model, `FitPositionsSourceSolved`, Nautilus `n_live=100`, `n_batch=50`, and θ_E prior U(0.5, 4.0). Seeds 0–4 ran on 2026-09-28, RAL CPU fp64 on `euclid-ral-gpu-2` (8 CPUs; no GPU allocation). Seed 0 is job 366937; seeds 1–4 are array 367140, all `COMPLETED 0:0`. All five are fresh fits, with identical recorded library revisions; all five parameters recover truth within 0.74σ.
+
+| Seed | Search wall (s) | Evaluations | Batched cost (µs/eval) | Estimated share | Single-call basis | Max absolute Δσ |
+|---|---:|---:|---:|---:|---:|---:|
+| 0 | 56.56 | 4,850 | 4.72 | 0.0405% | 1.77% | 0.735 |
+| 1 | 54.18 | 4,850 | 5.00 | 0.0447% | 1.95% | 0.710 |
+| 2 | 53.76 | 4,800 | 4.79 | 0.0427% | 1.88% | 0.706 |
+| 3 | 50.38 | 4,700 | 4.59 | 0.0428% | 2.03% | 0.688 |
+| 4 | 58.51 | 4,750 | 5.01 | 0.0407% | 1.73% | 0.689 |
+
+**Evidence.** [Five JSON/PNG rows](../../results/searches/point_source/nautilus/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/) and [array stdout/stderr](../../results/logs/point_source/). The historical config token `hpc_a100` names the host; these rows used the CPU. Runs predate the 2026-09-30 CPU partition rule.
+
+**What we learned.** The estimated steady likelihood contribution is 0.0405–0.0447% of search wall (0.022–0.024 s); halving that cost would save about 0.020–0.022% of wall at unchanged evaluation count. Further steady likelihood optimization has little expected benefit for this particular Nautilus fit. This does not measure a gradient sampler: blackjax forward-mode work still needs its own evaluation/gradient count and wall-share evidence. The next image-plane member remains the extent sanity check, followed by per-package settings.
+
+**Limits.** This is a timing-based estimate, not an instrumented decomposition of the fit. It uses the median of 200 synchronized calls after 10 warm-ups at the prior-median vector, with a fixed batch of 50; actual batch lengths and parameter vectors may differ. The single-call alternative gives 1.73–2.03%, but is not a proven upper bound across all fit states. `wall_s` is the sampler timer; total fit wall, setup and compilation are separate fields. No node-load/affinity or library dirty-state snapshot was recorded, so these are admission estimates, not quiet-node A/B speed claims. Logs retain a nonfatal visualization warm-up warning. Five seeds on one simulated lens are limited recovery evidence, not a general reliability rate.
+
+**Next.** Review and merge this phase; retain the raw run outputs on RAL. No new inference run was submitted during this reconciliation.

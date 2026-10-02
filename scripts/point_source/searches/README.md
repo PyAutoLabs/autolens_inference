@@ -4,7 +4,15 @@ Single-**search** runs on point source data: one sampler, one model, one seed. W
 "what does the production chain cost and does it agree across backends", this asks "does
 *this* search find the right answer, how often, and how fast".
 
-Empty in phase 1. Leaves are added one sampler at a time, each in its own directory:
+The first leaf is `nautilus/simple_source_plane.py`: a five-parameter Isothermal lens with
+a solved source centre, fitted with `FitPositionsSourceSolved`. Five RAL CPU fp64 seeds
+recover truth within 0.74σ and take 50–59 seconds. The warmed batch timing implies
+0.0405–0.0447% of search wall in steady likelihood evaluation; see the
+[admission-bar record](../../../wiki/project/state.md#2026-10-02--point-source-nautilus-admission-bar-five-seeds-recovered)
+for the timing assumptions and limits. This is a source-plane measurement; it does not
+measure PointSolver image-plane performance or gradient-sampler costs.
+
+Leaves are added one sampler at a time, each in its own directory:
 
 ```
 scripts/point_source/searches/<sampler>/<target>.py

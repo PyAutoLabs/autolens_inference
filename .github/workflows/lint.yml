@@ -148,3 +148,9 @@ jobs:
           # the only place a jit trace actually happens.
           python scripts/imaging/slam/hst_delaunay.py \
             --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
+          # The first search leaf (point source, Nautilus, source-plane solved χ²).
+          # Same short-circuit: after argv parsing, the config-name check and the
+          # backend environment, before the dataset or any jit.
+          python scripts/point_source/searches/nautilus/simple_source_plane.py \
+            --instrument simple --backend jax_cpu --inversion dense \
+            --config-name local_jax_cpu_dense_fp64
