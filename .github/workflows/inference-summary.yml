@@ -1,0 +1,58 @@
+name: Publish inference summary
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'results/**'
+      - 'scripts/misc/tooling/export_inference_summary.py'
+      - '.github/workflows/inference-summary.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: inference-summary
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and publish project exchange
+        id: publish
+        shell: bash
+        run: |
+          python scripts/misc/tooling/export_inference_summary.py
+          python scripts/misc/tooling/export_inference_summary.py --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dashboard/summary.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Refresh inference summary'
+            git push origin HEAD:main
+          fi
+          echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Refresh PyAutoInsight after successful publication
+        env:
+          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+          SOURCE_REVISION: ${{ steps.publish.outputs.revision }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo '::error::PAT_PYAUTOLABS is required for producer-to-organ refresh'
+            exit 1
+          fi
+          python - <<'PY' > /tmp/insight-dispatch.json
+          import json, os
+          summary = json.load(open('dashboard/summary.json'))
+          print(json.dumps({'event_type': 'insight-refresh', 'client_payload': {
+              'project': 'autolens_inference', 'source_commit': os.environ['SOURCE_REVISION'],
+              'summary_source_commit': summary['source_commit'],
+              'summary_path': 'dashboard/summary.json'}}))
+          PY
+          gh api --method POST repos/PyAutoLabs/PyAutoInsight/dispatches --input /tmp/insight-dispatch.json
