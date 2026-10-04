@@ -26,6 +26,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: autolens_inference
+          fetch-depth: 0
 
       - name: Checkout PyAutoNerves
         uses: actions/checkout@v4
@@ -90,6 +91,10 @@ jobs:
       - name: build_readme.py --check (dashboard idempotence)
         working-directory: autolens_inference
         run: python scripts/misc/tooling/build_readme.py --check
+
+      - name: inference-summary exchange freshness
+        working-directory: autolens_inference
+        run: python scripts/misc/tooling/export_inference_summary.py --check
 
       - name: wall check_submits.py --check (per-cell --time basis)
         working-directory: autolens_inference

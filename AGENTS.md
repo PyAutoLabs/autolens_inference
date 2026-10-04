@@ -11,10 +11,14 @@ It is a collection of standalone scripts, **not** an installable package — the
 `pyproject.toml`. These are the canonical, agent-agnostic instructions. `README.md` is the
 human-facing overview; `CORTEX.md` says where the rulings of record live.
 
-Science runs, tasks and rulings are managed by
-[PyAutoCortex](https://github.com/PyAutoLabs/PyAutoCortex) under the `projects.yaml` key
-`autolens_inference`, **not** by PyAutoMind. A question about what to run and whether to
-believe the answer is a Cortex task; a change to the code here is a Mind development task.
+Inference campaign intent and pending domain tasks are managed by
+[PyAutoInsight](https://github.com/PyAutoLabs/PyAutoInsight). Its `CHECKIN.md` is the
+single-chat entry point; existing project drivers still execute runs.
+[PyAutoCortex](https://github.com/PyAutoLabs/PyAutoCortex) retains authoritative run
+records, observations and human conclusions in `projects/autolens_inference.md`,
+registered under the `projects.yaml` key `autolens_inference`. Link these records;
+do not maintain competing scientific conclusions in Insight. Code changes and bounded
+implementation PR lifecycle remain PyAutoMind development work.
 
 ## Nothing is inherited
 
