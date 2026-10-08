@@ -1424,6 +1424,7 @@ def run_slam(
 
     stages: list[dict] = []
     stop_after = cli.stages
+    preparation_started = time.perf_counter()
 
     def run_stage(stage_key: str, built) -> tuple[object, dict]:
         """Fit one stage and capture its row."""
@@ -1433,6 +1434,40 @@ def run_slam(
 
         # Sampled BEFORE the fit: nautilus deletes checkpoint.hdf5 on completion.
         resumed = checkpoint_exists(search_root, search_name)
+        prepared_manifest = None
+        if stage_key == "mass_total" and cli.export_prepared is not None:
+            import hashlib
+
+            from experiments.prepared import export_problem
+
+            model = analysis.modify_model(model)
+            baseline_path = results_paths(
+                root, dataset_class, instrument, variant, config_name, seed
+            )[0]
+            baseline_id = (
+                baseline_path.relative_to(root).as_posix()
+                + "#stage-"
+                + hashlib.sha256(search_name.encode()).hexdigest()[:16]
+            )
+            prepared_manifest = export_problem(
+                root,
+                cli.export_prepared,
+                model,
+                analysis,
+                setup_id=f"imaging/{'delaunay' if cli.mesh == 'delaunay' else 'rectangular'}/{instrument}",
+                baseline_record_id=baseline_id,
+                controls=dict(
+                    dataset_class=dataset_class,
+                    instrument=instrument,
+                    variant=variant,
+                    config_name=config_name,
+                    backend=cli.backend,
+                    precision=precision,
+                    seed=seed,
+                    use_jax=use_jax,
+                ),
+                preparation_s=time.perf_counter() - preparation_started,
+            )
 
         compile_s = None
         compile_note = None
@@ -1481,6 +1516,29 @@ def run_slam(
             max_log_likelihood=max_log_likelihood,
             compile_s_note=compile_note,
         )
+        if prepared_manifest is not None:
+            from experiments.prepared import complete_baseline, verify_manifest
+
+            complete_baseline(root, prepared_manifest, result, posterior)
+            manifest = verify_manifest(root, prepared_manifest)
+            row.update(
+                setup_id=manifest["setup_id"],
+                problem_id=manifest["id"],
+                dataset_id=manifest["dataset_id"],
+                model=manifest["model_id"],
+                experiment_protocol="frozen-mass-total-v1",
+                initialization=dict(
+                    mode="unknown" if resumed else "cold",
+                    recipe="Nautilus prepared priors; no baseline sampler information reused",
+                    sources=[],
+                    **({"reason": "Preexisting checkpoint not pinned"} if resumed else {}),
+                ),
+                preparation_s=manifest["preparation_s"],
+                max_likelihood_parameters=manifest["baseline_evidence"][
+                    "max_likelihood_parameters"
+                ],
+                library_revisions=manifest["dependency_revisions"],
+            )
         stages.append(row)
         print(
             f"  {search_name}: wall {row['wall_s']}s, evals {row['likelihood_evals']}, "
@@ -1504,6 +1562,7 @@ def run_slam(
             "instrument": instrument,
             "dataset_class": dataset_class,
             "seed": seed,
+            "sampler": "nautilus",
             "version": al.__version__,
             "device": _device_info(),
             "cores": cores,

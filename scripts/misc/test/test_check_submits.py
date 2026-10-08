@@ -2,7 +2,7 @@
 
 The gate's one rule is that a `--time` justification never crosses cells, so
 everything here turns on *cell identity*. This repo names a leaf for the target
-it runs rather than for the task (`scripts/imaging/slam/hst.py`, not
+it runs rather than for the task (`scripts/imaging/rectangular/baseline_slam.py`, not
 `slam_hst_base.py`, because `AGENTS.md` makes the instrument a flag and never a
 directory). A cell id cut at `<dataset>/<leaf>` would therefore call the SLaM
 base run `imaging/hst` — the same id a future `scripts/imaging/searches/<sampler>/hst.py`
@@ -39,7 +39,9 @@ echo "Finished."
 """
 
 
-def _submit(cell="imaging/slam/hst", script="scripts/imaging/slam/hst.py", time="1:00:00"):
+def _submit(
+    cell="imaging/slam/hst", script="scripts/imaging/rectangular/baseline_slam.py", time="1:00:00"
+):
     return _HEADER.format(cell=cell, script=script, time=time)
 
 
@@ -83,7 +85,7 @@ def test_a_variant_leaf_may_still_run_its_instruments_flag():
     problems = check_submits.check_text(
         _submit(
             cell="imaging/slam/hst_delaunay",
-            script="scripts/imaging/slam/hst_delaunay.py",
+            script="scripts/imaging/delaunay/baseline_slam.py",
         ),
         "submit_slam_delaunay1250_hst_jax_gpu_dense",
     )
@@ -93,7 +95,7 @@ def test_a_variant_leaf_may_still_run_its_instruments_flag():
 def test_a_variant_leaf_is_still_its_own_cell():
     """The relaxation is the instrument check only — the rate key keeps the whole leaf."""
     problems = check_submits.check_text(
-        _submit(cell="imaging/slam/hst", script="scripts/imaging/slam/hst_delaunay.py"),
+        _submit(cell="imaging/slam/hst", script="scripts/imaging/delaunay/baseline_slam.py"),
         "submit_slam_delaunay1250_hst_jax_gpu_dense",
     )
     joined = " ".join(problems)

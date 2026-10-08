@@ -10,7 +10,7 @@ the sampler's ``wall_s`` and ``likelihood_evals`` — defined in
 ``scripts/misc/searches/_point_runner.py``, where the model, the flags and the
 row all live. This leaf is a name and a dataset class.
 
-    python3 scripts/point_source/searches/nautilus/simple_source_plane.py \
+    python3 scripts/point_source/simple/baseline.py \
         --instrument simple --backend jax_cpu --inversion dense \
         --config-name local_jax_cpu_dense_fp64 --seed 0
 

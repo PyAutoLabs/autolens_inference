@@ -120,10 +120,10 @@ cd $AP_ROOT
 # the path_prefix — without that, two backends at one seed, or the base and Delaunay legs of
 # one config, would hash to the same identifier and silently resume each other's fit.
 #
-# --mesh-pixels 1250 is the leaf's own default (scripts/imaging/slam/hst_delaunay.py). It is
+# --mesh-pixels 1250 is the leaf's own default (scripts/imaging/delaunay/baseline_slam.py). It is
 # passed anyway so that the submit states on its face what it runs: this file is the record
 # of what went to the queue, and a default that moves must not move what this job claims.
-python3 scripts/imaging/slam/hst_delaunay.py \
+python3 scripts/imaging/delaunay/baseline_slam.py \
     --instrument hst \
     --backend jax_gpu \
     --inversion dense \

@@ -3,15 +3,15 @@
 Full **SLaM pipeline** runs on imaging data — the science chains as they are actually run, end
 to end, stage by stage.
 
-The first leaf landed in phase 3: [`hst.py`](hst.py), the backend-parameterised base-run
-driver, exercised by the phase-4 Cortex task `slam_hst_base`. [`hst_delaunay.py`](hst_delaunay.py)
+The first leaf landed in phase 3: [`rectangular baseline`](../rectangular/baseline_slam.py), the backend-parameterised base-run
+driver, exercised by the phase-4 Cortex task `slam_hst_base`. [`Delaunay baseline`](../delaunay/baseline_slam.py)
 joined it: the same chain and the same runner, with the two pixelized source stages on a
 1250-vertex Delaunay mesh — the `delaunay_1250` **run variant**.
 
 ## Running a leg
 
 ```bash
-python3 scripts/imaging/slam/hst.py \
+python3 scripts/imaging/rectangular/baseline_slam.py \
     --backend {jax_cpu,numba_cpu,jax_gpu} --inversion {dense,sparse} \
     --config-name <config> [--seed 0] [--cores N] [--stages source_lp] [--output-dir DIR] \
     [--mesh {rect,delaunay}] [--mesh-pixels N]
@@ -76,8 +76,8 @@ fit. Only the backend may be a column of one table.
 
 | variant | mesh | source stages | regularization | leaf |
 |---|---|---|---|---|
-| `slam_base` | `rect`, 28x28 = 784 cells | `RectangularBilinearAdaptDensity` then `…AdaptImage` | `al.reg.Adapt` (class) | [`hst.py`](hst.py) |
-| `delaunay_1250` | `delaunay`, 1250 interior vertices (+30 zeroed edge) drawn by `al.image_mesh.Hilbert` | `al.mesh.Delaunay` on both | `al.reg.AdaptSplit` (class) | [`hst_delaunay.py`](hst_delaunay.py) |
+| `slam_base` | `rect`, 28x28 = 784 cells | `RectangularBilinearAdaptDensity` then `…AdaptImage` | `al.reg.Adapt` (class) | [`rectangular baseline`](../rectangular/baseline_slam.py) |
+| `delaunay_1250` | `delaunay`, 1250 interior vertices (+30 zeroed edge) drawn by `al.image_mesh.Hilbert` | `al.mesh.Delaunay` on both | `al.reg.AdaptSplit` (class) | [`Delaunay baseline`](../delaunay/baseline_slam.py) |
 
 `--mesh-pixels` means a different thing per family and the two numbers are not comparable:
 the side of the square mesh under `rect`, the vertex count outright under `delaunay`. The

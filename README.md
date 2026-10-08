@@ -49,7 +49,7 @@ HST SLaM chain under numba-CPU, JAX-CPU and A100, dense and sparse — which is 
 everything later is improvement *against*.
 
 The driver that runs it landed **2026-09-11** (phase 3):
-[`scripts/imaging/slam/hst.py`](scripts/imaging/slam/README.md), one leaf over one chain,
+[`scripts/imaging/rectangular/baseline_slam.py`](scripts/imaging/slam/README.md), one leaf over one chain,
 switched by `--backend` and `--inversion`, with six SLURM submits behind it. The first four
 legs came back on **2026-09-14** — A100, dense and sparse, seeds 0 and 1, all five stages —
 and are the rows in the table below. They are one backend of the parity row: the CPU legs
@@ -114,3 +114,48 @@ python scripts/misc/simulators/imaging.py --instrument hst
 
 Operational detail — backend facts, the config grammar, the RAL story, the testing gate —
 is in [`AGENTS.md`](AGENTS.md). RAL specifics are in [`hpc/README.md`](hpc/README.md).
+
+## Setup catalogue
+
+[`dashboard/catalogue.json`](dashboard/catalogue.json) publishes inference-summary@2
+alongside the retained v1 summary. Stable setup IDs identify HST rectangular,
+HST Delaunay and simple point-source families independently of runnable paths.
+Original record IDs, archived results and output directories are preserved.
+No historical initialization, frozen priors or scientific acceptance is inferred.
+
+Runnable baselines now live at:
+
+- [`scripts/imaging/rectangular/baseline_slam.py`](scripts/imaging/rectangular/baseline_slam.py)
+- [`scripts/imaging/delaunay/baseline_slam.py`](scripts/imaging/delaunay/baseline_slam.py)
+- [`scripts/point_source/simple/baseline.py`](scripts/point_source/simple/baseline.py)
+
+The wall gate maps these leaves to their existing measured cell identities;
+this migration creates no measurements or new timing justification.
+Run `python scripts/misc/tooling/export_inference_summary.py` to regenerate both
+feeds. Baseline export writes portable manifest metadata under tracked `prepared/<problem-id>/manifest.json` alongside local bulk snapshots in `output/prepared/`. Commit that metadata with the result rows so CI and fresh clones retain the problem declaration. These manifests attach
+exact dataset/model/prior identities to their source baseline; unpublished
+artifact paths do not promise publicly downloadable samples.
+
+Export the completed baseline's frozen `mass_total[1]` problem with
+`--export-prepared output/prepared/hst-rectangular` on the rectangular baseline
+command. Then investigate its shared problem with:
+
+```bash
+python scripts/misc/experiments/run.py --prepared output/prepared/hst-rectangular/manifest.json --problem-id <manifest-id> --run-id hst-rectangular-nautilus-cold-seed0 --sampler nautilus --start cold --hardware-id laptop-cpu-8cores-single-process
+```
+
+Replace `<manifest-id>` with the manifest's exact `id` field and set `--hardware-id` to the actual host/device, allocated resources and concurrency.
+Each imaging setup folder also provides `nautilus.py`, `emcee.py`, `nuts.py`
+and `smc.py` investigation leaves. They bind the shared runner to the named
+setup family and sampler and refuse a mismatched prepared problem. For example,
+a prepared JAX Delaunay baseline can be investigated with:
+
+```bash
+python scripts/imaging/delaunay/smc.py --prepared output/prepared/hst-delaunay/manifest.json --problem-id <manifest-id> --run-id hst-delaunay-smc-cold-seed0 --start cold --hardware-id laptop-cpu-8cores-single-process
+```
+
+Use `python scripts/misc/experiments/run.py --help` for supported start modes
+and samplers. Cold/warm/resume sampler initialization is recorded independently
+of compilation and cache conditions. Frozen priors are never narrowed to create
+a warm start. Executors verify manifest identities and artifact hashes before
+reuse; unavailable historical artifacts remain unknown.

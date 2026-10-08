@@ -145,17 +145,17 @@ jobs:
           # the config-name grammar check and the `scripts/misc/` import path all
           # still agree. It runs no inference and touches no dataset: the exit is
           # ahead of auto_simulate_if_missing.
-          python scripts/imaging/slam/hst.py \
+          python scripts/imaging/rectangular/baseline_slam.py \
             --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
           # The Delaunay leaf is its own cell (its own wall-basis row, its own
           # variant folder), so its import graph and flag handling are smoked
           # separately. The mesh itself is witnessed by profile.yml, which is
           # the only place a jit trace actually happens.
-          python scripts/imaging/slam/hst_delaunay.py \
+          python scripts/imaging/delaunay/baseline_slam.py \
             --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
           # The first search leaf (point source, Nautilus, source-plane solved χ²).
           # Same short-circuit: after argv parsing, the config-name check and the
           # backend environment, before the dataset or any jit.
-          python scripts/point_source/searches/nautilus/simple_source_plane.py \
+          python scripts/point_source/simple/baseline.py \
             --instrument simple --backend jax_cpu --inversion dense \
             --config-name local_jax_cpu_dense_fp64

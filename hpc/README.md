@@ -215,10 +215,10 @@ are in [`../scripts/misc/wall/README.md`](../scripts/misc/wall/README.md).
 
 ## The submits that exist today
 
-Nine, over **two cells**. Seven run `imaging/slam/hst` (`scripts/imaging/slam/hst.py`, the
+Nine, over **two cells**. Seven run `imaging/slam/hst` (`scripts/imaging/rectangular/baseline_slam.py`, the
 backend-parameterised SLaM driver): six are the six legs of the first parity row, and the
 seventh is the rate probe that had to run before any of them could be sized. Two run
-`imaging/slam/hst_delaunay` (`scripts/imaging/slam/hst_delaunay.py`) — the same five-stage
+`imaging/slam/hst_delaunay` (`scripts/imaging/delaunay/baseline_slam.py`) — the same five-stage
 chain on the `delaunay_1250` run variant.
 
 | submit | cell | partition | array | what it runs |

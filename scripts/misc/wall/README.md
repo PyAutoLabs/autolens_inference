@@ -56,7 +56,7 @@ One row per cell the submit runs, in the header above the `#SBATCH` stanza:
 
 A row starts at its `cell:` key and runs to the next `cell:` or the end of the
 block. **`cell:` is the invoked script's path below `scripts/`, without the
-`.py`** — `python3 scripts/imaging/slam/hst.py` is the cell `imaging/slam/hst`,
+`.py`** — `python3 scripts/imaging/rectangular/baseline_slam.py` is the cell `imaging/slam/hst`,
 i.e. `<dataset_class>/<task>/<leaf>`. The task directory is part of the identity
 because this repo names a leaf for the *target* (`AGENTS.md`: the instrument is a
 flag, never a directory), so `imaging/slam/hst.py` and

@@ -168,3 +168,9 @@ def step_rate_for(
 def wall_estimate(rate_s_per_step: float, n_steps: int, compile_s: float = 0.0) -> float:
     """Estimated wall seconds for `n_steps` at `rate_s_per_step`, plus compile."""
     return rate_s_per_step * n_steps + compile_s
+
+
+# Current runnable alias for the historical imaging/slam/hst cell.
+CURRENT_SCRIPT_ALIASES = {
+    "scripts/imaging/slam/hst.py": "scripts/imaging/rectangular/baseline_slam.py"
+}
