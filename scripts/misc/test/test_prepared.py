@@ -295,3 +295,49 @@ def test_library_revisions_follow_selected_import_sources(tmp_path, monkeypatch)
     assert set(result) == {"PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens", "PyAutoNerves"}
     assert any(cwd == tmp_path / "fit/PyAutoFit" for _, cwd in calls)
     assert not any(cwd == tmp_path / "lens/PyAutoFit" for _, cwd in calls)
+
+
+@pytest.mark.parametrize("family", ["rectangular", "delaunay"])
+def test_setup_leaf_binding_rejects_other_family(family):
+    run.validate_setup_binding({"setup_id": f"imaging/{family}/hst"}, ("imaging", family))
+    other = "delaunay" if family == "rectangular" else "rectangular"
+    with pytest.raises(ValueError, match="This leaf requires"):
+        run.validate_setup_binding({"setup_id": f"imaging/{other}/hst"}, ("imaging", family))
+    with pytest.raises(ValueError, match="This leaf requires"):
+        run.validate_setup_binding({"setup_id": "point_source/simple/simple"}, ("imaging", family))
+
+
+@pytest.mark.parametrize("family", ["rectangular", "delaunay"])
+@pytest.mark.parametrize("sampler", ["nautilus", "emcee", "nuts", "smc"])
+def test_setup_sampler_leaf_cli_import_and_binding(family, sampler):
+    import subprocess
+
+    leaf = ROOT / "scripts/imaging" / family / f"{sampler}.py"
+    help_result = subprocess.run(
+        [sys.executable, str(leaf), "--help"], capture_output=True, text=True
+    )
+    assert help_result.returncode == 0
+    assert "--prepared" in help_result.stdout and "--hardware-id" in help_result.stdout
+    other = "emcee" if sampler != "emcee" else "smc"
+    refusal = subprocess.run(
+        [
+            sys.executable,
+            str(leaf),
+            "--prepared",
+            "absent",
+            "--problem-id",
+            "absent",
+            "--run-id",
+            "test",
+            "--start",
+            "cold",
+            "--hardware-id",
+            "test",
+            "--sampler",
+            other,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert refusal.returncode == 2
+    assert f"This leaf runs {sampler}" in refusal.stderr

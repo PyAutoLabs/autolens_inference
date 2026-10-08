@@ -145,6 +145,15 @@ python scripts/misc/experiments/run.py --prepared output/prepared/hst-rectangula
 ```
 
 Replace `<manifest-id>` with the manifest's exact `id` field and set `--hardware-id` to the actual host/device, allocated resources and concurrency.
+Each imaging setup folder also provides `nautilus.py`, `emcee.py`, `nuts.py`
+and `smc.py` investigation leaves. They bind the shared runner to the named
+setup family and sampler and refuse a mismatched prepared problem. For example,
+a prepared JAX Delaunay baseline can be investigated with:
+
+```bash
+python scripts/imaging/delaunay/smc.py --prepared output/prepared/hst-delaunay/manifest.json --problem-id <manifest-id> --run-id hst-delaunay-smc-cold-seed0 --start cold --hardware-id laptop-cpu-8cores-single-process
+```
+
 Use `python scripts/misc/experiments/run.py --help` for supported start modes
 and samplers. Cold/warm/resume sampler initialization is recorded independently
 of compilation and cache conditions. Frozen priors are never narrowed to create

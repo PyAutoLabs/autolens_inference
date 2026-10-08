@@ -131,12 +131,20 @@ def timed_fit(search, model, analysis, row):
         row["total_wall_s"] = time.perf_counter() - start
 
 
-def main(argv=None):
+def validate_setup_binding(manifest, setup_family):
+    if setup_family is not None:
+        dataset, family = setup_family
+        parts = manifest["setup_id"].split("/")
+        if len(parts) != 3 or parts[:2] != [dataset, family]:
+            raise ValueError(f"This leaf requires {dataset}/{family}, not {manifest['setup_id']}")
+
+
+def main(argv=None, *, setup_family=None, sampler=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prepared", required=True, type=Path)
     parser.add_argument("--problem-id", required=True)
     parser.add_argument("--run-id", required=True)
-    parser.add_argument("--sampler", choices=SUPPORTED, required=True)
+    parser.add_argument("--sampler", choices=SUPPORTED, default=sampler, required=sampler is None)
     parser.add_argument("--start", choices=("cold", "warm", "resume"), required=True)
     parser.add_argument("--resume-record")
     parser.add_argument("--seed", type=int, default=0)
@@ -162,6 +170,8 @@ def main(argv=None):
     )
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args(argv)
+    if sampler is not None and args.sampler != sampler:
+        parser.error(f"This leaf runs {sampler}; choose that sampler or its corresponding leaf")
     if not args.run_id or any(
         c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
         for c in args.run_id
@@ -184,6 +194,7 @@ def main(argv=None):
     manifest = verify_manifest(
         ROOT, args.prepared, expected_problem=args.problem_id, revisions=library_revisions(ROOT)
     )
+    validate_setup_binding(manifest, setup_family)
     set_backend_env(manifest["controls"]["backend"], args.cores)
     import autofit as af
     import numpy as np
