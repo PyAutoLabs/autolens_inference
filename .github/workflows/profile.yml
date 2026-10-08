@@ -54,12 +54,12 @@ jobs:
         include:
           - backend: numba_cpu
             inversion: dense
-            script: scripts/imaging/slam/hst.py
+            script: scripts/imaging/rectangular/baseline_slam.py
             variant: slam_base
             cores: 2
           - backend: numba_cpu
             inversion: sparse
-            script: scripts/imaging/slam/hst.py
+            script: scripts/imaging/rectangular/baseline_slam.py
             variant: slam_base
             cores: 2
           # jax_cpu x sparse is deliberately absent: it is the 21.6 GB leg on
@@ -67,7 +67,7 @@ jobs:
           # to spare. It is witnessed locally and on RAL instead.
           - backend: jax_cpu
             inversion: dense
-            script: scripts/imaging/slam/hst.py
+            script: scripts/imaging/rectangular/baseline_slam.py
             variant: slam_base
             cores: 2
           # The Delaunay route, and the only CI check holding its regularization
@@ -77,7 +77,7 @@ jobs:
           # family. jax_cpu because there is nothing to trace on a numba leg.
           - backend: jax_cpu
             inversion: dense
-            script: scripts/imaging/slam/hst_delaunay.py
+            script: scripts/imaging/delaunay/baseline_slam.py
             variant: delaunay_1250
             # NOT 2. The Delaunay mesh reaches qhull through a
             # `jax.pure_callback`, so the fit calls back into the host while an

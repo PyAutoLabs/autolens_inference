@@ -45,7 +45,7 @@ echo "Seed:       0"
 
 cd $AP_ROOT
 
-python3 scripts/point_source/searches/nautilus/simple_source_plane.py \
+python3 scripts/point_source/simple/baseline.py \
     --instrument simple \
     --backend jax_cpu \
     --inversion dense \

@@ -80,7 +80,7 @@ cd $AP_ROOT
 # identifier field and `--config-name` is not, which is why the config name lives in the
 # path_prefix — without that, two backends at one seed would hash to the same identifier and
 # silently resume each other's fit.
-python3 scripts/imaging/slam/hst.py \
+python3 scripts/imaging/rectangular/baseline_slam.py \
     --instrument hst \
     --backend jax_gpu \
     --inversion sparse \

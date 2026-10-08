@@ -7,7 +7,7 @@ The 5-stage imaging SLaM chain on the simulated HST cell, under any
 class; the chain, the flags and the result row all live in
 ``scripts/misc/slam/_runner.py``.
 
-    python3 scripts/imaging/slam/hst.py --backend jax_cpu --inversion dense \
+    python3 scripts/imaging/rectangular/baseline_slam.py --backend jax_cpu --inversion dense \
         --config-name local_jax_cpu_dense_fp64 --seed 0
 
 See ``scripts/imaging/slam/README.md`` for the flags and the six legs of the

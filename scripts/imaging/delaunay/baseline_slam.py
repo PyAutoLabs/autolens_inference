@@ -12,12 +12,12 @@ its own ``results/slam/imaging/hst/delaunay_1250/`` tree and its own
 ``hst/slam5_delaunay_1250/seed<n>`` parity group rather than joining the base
 run's.
 
-    python3 scripts/imaging/slam/hst_delaunay.py --backend jax_gpu \
+    python3 scripts/imaging/delaunay/baseline_slam.py --backend jax_gpu \
         --inversion dense --config-name hpc_a100_jax_gpu_dense_fp64 --seed 0
 
 **Why this is a separate leaf and not a flag on ``hst.py``.** The wall gate
 derives a submit's *cell* from the script path it invokes
-(``scripts/misc/wall/check_submits.py``: ``scripts/imaging/slam/hst.py`` is the
+(``scripts/misc/wall/check_submits.py``: ``scripts/imaging/rectangular/baseline_slam.py`` is the
 cell ``imaging/slam/hst``), and ``scripts/misc/wall/rates.py`` keys its measured
 step rates by that cell. A 1250-vertex Delaunay chain is a different cost
 profile from a 784-cell rectangular one, so it must never share a rate row: a

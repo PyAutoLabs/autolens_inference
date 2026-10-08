@@ -108,6 +108,7 @@ class InferenceCLI:
     memo: str
     cores: int = 1
     stages: str | None = None
+    export_prepared: Path | None = None
 
 
 def parse_inference_cli(
@@ -332,6 +333,12 @@ def parse_inference_cli(
         ),
     )
 
+    parser.add_argument(
+        "--export-prepared",
+        type=Path,
+        help="Freeze mass_total[1] under a project-relative storage directory",
+    )
+
     args, _unknown = parser.parse_known_args()
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
@@ -361,6 +368,7 @@ def parse_inference_cli(
         memo=args.memo,
         cores=int(args.cores) if args.cores else default_cores(),
         stages=args.stages,
+        export_prepared=args.export_prepared,
     )
 
 

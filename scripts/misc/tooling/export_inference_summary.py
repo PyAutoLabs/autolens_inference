@@ -11,11 +11,15 @@ import hashlib
 import json
 import math
 import subprocess
+import sys
 from collections import Counter
 from datetime import UTC, datetime, timezone
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from inference_catalogue import build_catalogue  # noqa: E402
+
 DEFINITIONS = {
     "setup_s": "Not measured separately; unknown, not total minus sampling",
     "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
@@ -27,6 +31,7 @@ DIAGNOSTICS = (
     "log_evidence_err",
     "log_evidence_err_note",
     "max_log_likelihood",
+    "max_likelihood_parameters",
     "posterior",
     "truth_delta_sigma",
     "likelihood_evals",
@@ -93,7 +98,7 @@ def record(payload, path, *, stage=None, parent=None, archived=False):
     row.pop("stages", None)
     if stage is not None:
         row.update(stage)
-    stage_name = stage.get("name") if stage is not None else None
+    stage_name = stage.get("name") if stage is not None else row.get("stage")
     identifier = (
         path
         if stage is None
@@ -165,7 +170,7 @@ def record(payload, path, *, stage=None, parent=None, archived=False):
                     for k in DEFINITIONS
                 }
                 if is_parent
-                else DEFINITIONS
+                else dict(DEFINITIONS)
             ),
         },
         "diagnostics": {
@@ -300,6 +305,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--output", default="dashboard/summary.json")
+    parser.add_argument("--catalogue-output", default="dashboard/catalogue.json")
     args = parser.parse_args()
     revision = subprocess.check_output(
         [
@@ -310,6 +316,8 @@ def main():
             "--",
             "results",
             "scripts/misc/tooling/export_inference_summary.py",
+            "scripts/misc/tooling/inference_catalogue.py",
+            "prepared",
         ],
         cwd=ROOT,
         text=True,
@@ -321,6 +329,21 @@ def main():
     content = (
         json.dumps(build(ROOT, revision, date), indent=2, sort_keys=True, allow_nan=False) + "\n"
     )
+    catalogue = ROOT / args.catalogue_output
+    catalogue_content = (
+        json.dumps(
+            build_catalogue(build(ROOT, revision, date), ROOT),
+            indent=2,
+            sort_keys=True,
+            allow_nan=False,
+        )
+        + "\n"
+    )
+    if args.check and (not catalogue.exists() or catalogue.read_text() != catalogue_content):
+        raise SystemExit("inference catalogue is stale; regenerate")
+    if not args.check:
+        catalogue.parent.mkdir(parents=True, exist_ok=True)
+        catalogue.write_text(catalogue_content)
     if args.check:
         if not target.exists() or target.read_text() != content:
             raise SystemExit("inference summary is stale; regenerate")

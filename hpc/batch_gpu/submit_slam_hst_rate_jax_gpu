@@ -65,7 +65,7 @@ echo "Config:     hpc_a100_jax_gpu_dense_fp64"
 
 cd $AP_ROOT
 
-python3 scripts/imaging/slam/hst.py \
+python3 scripts/imaging/rectangular/baseline_slam.py \
     --instrument hst \
     --backend jax_gpu \
     --inversion dense \

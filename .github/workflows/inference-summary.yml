@@ -5,6 +5,8 @@ on:
     paths:
       - 'results/**'
       - 'scripts/misc/tooling/export_inference_summary.py'
+      - 'scripts/misc/tooling/inference_catalogue.py'
+      - 'prepared/**'
       - '.github/workflows/inference-summary.yml'
   workflow_dispatch:
 permissions:
@@ -32,7 +34,7 @@ jobs:
           python scripts/misc/tooling/export_inference_summary.py --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add dashboard/summary.json
+          git add dashboard/summary.json dashboard/catalogue.json
           if ! git diff --cached --quiet; then
             git commit -m 'Refresh inference summary'
             git push origin HEAD:main

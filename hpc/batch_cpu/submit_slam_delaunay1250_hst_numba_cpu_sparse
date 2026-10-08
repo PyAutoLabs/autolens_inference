@@ -74,7 +74,7 @@ cd $AP_ROOT
 # One seed per array task; the seed reaches the result filename and the output tree, and the
 # config name + variant live in the path_prefix so no two legs share a PyAutoFit identifier.
 # --mesh-pixels 1250 is the leaf's own default, passed so this file states what it runs.
-python3 scripts/imaging/slam/hst_delaunay.py \
+python3 scripts/imaging/delaunay/baseline_slam.py \
     --instrument hst \
     --backend numba_cpu \
     --inversion sparse \

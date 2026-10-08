@@ -30,7 +30,7 @@ A comment block anywhere in the submit's header, one row per cell::
     #   lanes: 1  steps: 3000  source: unmeasured  probe-first: yes
 
 A ``cell:`` is the runnable script's path below ``scripts/``, with the ``.py``
-dropped: ``scripts/imaging/slam/hst.py`` is the cell ``imaging/slam/hst``. That
+dropped: ``scripts/imaging/rectangular/baseline_slam.py`` is the cell ``imaging/slam/hst``. That
 is ``<dataset_class>/<task>/<leaf>``, and because this repo names a leaf for the
 target it runs (``AGENTS.md``: "the instrument is a flag, never a directory"),
 its last component doubles as the instrument the ``--instrument`` check reads —
@@ -205,14 +205,22 @@ def strip_comments(text: str) -> str:
     return "\n".join("" if ln.lstrip().startswith("#") else ln for ln in text.splitlines())
 
 
+# Preserve measured rate identities when runnable leaves move. No new rate is inferred.
+LEGACY_CELLS = {
+    "imaging/rectangular/baseline_slam": "imaging/slam/hst",
+    "imaging/delaunay/baseline_slam": "imaging/slam/hst_delaunay",
+    "point_source/simple/baseline": "point_source/searches/nautilus/simple_source_plane",
+}
+
+
 def cells_run(text: str) -> tuple[set[str], set[str]]:
     """The cell ids a submit actually runs, and its instruments.
 
     A cell id is the invoked script's path below ``scripts/`` with the ``.py``
-    dropped — ``python3 scripts/imaging/slam/hst.py`` runs the cell
+    dropped — ``python3 scripts/imaging/rectangular/baseline_slam.py`` runs the cell
     ``imaging/slam/hst``. The task directory is part of the identity on purpose:
     this repo names a leaf for the *target* it runs rather than for the task
-    (``scripts/imaging/slam/hst.py``, not ``slam_hst_base.py``), so a cell id cut
+    (``scripts/imaging/rectangular/baseline_slam.py``, not ``slam_hst_base.py``), so a cell id cut
     at ``<dataset>/<leaf>`` would call this cell ``imaging/hst`` and collide with
     every other task's HST leaf — ``imaging/searches/nautilus/hst.py`` included.
     Two different pipelines sharing one rate row is precisely the carry this
@@ -233,7 +241,8 @@ def cells_run(text: str) -> tuple[set[str], set[str]]:
         stem = parts[-1][: -len(".py")]
         for cell in _expand(text, stem) or {stem}:
             if not _VAR_REF.match(cell):
-                cells.add("/".join([*prefix, cell]))
+                identity = "/".join([*prefix, cell])
+                cells.add(LEGACY_CELLS.get(identity, identity))
 
     instruments: set[str] = set()
     for match in _INSTRUMENT.finditer(text):
