@@ -148,7 +148,7 @@ or `results/searches/`.
 
 ## RAL, and getting runs back
 
-The RAL copy of this repo is a **git clone** at `/mnt/ral/jnightin/autolens_inference`, not
+The RAL copy of this repo is a **git clone** at `/mnt/ral/jnightin/inference/autolens_inference`, not
 an rsync target.
 
 - **Code goes over with `git pull` on the login node.** There is deliberately no

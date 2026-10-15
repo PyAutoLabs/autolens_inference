@@ -11,7 +11,7 @@
 #
 # Usage (inside a SLURM submit or interactive shell):
 #
-#     source /mnt/ral/jnightin/autolens_inference/activate.sh
+#     source /mnt/ral/jnightin/inference/autolens_inference/activate.sh
 #     python3 scripts/imaging/slam/hst_base.py ...
 
 # --- SLURM exit-code guard ------------------------------------------------
