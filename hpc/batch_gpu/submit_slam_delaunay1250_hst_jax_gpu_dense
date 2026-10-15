@@ -59,7 +59,7 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
-export AP_ROOT=/mnt/ral/jnightin/autolens_inference
+export AP_ROOT=/mnt/ral/jnightin/inference/autolens_inference
 source $AP_ROOT/activate.sh
 
 # JAX_PLATFORMS and JAX_ENABLE_X64 are exported EXPLICITLY, never inherited: without the

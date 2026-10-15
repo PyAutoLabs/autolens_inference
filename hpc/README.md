@@ -115,7 +115,7 @@ on the login node:
 
 ```bash
 ssh euclid_jump
-cd /mnt/ral/jnightin/autolens_inference
+cd /mnt/ral/jnightin/inference/autolens_inference
 git status        # look before you pull — the checkout is often dirty
 git pull
 ```

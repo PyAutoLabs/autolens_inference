@@ -30,7 +30,7 @@
 
 # AP_ROOT defaults to the RAL clone; a branch worktree is run by exporting it at submit
 # (`sbatch --export=ALL,AP_ROOT=<worktree> ...`).
-export AP_ROOT=${AP_ROOT:-/mnt/ral/jnightin/autolens_inference}
+export AP_ROOT=${AP_ROOT:-/mnt/ral/jnightin/inference/autolens_inference}
 source $AP_ROOT/activate.sh
 
 export JAX_PLATFORMS=cpu
