@@ -303,8 +303,8 @@ run the four sampler leaves of `scripts/imaging/rectangular/` on frozen mass pro
 | `batch_cpu/submit_hst_cleanslate_jax_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × sparse, `--lens-light both` (64 GB) |
 | `batch_cpu/submit_hst_cleanslate_numba_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `numba_cpu` × dense, `--lens-light both`, `source_lp[1]` shared from the jax_cpu dense chain (in-job wait) (48 GB) |
 | `batch_cpu/submit_hst_cleanslate_numba_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `numba_cpu` × sparse, `--lens-light both`, `source_lp[1]` shared from the jax_cpu dense chain (in-job wait) (64 GB) |
-| `batch_gpu/submit_hst_cleanslate_mass_samplers_jax_gpu_dense` | `imaging/rectangular/{nautilus,emcee,nuts,smc}` | `gpu` | `0-23%4` | clean-slate wave 1: four samplers × seeds 0-2 × both light modes on the frozen A100 dense problems; submitted `--dependency afterok:<base>` |
-| `batch_cpu/submit_hst_cleanslate_mass_samplers_jax_cpu_dense` | `imaging/rectangular/{nautilus,emcee,nuts,smc}` | `ral` | `0-23%6` | the same 24 arms on the frozen RAL CPU dense problems; waits for the CPU base rows |
+| `batch_gpu/submit_hst_cleanslate_mass_samplers_jax_gpu_dense` | `imaging/rectangular/{nautilus,emcee}` | `gpu` | `0-11%4` | clean-slate wave 1 attempt 2: Nautilus and Emcee × seeds 0-2 × both light modes on the frozen A100 dense problems (NUTS/SMC deferred, A100 OOM) |
+| `batch_cpu/submit_hst_cleanslate_mass_samplers_jax_cpu_dense` | `imaging/rectangular/{nautilus,emcee}` | `ral` | `0-11%6` | the same 12 arms on the frozen RAL CPU dense problems; waits for the CPU base rows |
 
 ### The clean-slate submits (2026-10-17)
 
@@ -349,6 +349,22 @@ Each submit runs four cells (one per sampler leaf), all `unmeasured` with `probe
 the `%4` / `%6` throttles start one arm of every sampler first. The GPU array is submitted
 `--dependency afterok:<GPU dense base array>`; the CPU array waits for the CPU base rows
 (days) and is submitted the same way on the CPU dense base array.
+
+**Attempts and the sampler filter (autolens_inference#33).** Attempt 1 of the GPU array
+(412543, all 24 arms) wrote no rows: Nautilus and Emcee lost theirs to a row-writer bug after
+completing, NUTS and SMC ran out of A100 memory and are now deferred in `wave.py`. Each submit
+reads two environment variables, with defaults in the file:
+
+- `PYAUTO_WAVE_ATTEMPT` (GPU default `2`, CPU default `1`): run ids gain `_a<N>` for N > 1, so
+  a re-run never collides with an earlier attempt's run id (which `run.py` refuses);
+- `PYAUTO_WAVE_SAMPLERS` (default `nautilus,emcee`): the arms the array covers. The array
+  index is a position in that filtered list, in wave order, so `--array` is `0-<n-1>` for its
+  `n` arms (`0-11` for Nautilus and Emcee); a deferred sampler is refused.
+
+`hpc/sync submit` runs `sbatch` over ssh, which does not carry laptop variables, so the
+defaults in the file are what a submit runs; a later attempt edits them in a commit. The GPU
+attempt-2 array needs no dependency (the problems exist):
+`hpc/sync submit submit_hst_cleanslate_mass_samplers_jax_gpu_dense`.
 
 ### Why the second cell exists
 

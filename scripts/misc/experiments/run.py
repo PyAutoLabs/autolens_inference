@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import shutil
 import sys
@@ -24,7 +25,7 @@ from experiments.prepared import (  # noqa: E402
     load_problem,
     revision,
 )
-from slam._runner import set_backend_env  # noqa: E402
+from slam._runner import posterior_from_result, posterior_path, set_backend_env  # noqa: E402
 
 SUPPORTED = ("nautilus", "emcee", "nuts", "smc")
 
@@ -131,6 +132,89 @@ def timed_fit(search, model, analysis, row):
         row["total_wall_s"] = time.perf_counter() - start
 
 
+#: What each ``work`` counter means; a counter a sampler does not report stays ``None``.
+WORK_DEFINITIONS = {
+    "likelihood_evaluations": "Nautilus total_samples counts rejected and accepted likelihood calls, including exploration; other samplers not instrumented",
+    "gradient_evaluations": "Not instrumented; neither iterations nor particle counts are gradient counts",
+    "iterations": "Sampler-native Emcee steps aggregated over synchronized walkers or SMC tempering steps; includes native warmup where reported; cumulative on resume",
+    "retained_samples": "Length of PyAutoFit returned sample list after sampler-native burn-in/filtering; cumulative on resume",
+    "effective_sample_size": "No common posterior ESS estimator instrumented; terminal SMC weight ESS is not substituted",
+}
+
+
+def parameter_key(name) -> str:
+    """One dotted-path string for an entry of ``samples.names``.
+
+    PyAutoFit's ``samples.names`` is ``model.all_names``: per prior, a **tuple** of every
+    dotted path that prior answers to (``('galaxies.lens.mass.einstein_radius',)``). JSON
+    object keys must be strings, so the SLaM runner's own ``posterior_path`` (first alias,
+    or a joined tuple of path segments) names the key, never the tuple itself.
+    """
+    return posterior_path(name)
+
+
+def row_diagnostics(af, result, sampler) -> dict:
+    """Posterior, likelihood, timing and work fields of a completed fit's row."""
+    samples = result.samples
+    info = samples.samples_info or {}
+    native_time = info.get("time")
+    work = {
+        "likelihood_evaluations": info.get("total_samples") if sampler == "nautilus" else None,
+        "gradient_evaluations": None,
+        "iterations": info.get("total_steps", info.get("n_smc_steps")),
+        "retained_samples": len(samples.sample_list),
+        "effective_sample_size": None,
+        "definitions": WORK_DEFINITIONS,
+    }
+    for key in WORK_DEFINITIONS:
+        if work[key] is None:
+            work[key + "_reason"] = "Not measured by this producer/sampler; no estimate substituted"
+    return {
+        "posterior": posterior_from_result(af, result),
+        "max_log_likelihood": float(samples.max_log_likelihood_sample.log_likelihood),
+        "wall_s": float(native_time) if native_time is not None else None,
+        "work": work,
+        "max_likelihood_parameters": {
+            parameter_key(name): float(value)
+            for name, value in zip(samples.names, samples.max_log_likelihood(as_instance=False))
+        },
+    }
+
+
+def _jsonable(value):
+    """A copy of ``value`` that ``json_bytes`` accepts: string keys, finite floats."""
+    if isinstance(value, dict):
+        return {
+            k if isinstance(k, str) else parameter_key(k) if isinstance(k, tuple) else str(k): (
+                _jsonable(v)
+            )
+            for k, v in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    return str(value)
+
+
+def write_row(destination: Path, row: dict) -> None:
+    """Write the row; a value JSON refuses is coerced and recorded, never the row lost."""
+    try:
+        data = json_bytes(row)
+    except (TypeError, ValueError) as exc:
+        row = _jsonable(row)
+        note = f"row serialisation coerced: {type(exc).__name__}: {exc}"
+        status = str(row.get("status"))
+        if status == "complete":
+            status = "complete; diagnostics failed"
+        row["status"] = f"{status}: {note}" if status.endswith("failed") else f"{status}; {note}"
+        data = json_bytes(row)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(data)
+
+
 def validate_setup_binding(manifest, setup_family):
     if setup_family is not None:
         dataset, family = setup_family
@@ -199,7 +283,6 @@ def main(argv=None, *, setup_family=None, sampler=None):
     import autofit as af
     import numpy as np
     from autonerves.test_mode import with_test_mode_segment
-    from slam._runner import posterior_from_result
 
     af.conf.instance.push(new_path=ROOT / "config", output_path=ROOT / "output")
     manifest, model, analysis, items = load_problem(
@@ -295,59 +378,32 @@ def main(argv=None, *, setup_family=None, sampler=None):
                 "Not independently measured; operator did not declare state"
             )
     try:
-        result = timed_fit(search, model, analysis, row)
-        row.update(
-            completed=True,
-            status="complete",
-            posterior=posterior_from_result(af, result),
-            max_log_likelihood=float(result.samples.max_log_likelihood_sample.log_likelihood),
-        )
-        info = result.samples.samples_info or {}
-        native_time = info.get("time")
-        row["wall_s"] = float(native_time) if native_time is not None else None
-        definitions = {
-            "likelihood_evaluations": "Nautilus total_samples counts rejected and accepted likelihood calls, including exploration; other samplers not instrumented",
-            "gradient_evaluations": "Not instrumented; neither iterations nor particle counts are gradient counts",
-            "iterations": "Sampler-native Emcee steps aggregated over synchronized walkers or SMC tempering steps; includes native warmup where reported; cumulative on resume",
-            "retained_samples": "Length of PyAutoFit returned sample list after sampler-native burn-in/filtering; cumulative on resume",
-            "effective_sample_size": "No common posterior ESS estimator instrumented; terminal SMC weight ESS is not substituted",
-        }
-        row["work"] = {
-            "likelihood_evaluations": info.get("total_samples")
-            if args.sampler == "nautilus"
-            else None,
-            "gradient_evaluations": None,
-            "iterations": info.get("total_steps", info.get("n_smc_steps")),
-            "retained_samples": len(result.samples.sample_list),
-            "effective_sample_size": None,
-            "definitions": definitions,
-        }
-        for key in definitions:
-            if row["work"][key] is None:
-                row["work"][key + "_reason"] = (
-                    "Not measured by this producer/sampler; no estimate substituted"
-                )
-        row["max_likelihood_parameters"] = dict(
-            zip(
-                result.samples.names,
-                map(float, result.samples.max_log_likelihood(as_instance=False)),
-            )
-        )
-    except BaseException as exc:
-        row["status"] = f"failed: {type(exc).__name__}: {exc}"
-        raise
+        try:
+            result = timed_fit(search, model, analysis, row)
+        except BaseException as exc:
+            row["status"] = f"failed: {type(exc).__name__}: {exc}"
+            raise
+        row.update(completed=True, status="complete")
+        try:
+            row.update(row_diagnostics(af, result, args.sampler))
+        except Exception as exc:
+            # The fit completed and its output tree exists; a diagnostics failure must
+            # never cost the row (autolens_inference#33).
+            row["status"] = f"complete; diagnostics failed: {type(exc).__name__}: {exc}"
     finally:
         if args.sampler == "emcee" and Path(search.backend_filename).exists():
-            row["checkpoint"] = artifact(
-                ROOT,
-                ROOT / "output" / "experiment_sources" / args.run_id / "final.hdf",
-                Path(search.backend_filename).read_bytes(),
-                "checkpoint",
-                destination.relative_to(ROOT).as_posix(),
-                revision(ROOT),
-            )
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(json_bytes(row))
+            try:
+                row["checkpoint"] = artifact(
+                    ROOT,
+                    ROOT / "output" / "experiment_sources" / args.run_id / "final.hdf",
+                    Path(search.backend_filename).read_bytes(),
+                    "checkpoint",
+                    destination.relative_to(ROOT).as_posix(),
+                    revision(ROOT),
+                )
+            except Exception as exc:
+                row["checkpoint_error"] = f"{type(exc).__name__}: {exc}"
+        write_row(destination, row)
     return 0
 
 

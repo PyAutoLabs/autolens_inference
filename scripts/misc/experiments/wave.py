@@ -22,8 +22,19 @@ Run from the repo root::
         --base-seed 0 --hardware-id ral-a100-1gpu-4cpu --cores 4 --print-command
 
 ``--account`` reports each expected arm as ``row`` (a complete result row), ``failed``
-(a row whose status is not complete, or whose identity does not match the arm) or
-``missing`` (no row). It never infers success from a job state or an output folder.
+(a row whose status is not complete, or whose identity does not match the arm),
+``missing`` (no row) or ``deferred`` (the sampler is set aside for this wave, with the
+reason, see ``DEFERRED``). It never infers success from a job state or an output folder.
+
+Attempts. A run id is never reused (``run.py`` refuses an existing one), so re-running an
+arm is a new **attempt**: ``--attempt N`` (N > 1) appends ``_a<N>`` to every run id.
+``--account`` lists every attempt of every arm it finds (or up to ``--attempt``), and the
+arm's live state is its latest complete row, else its latest attempt. ``--sampler-filter
+nautilus,emcee`` restricts a submit to a subset: ``--arm`` then indexes the filtered arms
+(in wave order), so ``--array=0-<n-1>`` covers exactly them. Attempt 1 of wave 1 (RAL array
+412543) lost every Nautilus/Emcee row to a row-writer bug (tuple parameter names,
+autolens_inference#33) and ran NUTS/SMC out of A100 memory; attempt 2 re-runs the twelve
+Nautilus and Emcee arms with ``--attempt 2 --sampler-filter nautilus,emcee``.
 """
 
 from __future__ import annotations
@@ -60,6 +71,17 @@ SETTINGS = {
 #: measured.
 COMMON = ("--start", "cold", "--compilation", "cold", "--cache", "unknown")
 
+#: Samplers set aside for this wave, with the evidence. A deferred arm is never resolved
+#: for a run and is accounted ``deferred``, never ``missing``.
+DEFERRED = {
+    "nuts": "A100 OOM 2026-10-17 (385 GiB NUTS, 48 GiB SMC): NUTS jit_log_l gradient "
+    "asked for 385.32 GiB on an 80 GB A100 (RAL array 412543)",
+    "smc": "A100 OOM 2026-10-17 (385 GiB NUTS, 48 GiB SMC): SMC 256-particle jit_scan "
+    "asked for 48.45 GiB on an 80 GB A100 (RAL array 412543)",
+}
+
+ATTEMPT_SUFFIX = re.compile(r"_a([0-9]+)$")
+
 CONFIG_GRAMMAR = re.compile(
     r"(local|hpc_a100)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse)_(fp64|mp)"
 )
@@ -72,8 +94,13 @@ class Arm:
     sampler: str
     seed: int
 
-    def run_id(self, config: str) -> str:
-        return f"{RUN_PREFIX}_{config}_{self.variant}_{self.sampler}_s{self.seed}"
+    def run_id(self, config: str, attempt: int = 1) -> str:
+        base = f"{RUN_PREFIX}_{config}_{self.variant}_{self.sampler}_s{self.seed}"
+        return base if check_attempt(attempt) == 1 else f"{base}_a{attempt}"
+
+    @property
+    def deferred(self) -> str | None:
+        return DEFERRED.get(self.sampler)
 
     @property
     def leaf(self) -> str:
@@ -95,6 +122,40 @@ def arm(index: int) -> Arm:
     if not 0 <= index < len(table):
         raise ValueError(f"arm {index} is outside wave {WAVE_ID} (0-{len(table) - 1})")
     return table[index]
+
+
+def check_attempt(attempt: int) -> int:
+    if not isinstance(attempt, int) or attempt < 1:
+        raise ValueError(f"attempt must be a positive integer, not {attempt!r}")
+    return attempt
+
+
+def sampler_filter(text: str | None) -> tuple[str, ...]:
+    """Parse ``nautilus,emcee`` / ``nautilus emcee``; empty or None means every sampler."""
+    names = tuple(n for n in re.split(r"[,\s]+", text or "") if n)
+    unknown = [n for n in names if n not in SAMPLERS]
+    if unknown:
+        raise ValueError(f"unknown sampler(s) {unknown} (wave samplers: {list(SAMPLERS)})")
+    return names or SAMPLERS
+
+
+def selection(samplers: tuple[str, ...] = SAMPLERS) -> list[Arm]:
+    """The arms a filtered submit runs, in wave order; array index = position here."""
+    return [a for a in arms() if a.sampler in samplers]
+
+
+def select(position: int, samplers: tuple[str, ...] = SAMPLERS) -> Arm:
+    """The arm at ``position`` of the filtered selection, refusing a deferred sampler."""
+    table = selection(samplers)
+    if not 0 <= position < len(table):
+        raise ValueError(
+            f"arm {position} is outside the {len(table)} selected arms of wave {WAVE_ID} "
+            f"(samplers {list(samplers)})"
+        )
+    a = table[position]
+    if a.deferred:
+        raise ValueError(f"arm {a.index} ({a.sampler}) is deferred in {WAVE_ID}: {a.deferred}")
+    return a
 
 
 def check_config(config: str) -> str:
@@ -120,9 +181,15 @@ def problem_id(root: Path, config: str, base_seed: int, variant: str) -> str:
 
 
 def leaf_args(
-    root: Path, index: int, config: str, base_seed: int, hardware_id: str, cores: int
+    root: Path,
+    index: int,
+    config: str,
+    base_seed: int,
+    hardware_id: str,
+    cores: int,
+    attempt: int = 1,
 ) -> list[str]:
-    """The exact argument list the arm's leaf is called with."""
+    """The exact argument list the arm's leaf (wave index ``index``) is called with."""
     a = arm(index)
     if not hardware_id or cores <= 0:
         raise ValueError("an arm needs a hardware id and a positive core count")
@@ -132,7 +199,7 @@ def leaf_args(
         "--problem-id",
         problem_id(root, config, base_seed, a.variant),
         "--run-id",
-        a.run_id(config),
+        a.run_id(config, attempt),
         "--seed",
         str(a.seed),
         "--cores",
@@ -144,31 +211,61 @@ def leaf_args(
     ]
 
 
-def account(results: Path, config: str) -> list[dict]:
-    """Each expected arm's state from committed/pulled rows: row, failed or missing."""
+def row_state(path: Path, a: Arm, config: str) -> tuple[str, str]:
+    """``row`` / ``failed`` / ``missing`` for one attempt's row file."""
+    if not path.is_file():
+        return "missing", "no result row"
+    try:
+        row = json.loads(path.read_text())
+    except (OSError, ValueError) as exc:
+        return "failed", f"unreadable row: {exc}"
+    expected = dict(sampler=a.sampler, seed=a.seed, config_name=config, variant=a.variant)
+    wrong = {k: row.get(k) for k, v in expected.items() if row.get(k) != v}
+    status = str(row.get("status"))
+    if wrong:
+        return "failed", f"identity mismatch: {wrong}"
+    if status == "complete" and row.get("completed") is True:
+        return "row", f"problem {row.get('problem_id')}"
+    return "failed", status
+
+
+def attempts_on_disk(results: Path, a: Arm, config: str) -> int:
+    """The highest attempt of this arm with a row file (1 when there is none)."""
+    base = a.run_id(config)
+    found = [1]
+    for path in results.glob(f"{base}_a*.json") if results.is_dir() else ():
+        match = ATTEMPT_SUFFIX.search(path.stem)
+        if match and path.stem == f"{base}_a{match.group(1)}":
+            found.append(int(match.group(1)))
+    return max(found)
+
+
+def account(results: Path, config: str, attempt: int | None = None) -> list[dict]:
+    """Each expected arm's state from committed/pulled rows, every attempt listed.
+
+    ``attempt`` is the latest attempt expected (rows of attempts 1..attempt are looked
+    for); ``None`` takes the highest found on disk per arm. The arm's ``state`` is
+    ``deferred`` for a deferred sampler, else its latest ``row`` attempt, else the state
+    of its latest attempt (``failed`` or ``missing``).
+    """
     out = []
     for a in arms():
-        run_id = a.run_id(config)
-        path = results / f"{run_id}.json"
-        entry = dict(index=a.index, run_id=run_id, variant=a.variant, sampler=a.sampler)
-        entry["seed"] = a.seed
-        if not path.is_file():
-            out.append(dict(entry, state="missing", detail="no result row"))
-            continue
-        try:
-            row = json.loads(path.read_text())
-        except (OSError, ValueError) as exc:
-            out.append(dict(entry, state="failed", detail=f"unreadable row: {exc}"))
-            continue
-        expected = dict(sampler=a.sampler, seed=a.seed, config_name=config, variant=a.variant)
-        wrong = {k: row.get(k) for k, v in expected.items() if row.get(k) != v}
-        status = str(row.get("status"))
-        if wrong:
-            out.append(dict(entry, state="failed", detail=f"identity mismatch: {wrong}"))
-        elif status == "complete" and row.get("completed") is True:
-            out.append(dict(entry, state="row", detail=f"problem {row.get('problem_id')}"))
+        last = (
+            check_attempt(attempt) if attempt is not None else attempts_on_disk(results, a, config)
+        )
+        history = []
+        for n in range(1, last + 1):
+            run_id = a.run_id(config, n)
+            state, detail = row_state(results / f"{run_id}.json", a, config)
+            history.append(dict(attempt=n, run_id=run_id, state=state, detail=detail))
+        live = next((h for h in reversed(history) if h["state"] == "row"), history[-1])
+        entry = dict(index=a.index, variant=a.variant, sampler=a.sampler, seed=a.seed)
+        entry.update(run_id=live["run_id"], attempt=live["attempt"], attempts=history)
+        if a.deferred:
+            entry.update(state="deferred", detail=a.deferred)
         else:
-            out.append(dict(entry, state="failed", detail=status))
+            entry.update(state=live["state"], detail=live["detail"])
+        out.append(entry)
     return out
 
 
@@ -176,8 +273,12 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--list", action="store_true", help="print every expected arm")
-    mode.add_argument("--account", action="store_true", help="row / failed / missing per arm")
-    mode.add_argument("--arm", type=int, help="resolve one array index")
+    mode.add_argument(
+        "--account", action="store_true", help="row / failed / missing / deferred per arm"
+    )
+    mode.add_argument(
+        "--arm", type=int, help="resolve one array index (into --sampler-filter's arms)"
+    )
     parser.add_argument("--config", required=True)
     parser.add_argument("--base-seed", type=int, default=0)
     parser.add_argument(
@@ -185,7 +286,17 @@ def main(argv=None) -> int:
         help="the submit's sampler order (space separated); refused unless it is this table's",
     )
     parser.add_argument(
-        "--field", choices=("sampler", "sampler_index", "variant", "seed", "run_id", "manifest")
+        "--sampler-filter",
+        help="run only these samplers' arms (comma or space separated); empty = all",
+    )
+    parser.add_argument(
+        "--attempt",
+        type=int,
+        help="attempt number: run ids gain _a<N> for N > 1 (default 1; --account: highest found)",
+    )
+    parser.add_argument(
+        "--field",
+        choices=("sampler", "sampler_index", "variant", "seed", "run_id", "manifest", "index"),
     )
     parser.add_argument("--print-args", action="store_true", help="the leaf's arguments")
     parser.add_argument("--print-command", action="store_true", help="the full leaf command")
@@ -198,38 +309,57 @@ def main(argv=None) -> int:
         config = check_config(args.config)
         if args.samplers is not None and tuple(args.samplers.split()) != SAMPLERS:
             raise ValueError(f"submit sampler order {args.samplers.split()} != {list(SAMPLERS)}")
+        samplers = sampler_filter(args.sampler_filter)
+        attempt = check_attempt(args.attempt) if args.attempt is not None else None
         if args.list:
-            print(f"# wave {WAVE_ID}  config {config}  base seed {args.base_seed}")
-            for a in arms():
+            print(
+                f"# wave {WAVE_ID}  config {config}  base seed {args.base_seed}  "
+                f"attempt {attempt or 1}  samplers {','.join(samplers)}"
+            )
+            for position, a in enumerate(selection(samplers)):
                 path = manifest_path(config, args.base_seed, a.variant)
-                print(f"{a.index:2d}  {a.run_id(config)}  {' '.join(SETTINGS[a.sampler])}  {path}")
+                note = f"  DEFERRED: {a.deferred}" if a.deferred else ""
+                print(
+                    f"{position:2d}  arm {a.index:2d}  {a.run_id(config, attempt or 1)}  "
+                    f"{' '.join(SETTINGS[a.sampler])}  {path}{note}"
+                )
             return 0
         if args.account:
-            entries = account(args.results_dir, config)
+            entries = [
+                e for e in account(args.results_dir, config, attempt) if e["sampler"] in samplers
+            ]
             for e in entries:
-                print(f"{e['index']:2d}  {e['state']:7s}  {e['run_id']}  {e['detail']}")
+                print(f"{e['index']:2d}  {e['state']:8s}  {e['run_id']}  {e['detail']}")
+                for h in e["attempts"]:
+                    print(
+                        f"      attempt {h['attempt']}  {h['state']:7s}  {h['run_id']}  {h['detail']}"
+                    )
             counts = {
-                s: sum(e["state"] == s for e in entries) for s in ("row", "failed", "missing")
+                s: sum(e["state"] == s for e in entries)
+                for s in ("row", "failed", "missing", "deferred")
             }
             print(
                 f"# wave {WAVE_ID} {config}: {len(entries)} expected, "
                 + ", ".join(f"{v} {k}" for k, v in counts.items())
             )
             return 0
-        a = arm(args.arm)
+        a = select(args.arm, samplers)
         if args.field:
             value = {
                 "sampler": a.sampler,
                 "sampler_index": SAMPLERS.index(a.sampler),
                 "variant": a.variant,
                 "seed": a.seed,
-                "run_id": a.run_id(config),
+                "run_id": a.run_id(config, attempt or 1),
                 "manifest": manifest_path(config, args.base_seed, a.variant),
+                "index": a.index,
             }[args.field]
             print(value)
             return 0
         if args.print_args or args.print_command:
-            leaf = leaf_args(ROOT, args.arm, config, args.base_seed, args.hardware_id, args.cores)
+            leaf = leaf_args(
+                ROOT, a.index, config, args.base_seed, args.hardware_id, args.cores, attempt or 1
+            )
             words = (["python3", a.leaf] if args.print_command else []) + leaf
             print(shlex.join(words))
             return 0

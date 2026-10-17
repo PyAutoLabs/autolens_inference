@@ -32,7 +32,11 @@ Sampler wave 1 (2026-10-17, phase 3, autolens_inference#27): the four sampler le
 `cs1017_<config>_<variant>_<sampler>_s<seed>`. The A100 `jax_gpu` dense arms are
 submitted `afterok` on the GPU dense base array; the `ral` `jax_cpu` dense arms wait for
 the CPU base rows. `scripts/misc/experiments/wave.py` holds the arm table, and
-`--account` reports each arm as row, failed or missing.
+`--account` reports each arm as row, failed, missing or deferred.
+Attempt 1 (RAL array 412543) wrote no rows: Nautilus and Emcee completed their fits but the
+row writer refused PyAutoFit's tuple parameter names (fixed in autolens_inference#33), and
+NUTS (385 GiB) and SMC (48 GiB) ran out of A100 memory. NUTS and SMC are deferred in wave 1;
+attempt 2 re-runs the twelve Nautilus and Emcee arms with run ids suffixed `_a2`.
 
 numba_cpu base (2026-10-17, autolens_inference#31): `submit_hst_cleanslate_numba_cpu_{dense,sparse}`
 (8 `ral` CPUs, seeds 0 and 1, both light modes, same pin, root and tag) load the jax_cpu

@@ -50,5 +50,21 @@ add leaves here: it runs the sampler leaves of `scripts/imaging/rectangular/` (`
 The arm table is data in
 [`../../misc/experiments/wave.py`](../../misc/experiments/wave.py):
 `--list --config <config>` prints every arm, `--account --config <config>` reports each as
-`row`, `failed` or `missing` and never infers success. Wave 2 (NSS, Dynesty, Zeus) needs
-runner support first.
+`row`, `failed`, `missing` or `deferred` and never infers success. Wave 2 (NSS, Dynesty,
+Zeus) needs runner support first.
+
+**Attempt 1 failed (RAL array 412543, 2026-10-17); attempt 2 re-runs Nautilus and Emcee.**
+Every Nautilus and Emcee arm completed its fit (the PyAutoFit trees exist under
+`output/experiments/cs1017_*`) and then lost its row: `run.py` keyed
+`max_likelihood_parameters` by `samples.names`, which PyAutoFit returns as *tuples* of dotted
+aliases, and the JSON write refused them (autolens_inference#33; now keyed through the SLaM
+runner's `posterior_path`, and a diagnostics failure after a completed fit is recorded as
+`complete; diagnostics failed: ...` rather than losing the row). NUTS (`jit_log_l`, 385 GiB)
+and SMC (256-particle `jit_scan`, 48 GiB) ran out of memory on the 80 GB A100: both are
+**deferred** in wave 1 (`wave.py` `DEFERRED`, reason "A100 OOM 2026-10-17 (385 GiB NUTS,
+48 GiB SMC)") pending a memory-feasible formulation (the sparse-operator problem
+`hpc_a100_jax_gpu_sparse_fp64`, fewer particles, or a CPU problem with host memory).
+A re-run of an arm is a new attempt: `--attempt N` appends `_a<N>` to the run id (run ids are
+never reused), and `--sampler-filter nautilus,emcee` restricts a submit to the twelve
+Nautilus and Emcee arms. `--account` lists every attempt per arm; the arm's live state is its
+latest complete row.
