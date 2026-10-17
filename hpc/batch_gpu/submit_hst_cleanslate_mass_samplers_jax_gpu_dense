@@ -20,6 +20,18 @@
 # then refuses on any identity, artifact digest or library-revision mismatch by itself, and
 # refuses an existing run id, so a resubmitted arm can never overwrite a measurement.
 #
+# ATTEMPT 2 (autolens_inference#33). Attempt 1 (RAL array 412543, 2026-10-17, all 24 arms) lost
+# every row: Nautilus/Emcee completed their fits and died in run.py's row write (tuple parameter
+# names, fixed in #33); NUTS (385 GiB `jit_log_l`) and SMC (48 GiB `jit_scan`) ran out of A100
+# memory and are DEFERRED in wave.py. This file now runs attempt 2 (`PYAUTO_WAVE_ATTEMPT`, default
+# 2; run ids gain `_a2`) over the twelve Nautilus and Emcee arms (`PYAUTO_WAVE_SAMPLERS`, default
+# nautilus,emcee; array index = position in that filtered list, `--array=0-11%4`). The problems
+# exist, so no dependency is needed:
+#
+#   hpc/sync submit submit_hst_cleanslate_mass_samplers_jax_gpu_dense
+#
+# A later attempt edits the defaults below (a commit, so the attempt is reproducible from git).
+#
 # Pinned like the base it reads: PYAUTO_LIB_BASE / PYAUTO_RELEASE_PIN are the 2026.10.17.1 pin
 # (hpc/README.md "Running against a pinned release"), the revisions the problems were frozen under.
 #
@@ -46,7 +58,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64gb
 #SBATCH --time=06:00:00
-#SBATCH --array=0-23%4
+#SBATCH --array=0-11%4
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
 #SBATCH --mail-type=END,FAIL
@@ -81,7 +93,13 @@ HARDWARE_ID=ral-a100-1gpu-4cpu
 # The sampler order of wave.py's arm table; wave.py refuses the arm if this ever differs.
 SAMPLERS=(nautilus emcee nuts smc)
 WAVE=scripts/misc/experiments/wave.py
-ARM_FLAGS="--arm $SLURM_ARRAY_TASK_ID --config $CONFIG --base-seed $BASE_SEED"
+# Attempt and sampler filter (autolens_inference#33). The array index is a position in the
+# FILTERED arm list (wave order), so `--array` must be 0-<n-1> for the filter's n arms
+# (`wave.py --list --config $CONFIG --sampler-filter ...` prints them). NUTS and SMC are
+# deferred in wave 1 (A100 OOM, wave.py DEFERRED) and refused if selected.
+ATTEMPT=${PYAUTO_WAVE_ATTEMPT:-2}
+WAVE_SAMPLERS=${PYAUTO_WAVE_SAMPLERS:-nautilus,emcee}
+ARM_FLAGS="--arm $SLURM_ARRAY_TASK_ID --config $CONFIG --base-seed $BASE_SEED --attempt $ATTEMPT --sampler-filter $WAVE_SAMPLERS"
 
 SAMPLER_INDEX=$(python3 $WAVE $ARM_FLAGS --samplers "${SAMPLERS[*]}" --field sampler_index)
 SAMPLER=${SAMPLERS[$SAMPLER_INDEX]}
@@ -89,7 +107,8 @@ LEAF_ARGS=$(python3 $WAVE $ARM_FLAGS --hardware-id $HARDWARE_ID --cores $SLURM_C
 
 echo "=========================================="
 date
-echo "Wave:       cleanslate_2026_10_17_wave1, arm $SLURM_ARRAY_TASK_ID"
+ARM_INDEX=$(python3 $WAVE $ARM_FLAGS --field index)
+echo "Wave:       cleanslate_2026_10_17_wave1, attempt $ATTEMPT, samplers $WAVE_SAMPLERS, array index $SLURM_ARRAY_TASK_ID = arm $ARM_INDEX"
 echo "Cell:       imaging/rectangular/$SAMPLER"
 echo "Config:     $CONFIG (problem base seed $BASE_SEED)"
 echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
