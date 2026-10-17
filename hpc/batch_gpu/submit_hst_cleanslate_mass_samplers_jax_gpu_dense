@@ -1,0 +1,101 @@
+#!/bin/bash -l
+#
+# HST clean slate, phase 3 wave 1 — the four samplers on the frozen A100 `jax_gpu` dense
+# mass_total[1] problems, both lens-light modes, sampler seeds 0-2: 24 arms, one A100 each.
+#
+# PyAutoInsight campaign `hst-imaging-mass-samplers`, task `hst_mass_samplers_wave1`
+# (autolens_inference#27). Phase 2 (`submit_hst_cleanslate_jax_gpu_dense`) exports the frozen
+# problems to output/prepared/cleanslate_2026_10_17/hpc_a100_jax_gpu_dense_fp64/seed_<n>/<variant>/;
+# this array runs every sampler `scripts/misc/experiments/run.py` supports, cold, on the base-seed-0
+# problem of `slam_base` and `slam_base_lightfixed`. Submit it ONLY with a dependency on that base
+# array, so no arm starts before its problem exists:
+#
+#   hpc/sync submit --dependency afterok:<base job id> submit_hst_cleanslate_mass_samplers_jax_gpu_dense
+#
+# The arm table is data in scripts/misc/experiments/wave.py (wave `cleanslate_2026_10_17_wave1`):
+# index = seed x 8 + variant x 4 + sampler, seed-major, so with `%4` the first four arms are
+# sampler seed 0 of each sampler on `slam_base`. `wave.py --list --config <config>` prints all 24
+# with their run ids (`cs1017_<config>_<variant>_<sampler>_s<seed>`), `--account` reports each as
+# row / failed / missing. Each arm reads its problem id from the manifest at run time; the leaf
+# then refuses on any identity, artifact digest or library-revision mismatch by itself, and
+# refuses an existing run id, so a resubmitted arm can never overwrite a measurement.
+#
+# Pinned like the base it reads: PYAUTO_LIB_BASE / PYAUTO_RELEASE_PIN are the 2026.10.17.1 pin
+# (hpc/README.md "Running against a pinned release"), the revisions the problems were frozen under.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   Four cells, one per sampler leaf, and nothing measured on any of them: the phase-1 base
+#   stage of this problem took 9 to 14 min for Nautilus (150 live, batch 20) on the A100, which
+#   is an observation of the base stage, never a rate for these leaves; Emcee, NUTS and SMC
+#   have never run on this problem. No `wall:` is offered. `--time` below is a CONTAINMENT,
+#   not a derived budget, and the `%4` throttle makes the first arm of each sampler its probe:
+#   read `total_wall_s` from its row before trusting the rest of the array's budget.
+#   cell: imaging/rectangular/nautilus  device: a100  precision: fp64
+#   lanes: 1  steps: unmeasured  source: unmeasured  probe-first: yes
+#   cell: imaging/rectangular/emcee  device: a100  precision: fp64
+#   lanes: 1  steps: 2000  source: unmeasured  probe-first: yes
+#   cell: imaging/rectangular/nuts  device: a100  precision: fp64
+#   lanes: 1  steps: 1500  source: unmeasured  probe-first: yes
+#   cell: imaging/rectangular/smc  device: a100  precision: fp64
+#   lanes: 1  steps: 1000  source: unmeasured  probe-first: yes
+#
+#SBATCH -J hst_cs_mass_samplers_jax_gpu_dense
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=06:00:00
+#SBATCH --array=0-23%4
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/inference/autolens_inference
+
+# The release pin: exported BEFORE activate.sh, which reads PYAUTO_LIB_BASE.
+export PYAUTO_LIB_BASE=/mnt/ral/jnightin/inference/pins/2026.10.17.1
+export PYAUTO_RELEASE_PIN=2026.10.17.1
+source $AP_ROOT/activate.sh
+
+# JAX_PLATFORMS and JAX_ENABLE_X64 are exported EXPLICITLY, never inherited: without the
+# first, this job can silently fall back to CPU and report a "GPU" wall clock that is
+# nothing of the kind; without the second, an fp64 config runs in fp32.
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# Proof of what the job actually got.
+nvidia-smi
+
+cd $AP_ROOT
+
+CONFIG=hpc_a100_jax_gpu_dense_fp64
+BASE_SEED=0
+HARDWARE_ID=ral-a100-1gpu-4cpu
+# The sampler order of wave.py's arm table; wave.py refuses the arm if this ever differs.
+SAMPLERS=(nautilus emcee nuts smc)
+WAVE=scripts/misc/experiments/wave.py
+ARM_FLAGS="--arm $SLURM_ARRAY_TASK_ID --config $CONFIG --base-seed $BASE_SEED"
+
+SAMPLER_INDEX=$(python3 $WAVE $ARM_FLAGS --samplers "${SAMPLERS[*]}" --field sampler_index)
+SAMPLER=${SAMPLERS[$SAMPLER_INDEX]}
+LEAF_ARGS=$(python3 $WAVE $ARM_FLAGS --hardware-id $HARDWARE_ID --cores $SLURM_CPUS_PER_TASK --print-args)
+
+echo "=========================================="
+date
+echo "Wave:       cleanslate_2026_10_17_wave1, arm $SLURM_ARRAY_TASK_ID"
+echo "Cell:       imaging/rectangular/$SAMPLER"
+echo "Config:     $CONFIG (problem base seed $BASE_SEED)"
+echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
+echo "Leaf args:  $LEAF_ARGS"
+
+python3 scripts/imaging/rectangular/${SAMPLER}.py $LEAF_ARGS
+
+echo "Finished."
+date
