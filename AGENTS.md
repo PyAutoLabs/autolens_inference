@@ -128,6 +128,13 @@ config: `fixed` names its own variant (`slam_base_lightfixed`) and its own parit
   set `JAX_ENABLE_X64=True` runs an `fp64` config in fp32.
 - **`NPROC=$SLURM_CPUS_PER_TASK`** in every sbatch script: `NPROC` throttles JAX's CPU
   thread pool, and an unset one lets a job take the whole node.
+- **A shared stage is a declared departure, named in the row.** `--stages-from
+  <config>:source_lp` loads the parametric `source_lp[1]` from another config's completed
+  chain (the clean-slate numba_cpu legs share the jax_cpu dense one, human decision
+  2026-10-17). The stage entry carries `shared_from_config` and `fitted_backend`, the row's
+  `chain_wall_s` excludes it (`chain_wall_excludes`), and its wall is never cited as this
+  config's. Only `source_lp` may be shared, because a pixelized stage's inversion is the thing
+  being compared. An incomplete shared stage exits 3 and is never refitted.
 
 ## Outputs are KEPT
 

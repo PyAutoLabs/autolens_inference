@@ -459,6 +459,61 @@ def _render_parity(rows: list[dict]) -> str:
     return "".join(blocks)
 
 
+def _shared_from(row: dict) -> str | None:
+    """The config a stage was loaded from (``--stages-from``), else ``None``."""
+    stage = row.get("_stage") or {}
+    return stage.get("shared_from_config") or row.get("shared_from_config")
+
+
+def _format_stage_wall(row: dict) -> str:
+    """A stage's wall, or a marker for a stage loaded from another config.
+
+    A shared stage's ``wall_s`` is the other config's fit (autolens_inference#31);
+    printed bare it would read as this config's measurement, so the cell names
+    where it came from instead.
+    """
+    shared = _shared_from(row)
+    if shared:
+        return f"shared from `{shared}`"
+    return _format_time(row.get("wall_s"))
+
+
+def _render_chain_walls(rows: list[dict]) -> str:
+    """One line per config with a recorded ``chain_wall_s`` (fitted stages only).
+
+    Rows written before the field existed carry none and render nothing, so the
+    view only appears once a chain records it. A chain that loaded a stage from
+    another config says which stages its wall excludes.
+    """
+    walls: dict[tuple, dict] = {}
+    for row in rows:
+        if row.get("chain_wall_s") is None:
+            continue
+        key = (
+            str(row.get("target", "")),
+            str(row.get("seed", "")),
+            _config_label(row),
+        )
+        walls[key] = row
+    if not walls:
+        return ""
+    body = []
+    for (target, seed, label), row in sorted(walls.items()):
+        excludes = row.get("chain_wall_excludes") or []
+        shared = (row.get("stages_from") or {}).get("config_name")
+        note = (
+            f"excludes {', '.join(excludes)} (shared from `{shared}`)"
+            if excludes
+            else "all stages fitted"
+        )
+        body.append(
+            [f"`{target}`", seed, f"`{label}`", _format_time(row.get("chain_wall_s")), note]
+        )
+    return "\n**Chain walls (fitted stages only)**\n" + _render_table(
+        ["Target", "Seed", "Config", "Chain wall", "Excludes"], body
+    )
+
+
 def render_slam() -> str:
     """Pipeline runs — one line per (target, stage, config), plus the parity view."""
     rows = [row for row in _scan_rows(SLAM_ROOT) if _is_complete(row)]
@@ -475,7 +530,7 @@ def render_slam() -> str:
             _cell(row.get("stage")),
             f"`{_config_label(row)}`",
             _cell(row.get("seed")),
-            _format_time(row.get("wall_s")),
+            _format_stage_wall(row),
             _format_evals(row.get("likelihood_evals")),
             _format_evidence(row.get("log_evidence")),
             _cell(row.get("version")),
@@ -497,7 +552,7 @@ def render_slam() -> str:
         ],
         body,
     )
-    return table + _render_parity(rows)
+    return table + _render_parity(rows) + _render_chain_walls(rows)
 
 
 def _format_per_call(seconds) -> str:

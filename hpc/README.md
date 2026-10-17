@@ -7,6 +7,7 @@ Driving the RAL HPC from the laptop, and getting runs back.
 ```
 sync                    laptop-side driver (below)
 sync.conf.example       template; sync.conf is gitignored
+wait_for_stage.sh       in-job wait for another chain's completed SLaM stage (--stages-from)
 batch_gpu/
   template              the shape every A100 submit is copied from
   submit_<name>         one submit per run
@@ -300,6 +301,8 @@ run the four sampler leaves of `scripts/imaging/rectangular/` on frozen mass pro
 | `batch_gpu/submit_hst_cleanslate_jax_gpu_sparse` | `imaging/slam/hst` | `gpu` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_gpu` × sparse, `--lens-light both` |
 | `batch_cpu/submit_hst_cleanslate_jax_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × dense, `--lens-light both` (48 GB) |
 | `batch_cpu/submit_hst_cleanslate_jax_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × sparse, `--lens-light both` (64 GB) |
+| `batch_cpu/submit_hst_cleanslate_numba_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `numba_cpu` × dense, `--lens-light both`, `source_lp[1]` shared from the jax_cpu dense chain (in-job wait) (48 GB) |
+| `batch_cpu/submit_hst_cleanslate_numba_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `numba_cpu` × sparse, `--lens-light both`, `source_lp[1]` shared from the jax_cpu dense chain (in-job wait) (64 GB) |
 | `batch_gpu/submit_hst_cleanslate_mass_samplers_jax_gpu_dense` | `imaging/rectangular/{nautilus,emcee,nuts,smc}` | `gpu` | `0-23%4` | clean-slate wave 1: four samplers × seeds 0-2 × both light modes on the frozen A100 dense problems; submitted `--dependency afterok:<base>` |
 | `batch_cpu/submit_hst_cleanslate_mass_samplers_jax_cpu_dense` | `imaging/rectangular/{nautilus,emcee,nuts,smc}` | `ral` | `0-23%6` | the same 24 arms on the frozen RAL CPU dense problems; waits for the CPU base rows |
 
@@ -320,6 +323,15 @@ measured before it twice over:
   parity groups in the README view.
 
 The CPU pair is `--partition=ral` only — never `gpu`, `ral,gpu` or `gpu,ral`.
+
+The numba_cpu pair (autolens_inference#31) shares the jax_cpu dense chain's `source_lp[1]`
+(`--stages-from hpc_a100_jax_cpu_dense_fp64:source_lp`; the rule is in
+`scripts/imaging/slam/README.md`, "Shared stages"). Before the runner starts, each job runs
+`hpc/wait_for_stage.sh <jax_cpu dense seed dir>`. The helper polls `_runner.py
+--stage-complete` every 5 minutes, capped at 8 h, and on timeout exits 4 without fitting. The
+helper is a poll, not a cell, so it stays out of the submit's `python3 scripts/...` lines,
+which are what the wall gate reads. The pair can be submitted before the jax_cpu stage
+finishes. If the jax_cpu array is cancelled, cancel these too, or they exit 4 after 8 h.
 
 ### The clean-slate wave-1 sampler submits (2026-10-17)
 

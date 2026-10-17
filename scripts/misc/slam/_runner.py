@@ -59,6 +59,18 @@ Deliberate departures from ``slam_start_here.py``
    and only in test mode, where the model it would have been solved from is a
    near-random prior draw.
 
+6. **``--stages-from`` loads a stage from another config's chain instead of
+   fitting it** (autolens_inference#31). The stage's PyAutoFit ``path_prefix``
+   names the other config (same output root, variant and seed), so its
+   completed fit is loaded exactly as a PyAutoFit resume loads one, and the
+   result is used only as a result object (prior passing). Only the parametric
+   ``source_lp[1]`` may be shared (no inversion, so both CPU backends fit the
+   same likelihood there). The run refuses with exit 3, fitting nothing, unless
+   that stage is complete there *for this run's own model and search
+   identifier*. The row names the departure: the stage entry carries
+   ``shared_from_config`` and the payload's ``chain_wall_s`` excludes it
+   (``chain_wall_excludes``).
+
 Hazards this module is built around (do not rediscover them)
 ------------------------------------------------------------
 
@@ -134,6 +146,22 @@ from _inference_cli import (  # noqa: E402
 #: ``null``). v1/v2 rows still read: an absent ``lens_light_mode`` is
 #: ``linear`` (the only mode that existed), absent provenance is ``null``.
 SCHEMA_VERSION = 3
+
+#: Exit code of a ``--stages-from`` run whose shared stage is not complete in
+#: the other config's tree (nothing is fitted). 2 stays the flag/environment
+#: refusal; 4 is the submit's in-job wait timing out.
+SHARED_STAGE_INCOMPLETE_EXIT = 3
+
+SHARED_STAGE_NOTE = (
+    "loaded from another config's completed fit (--stages-from), not fitted by "
+    "this run: wall_s and likelihood_evals are that fit's, kept for the record "
+    "and excluded from chain_wall_s"
+)
+CHAIN_WALL_NOTE = (
+    "chain_wall_s is the sum of the sampler walls (wall_s) of the stages this "
+    "row's process fitted; a stage loaded from another config (shared_from_config) "
+    "is excluded and listed in chain_wall_excludes"
+)
 
 #: What a v1/v2 row's ``lens_light_mode`` is when the field is absent: the only
 #: mode the chain had before v3.
@@ -401,6 +429,110 @@ def checkpoint_exists(search_root: Path, search_name: str) -> bool:
         (d / "files" / "search_internal" / "checkpoint.hdf5").exists()
         for d in stage_output_dirs(search_root, search_name)
     )
+
+
+def stage_completed(search_root: Path, search_name: str) -> bool:
+    """Is ``search_name`` complete under ``search_root``: any identifier directory
+    holding PyAutoFit's ``.completed`` marker.
+
+    The same marker :func:`_stage_row` reads for ``completed``, and the test the
+    numba clean-slate submits poll (``python3 scripts/misc/slam/_runner.py
+    --stage-complete <seed_dir>``) before a ``--stages-from`` run starts.
+    ``.completed`` is written only after the fit's archive has landed, so a stage
+    carrying it is loadable.
+    """
+    return any((d / ".completed").exists() for d in stage_output_dirs(search_root, search_name))
+
+
+class SharedStageIncomplete(RuntimeError):
+    """A ``--stages-from`` stage is not complete in the other config's tree."""
+
+
+def validate_stages_from(cli: InferenceCLI) -> str | None:
+    """Return an error for a ``--stages-from`` that disagrees with this run.
+
+    The grammar and the shareable-stage rule are checked at parse time
+    (``parse_stages_from``); what needs this run's flags is checked here: a run
+    may not share from itself, and both chains must run at the same precision
+    (a fp64 stage is not the mp chain's stage 1).
+    """
+    if cli.stages_from is None:
+        return None
+    shared_config, _stages = cli.stages_from
+    if shared_config == cli.config_name:
+        return f"--stages-from names this run's own config {shared_config!r}"
+    own = CONFIG_NAME_RE.match(cli.config_name or "")
+    other = CONFIG_NAME_RE.match(shared_config)
+    if own is not None and other is not None and own.group(4) != other.group(4):
+        return (
+            f"--stages-from config {shared_config!r} runs at precision "
+            f"{other.group(4)!r}, this run at {own.group(4)!r}"
+        )
+    return None
+
+
+def shared_stage_names(cli: InferenceCLI) -> dict[str, str]:
+    """``{stage_key: shared_from_config}`` for the stages this run loads."""
+    if cli.stages_from is None:
+        return {}
+    shared_config, stages = cli.stages_from
+    return {stage: shared_config for stage in stages}
+
+
+def shared_stage_prefixes(
+    cli: InferenceCLI, dataset_class: str, instrument: str, variant: str, seed: int
+) -> dict[str, Path]:
+    """``{stage_key: path_prefix}`` for the shared stages: the OTHER config's prefix.
+
+    The same output root, variant (stages 1 to 4 are the mesh-only variant
+    whatever the light mode) and seed as this run; only the config level names
+    the chain the stage is loaded from.
+    """
+    return {
+        stage: output_path_prefix(dataset_class, instrument, variant, shared_config, seed)
+        for stage, shared_config in shared_stage_names(cli).items()
+    }
+
+
+def chain_wall_from(stages: list[dict]) -> dict:
+    """The row-level chain wall: fitted stages only.
+
+    ``chain_wall_s`` sums ``wall_s`` over the stages this process fitted and is
+    null when any of them lacks one (a partial sum would read as a chain wall).
+    Stages loaded from another config are never in the sum: their wall is that
+    config's, and counting it would make a shared chain look as slow as the
+    chain it borrowed from, or a parity row compare one stage twice.
+    """
+    fitted = [stage for stage in stages if not stage.get("shared_from_config")]
+    walls = [stage.get("wall_s") for stage in fitted]
+    total = None
+    if fitted and all(isinstance(w, (int, float)) for w in walls):
+        total = float(sum(walls))
+    return {
+        "chain_wall_s": total,
+        "chain_wall_excludes": [
+            stage.get("name") for stage in stages if stage.get("shared_from_config")
+        ],
+        "chain_wall_note": CHAIN_WALL_NOTE,
+    }
+
+
+def mark_shared_stage(row: dict, shared_from_config: str, load_s: float | None) -> dict:
+    """Turn a stage row built from a loaded fit into a declared shared stage."""
+    match = CONFIG_NAME_RE.match(shared_from_config)
+    fitted_backend = match.group(2) if match else None
+    row.update(
+        shared_from_config=shared_from_config,
+        shared_stage_note=SHARED_STAGE_NOTE,
+        # The process that FITTED this stage, read from the config name: a
+        # numba chain sharing a jax_cpu stage must not claim use_jax=False here.
+        fitted_backend=fitted_backend,
+        use_jax=None if fitted_backend is None else fitted_backend != "numba_cpu",
+        # This process only loaded it; its search.fit call is not a stage wall.
+        total_wall_s=None,
+        shared_load_s=_as_float(load_s),
+    )
+    return row
 
 
 def _stage_row(
@@ -1466,6 +1598,11 @@ def run_slam(
     config_name = cli.config_name
     precision = config_name_precision(config_name)
 
+    error = validate_stages_from(cli)
+    if error is not None:
+        print(f"ERROR: {error}", file=sys.stderr)
+        return 2
+
     if cli.stages is not None and cli.stages not in STAGES:
         print(f"ERROR: --stages {cli.stages!r} is not one of {STAGES}", file=sys.stderr)
         return 2
@@ -1523,12 +1660,48 @@ def run_slam(
     print(f"  variant:    {variant}  (mesh={cli.mesh}, mesh_pixels={cli.mesh_pixels})")
     print(f"  lens light: {cli.lens_light}  (mass_total[1] variants: {list(variants.values())})")
     print(f"  results tag: {cli.results_tag}")
+    print(f"  stages from: {cli.stages_from}")
     print(f"  backend:    {cli.backend}  (use_jax={use_jax}, cores={cores})")
     print(f"  inversion:  {cli.inversion}")
     print(f"  precision:  {precision}")
     print(f"  env set:    {env}")
     print(f"  output:     {output_root}")
     print(f"  test mode:  {is_test_mode()}")
+
+    # `--stages-from`: a shared stage's prefix names the OTHER config, so its
+    # completed fit is loaded (PyAutoFit resume), never refitted here.
+    # Checked before the dataset is even loaded, so a refusal costs nothing.
+    shared_from = shared_stage_names(cli)
+    shared_prefixes = shared_stage_prefixes(cli, dataset_class, instrument, variant, seed)
+    stage_settings_search = {}
+    stage_search_roots = {}
+    for stage_key, shared_config in shared_from.items():
+        shared_prefix = shared_prefixes[stage_key]
+        stage_settings_search[stage_key] = af.SettingsSearch(
+            path_prefix=shared_prefix,
+            unique_tag=None,
+            info=None,
+            session=None,
+            number_of_cores=1 if use_jax else cores,
+        )
+        stage_search_roots[stage_key] = with_test_mode_segment(output_root) / shared_prefix
+        complete = stage_completed(stage_search_roots[stage_key], STAGE_SEARCH_NAMES[stage_key])
+        print(
+            f"  shared:     {STAGE_SEARCH_NAMES[stage_key]} from {shared_config} "
+            f"({stage_search_roots[stage_key]}) complete={complete}"
+        )
+        if not complete:
+            print(
+                f"ERROR: --stages-from {shared_config}:{stage_key} but "
+                f"{STAGE_SEARCH_NAMES[stage_key]} is not complete under "
+                f"{stage_search_roots[stage_key]} (no identifier directory holds "
+                f"`.completed`). Refusing to run: fitting it here would make this "
+                f"chain a different chain from the one it claims to share. Wait for "
+                f"that stage (the clean-slate submits poll `_runner.py "
+                f"--stage-complete`) or drop --stages-from. Nothing was fitted.",
+                file=sys.stderr,
+            )
+            return SHARED_STAGE_INCOMPLETE_EXIT
 
     # --- dataset ----------------------------------------------------------
     from instruments.imaging import INSTRUMENTS
@@ -1658,8 +1831,25 @@ def run_slam(
         model, analysis, search = built
         n_live, n_batch = STAGE_SAMPLING[stage_key]
         search_name = STAGE_SEARCH_NAMES[stage_key]
+        if stage_search_root is None:
+            stage_search_root = stage_search_roots.get(stage_key)
         stage_root = stage_search_root if stage_search_root is not None else search_root
         stage_started = time.perf_counter()
+        shared_config = shared_from.get(stage_key)
+        if shared_config is not None:
+            # The directory-level test passed before the chain started; this is
+            # the exact one. PyAutoFit loads a fit only when THIS model+search
+            # hashes to the completed identifier — anything else would be a
+            # fresh fit written into the other config's tree.
+            search.paths.model = analysis.modify_model(model)
+            search.paths.unique_tag = search.unique_tag
+            if not search.paths.is_complete:
+                raise SharedStageIncomplete(
+                    f"--stages-from {shared_config}:{stage_key}: this run's "
+                    f"{search_name} identifier {search.paths.identifier} is not a "
+                    f"completed fit under {stage_root} (the model or search settings "
+                    f"differ from the run that fitted it). Nothing was fitted."
+                )
 
         # Sampled BEFORE the fit: nautilus deletes checkpoint.hdf5 on completion.
         resumed = checkpoint_exists(stage_root, search_name)
@@ -1709,7 +1899,9 @@ def run_slam(
 
         compile_s = None
         compile_note = None
-        if use_jax and is_test_mode():
+        if shared_config is not None:
+            compile_note = "no compile probe: stage loaded from another config, not fitted"
+        elif use_jax and is_test_mode():
             compile_note = COMPILE_S_TEST_MODE_NOTE
         elif use_jax:
             try:
@@ -1754,6 +1946,10 @@ def run_slam(
             max_log_likelihood=max_log_likelihood,
             compile_s_note=compile_note,
         )
+        if shared_config is not None:
+            mark_shared_stage(row, shared_config, total_wall_s)
+        else:
+            row["use_jax"] = use_jax
         if prepared_manifest is not None:
             from experiments.prepared import complete_baseline, verify_manifest
 
@@ -1845,6 +2041,12 @@ def run_slam(
             # so rather than inventing one.
             "mesh_shape": list(meshes.shape) if meshes.shape is not None else None,
             "stages_requested": stop_after,
+            "stages_from": (
+                {"config_name": cli.stages_from[0], "stages": list(cli.stages_from[1])}
+                if cli.stages_from is not None
+                else None
+            ),
+            **chain_wall_from(stages),
             "test_mode": bool(is_test_mode()),
             "status": status,
             "stages": stages,
@@ -1878,7 +2080,7 @@ def run_slam(
             source_lp(
                 af,
                 al,
-                settings_search,
+                stage_settings_search.get("source_lp", settings_search),
                 dataset,
                 mask_radius=mask_radius,
                 redshift_lens=REDSHIFT_LENS,
@@ -2025,6 +2227,10 @@ def run_slam(
             write("complete", mode)
 
         return 0
+    except SharedStageIncomplete as exc:
+        # A refusal, not a failure: nothing was fitted, so no row is written.
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return SHARED_STAGE_INCOMPLETE_EXIT
     except BaseException as exc:
         write_all(f"failed: {type(exc).__name__}: {exc}")
         raise
@@ -2041,3 +2247,35 @@ def _device_info() -> dict:
         return device_info_dict()
     except Exception as exc:
         return {"backend": None, "error": f"{type(exc).__name__}: {exc}"}
+
+
+def main_stage_complete(argv: list[str] | None = None) -> int:
+    """``python3 scripts/misc/slam/_runner.py --stage-complete <seed_dir>``.
+
+    Exit 0 when the stage is complete under ``<seed_dir>`` (the
+    ``.../<variant>/<config_name>/seed_<n>`` directory of a chain), 1 when not.
+    It runs :func:`stage_completed`, the test the runner itself applies to a
+    ``--stages-from`` stage, and imports nothing beyond the stdlib, so a SLURM
+    wait loop can poll it cheaply.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description=main_stage_complete.__doc__)
+    parser.add_argument("--stage-complete", type=Path, required=True, metavar="SEED_DIR")
+    parser.add_argument(
+        "--stage",
+        default="source_lp",
+        choices=tuple(STAGE_SEARCH_NAMES),
+        help="Stage key (default source_lp, i.e. source_lp[1]).",
+    )
+    args = parser.parse_args(argv)
+    complete = stage_completed(args.stage_complete, STAGE_SEARCH_NAMES[args.stage])
+    print(
+        f"{STAGE_SEARCH_NAMES[args.stage]} under {args.stage_complete}: "
+        f"{'complete' if complete else 'not complete'}"
+    )
+    return 0 if complete else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main_stage_complete())
