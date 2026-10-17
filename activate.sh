@@ -54,9 +54,23 @@ if [ -n "${SLURM_JOB_ID:-}" ]; then
     export PYTHONUNBUFFERED=1
 fi
 
-BASE=/mnt/ral/jnightin/PyAuto
+# --- Which PyAuto* checkouts, and which venv ---------------------------------
+# SHARED_BASE is the shared RAL mirror: it holds the venv (`$SHARED_BASE/PyAuto`)
+# and, by default, the five library checkouts. It is NEVER pulled for a pinned
+# run (standing rule: the euclid_dr1 jobs read it live).
+#
+# BASE is where the five PyAuto* checkouts on PYTHONPATH come from. A submit
+# that must run against a release exports PYAUTO_LIB_BASE to a private pinned
+# checkout set — five repos at one release tag under one directory, e.g.
+# /mnt/ral/jnightin/inference/pins/2026.10.17.1 (how to create one:
+# hpc/README.md, "Running against a pinned release"). Only PYTHONPATH moves:
+# the venv (third-party deps only, never PyAuto*) stays the shared one, so a
+# pin directory needs no venv of its own. The row's `library_revisions` then
+# records which commits were actually imported.
+SHARED_BASE=/mnt/ral/jnightin/PyAuto
+BASE=${PYAUTO_LIB_BASE:-$SHARED_BASE}
 
-source "$BASE/PyAuto/bin/activate"
+source "$SHARED_BASE/PyAuto/bin/activate"
 
 # --- Keep caches OFF $HOME on HPC -------------------------------------------
 # On RAL every node's /home sits on a small root disk (as does /tmp), so tools that
@@ -67,7 +81,8 @@ source "$BASE/PyAuto/bin/activate"
 # filled, so a submit script's own JAX_COMPILATION_CACHE_DIR still wins (and an
 # explicitly EMPTY one still disables the JAX cache). The `|| true` keeps a failed
 # mkdir from tripping the SLURM `set -eE` guard above.
-export PYAUTO_HPC_CACHE="${PYAUTO_HPC_CACHE:-$(dirname "${PYAUTO_HPC_BASE:-$BASE}")/.cache}"
+# Keyed to the SHARED root, not $BASE, so a pinned run shares the one cache.
+export PYAUTO_HPC_CACHE="${PYAUTO_HPC_CACHE:-$(dirname "${PYAUTO_HPC_BASE:-$SHARED_BASE}")/.cache}"
 mkdir -p "$PYAUTO_HPC_CACHE" 2>/dev/null || true
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$PYAUTO_HPC_CACHE}"
 export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$PYAUTO_HPC_CACHE/pip}"
