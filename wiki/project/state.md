@@ -23,14 +23,16 @@ interferometer and point-source data.
 
 ## Where we are
 
-**2026-09-24 — every existing SLaM HST row is archived; the A100 legs and the numba-CPU sparse legs (both variants) are
-re-running on the sped-up library mains.** The four `slam_base` and four `delaunay_1250` A100 rows (plus the
-`342695` rate-probe row) were measured before the autolens_profiling likelihood speedups
-landed, so they now describe code nobody runs. They live on, unchanged, under
-`results/archive/2026-09-24_pre_likelihood_speedup/` (and their PyAutoFit trees under
-`output/archive/…`, locally and on RAL); the dashboard reads only `results/slam/` and
-`results/searches/`, so they are no longer live rows. The live tree is empty until the
-re-runs land — see the 2026-09-24 journal entry for the job ids.
+**2026-10-17: all six 2026-09-24 re-runs completed and the 12 post-speedup SLaM HST rows are live.**
+RAL jobs 350674, 350675, 350678 and 350679 (A100, `jax_gpu` dense and sparse, both variants)
+and 350682 and 350684 (`ral`, `numba_cpu` sparse, both variants) all ended `COMPLETED 0:0`
+per sacct queried 2026-10-17. Each wrote `status: complete` rows for seeds 0 and 1 under
+`results/slam/imaging/hst/{slam_base,delaunay_1250}/`. The A100 chain walls are
+single-attempt measurements; the two `numba_cpu` arrays were requeued after their first
+start, so each carries one `resumed` stage and its chain wall spans more than one attempt.
+Execution completed; no scientific acceptance is implied by any row. The pre-speedup rows
+stay under `results/archive/2026-09-24_pre_likelihood_speedup/`. See the 2026-10-17 journal
+entry for the tables, the caveats and the proposed readings.
 
 **Born 2026-09-10 — phase 3 of the `autolens-inference` epic shipped 2026-09-11 (PR
 pending).**
@@ -374,3 +376,99 @@ inference rather than on one likelihood call.
 **Limits.** This is a timing-based estimate, not an instrumented decomposition of the fit. It uses the median of 200 synchronized calls after 10 warm-ups at the prior-median vector, with a fixed batch of 50; actual batch lengths and parameter vectors may differ. The single-call alternative gives 1.73–2.03%, but is not a proven upper bound across all fit states. `wall_s` is the sampler timer; total fit wall, setup and compilation are separate fields. No node-load/affinity or library dirty-state snapshot was recorded, so these are admission estimates, not quiet-node A/B speed claims. Logs retain a nonfatal visualization warm-up warning. Five seeds on one simulated lens are limited recovery evidence, not a general reliability rate.
 
 **Next.** Review and merge this phase; retain the raw run outputs on RAL. No new inference run was submitted during this reconciliation.
+
+### 2026-10-17 — the post-speedup rows land: all six re-runs completed
+
+**What ran.** The six array jobs submitted 2026-09-24 on the then library mains (PyAutoArray
+`3de624b5`, PyAutoLens `86054bbc1`, PyAutoFit `dd9fbe0aa`, PyAutoGalaxy `70a61e26`,
+PyAutoNerves `1fa613a`), seeds 0 and 1 each (array index = seed). All twelve tasks
+completed. sacct `-X`, queried 2026-10-17 at about 11:10Z:
+
+| job | row | state | exit | elapsed | start | end | partition |
+|---|---|---|---|---|---|---|---|
+| 350674_0 | `slam_base/hpc_a100_jax_gpu_dense_fp64` seed 0 | COMPLETED | 0:0 | 01:08:37 | 2026-09-24T20:20:51 | 2026-09-24T21:29:28 | gpu |
+| 350674_1 | `slam_base/hpc_a100_jax_gpu_dense_fp64` seed 1 | COMPLETED | 0:0 | 01:06:48 | 2026-09-24T20:20:51 | 2026-09-24T21:27:39 | gpu |
+| 350675_0 | `slam_base/hpc_a100_jax_gpu_sparse_fp64` seed 0 | COMPLETED | 0:0 | 01:33:40 | 2026-09-24T20:20:51 | 2026-09-24T21:54:31 | gpu |
+| 350675_1 | `slam_base/hpc_a100_jax_gpu_sparse_fp64` seed 1 | COMPLETED | 0:0 | 01:33:08 | 2026-09-24T20:20:51 | 2026-09-24T21:53:59 | gpu |
+| 350678_0 | `delaunay_1250/hpc_a100_jax_gpu_dense_fp64` seed 0 | COMPLETED | 0:0 | 01:22:45 | 2026-09-24T20:20:52 | 2026-09-24T21:43:37 | gpu |
+| 350678_1 | `delaunay_1250/hpc_a100_jax_gpu_dense_fp64` seed 1 | COMPLETED | 0:0 | 01:36:19 | 2026-09-24T20:20:52 | 2026-09-24T21:57:11 | gpu |
+| 350679_0 | `delaunay_1250/hpc_a100_jax_gpu_sparse_fp64` seed 0 | COMPLETED | 0:0 | 02:14:15 | 2026-09-24T20:20:52 | 2026-09-24T22:35:07 | gpu |
+| 350679_1 | `delaunay_1250/hpc_a100_jax_gpu_sparse_fp64` seed 1 | COMPLETED | 0:0 | 02:23:25 | 2026-09-24T20:20:52 | 2026-09-24T22:44:17 | gpu |
+| 350682_0 | `slam_base/hpc_a100_numba_cpu_sparse_fp64` seed 0 | COMPLETED | 0:0 | 1-09:38:22 | 2026-09-25T09:45:47 | 2026-09-26T19:24:09 | ral |
+| 350682_1 | `slam_base/hpc_a100_numba_cpu_sparse_fp64` seed 1 | COMPLETED | 0:0 | 1-12:06:57 | 2026-09-25T09:45:47 | 2026-09-26T21:52:44 | ral |
+| 350684_0 | `delaunay_1250/hpc_a100_numba_cpu_sparse_fp64` seed 0 | COMPLETED | 0:0 | 09:34:20 | 2026-10-03T09:41:13 | 2026-10-03T19:15:33 | ral |
+| 350684_1 | `delaunay_1250/hpc_a100_numba_cpu_sparse_fp64` seed 1 | COMPLETED | 0:0 | 05:34:59 | 2026-10-03T09:41:43 | 2026-10-03T15:16:42 | ral |
+
+The rows are under [`results/slam/imaging/hst/`](../../results/slam/imaging/hst/), one JSON
+and one PNG per seed, all `status: complete`. The eight A100 rows were pulled by `hpc/sync`;
+the four `numba_cpu` rows were copied from
+`/mnt/ral/jnightin/inference/autolens_inference/results/slam/imaging/hst/` on 2026-10-17.
+Each pulled SLURM log (`logs/{gpu,cpu}/output/output.<job>_<seed>.out`) ends `Finished.` with
+the row path.
+
+Per-stage search walls in seconds (`wall_s`; chain = sum of the five stages), the
+`mass_total[1]` evaluations and log evidence, and the largest absolute `truth_delta_sigma` at
+`mass_total[1]`:
+
+| variant | config | seed | chain | source_lp[1] | source_pix[1] | source_pix[2] | light[1] | mass_total[1] | mass evals | mass log Z | max abs Δσ (param) | resumed stage |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| delaunay_1250 | hpc_a100_jax_gpu_dense_fp64 | 0 | 4,390 | 751 | 1,878 | 109 | 435 | 1,217 | 27,940 | 31,499.14 | 5.98 (gamma_2) | none |
+| delaunay_1250 | hpc_a100_jax_gpu_dense_fp64 | 1 | 5,210 | 774 | 2,384 | 110 | 405 | 1,538 | 35,980 | 31,528.44 | 2.18 (gamma_1) | none |
+| delaunay_1250 | hpc_a100_jax_gpu_sparse_fp64 | 0 | 7,454 | 751 | 4,755 | 110 | 346 | 1,492 | 27,180 | 31,531.15 | 5.12 (shear_magnitude) | none |
+| delaunay_1250 | hpc_a100_jax_gpu_sparse_fp64 | 1 | 8,013 | 757 | 5,077 | 111 | 368 | 1,699 | 29,920 | 31,538.40 | 3.57 (gamma_2) | none |
+| delaunay_1250 | hpc_a100_numba_cpu_sparse_fp64 | 0 | 772,484 | 7,901 | 346,332 | 11,565 | 61,045 | 345,641 | 39,580 | 31,515.84 | 6.62 (gamma_2) | mass_total[1] |
+| delaunay_1250 | hpc_a100_numba_cpu_sparse_fp64 | 1 | 757,842 | 6,774 | 317,441 | 11,612 | 61,478 | 360,538 | 39,680 | 31,544.76 | 3.92 (shear_magnitude) | mass_total[1] |
+| slam_base | hpc_a100_jax_gpu_dense_fp64 | 0 | 2,468 | 772 | 756 | 138 | 241 | 562 | 22,600 | 31,589.22 | 1.52 (gamma_2) | none |
+| slam_base | hpc_a100_jax_gpu_dense_fp64 | 1 | 2,365 | 774 | 693 | 137 | 240 | 521 | 21,040 | 31,590.06 | 0.55 (gamma_1) | none |
+| slam_base | hpc_a100_jax_gpu_sparse_fp64 | 0 | 3,930 | 767 | 1,857 | 238 | 231 | 837 | 22,900 | 31,597.52 | 1.98 (gamma_1) | none |
+| slam_base | hpc_a100_jax_gpu_sparse_fp64 | 1 | 3,915 | 778 | 1,838 | 182 | 292 | 825 | 22,360 | 31,594.05 | 1.20 (gamma_2) | none |
+| slam_base | hpc_a100_numba_cpu_sparse_fp64 | 0 | 168,824 | 7,948 | 87,927 | 6,460 | 22,267 | 44,221 | 23,460 | 31,592.05 | 1.30 (einstein_radius) | source_pix[1] |
+| slam_base | hpc_a100_numba_cpu_sparse_fp64 | 1 | 177,740 | 7,665 | 84,822 | 15,316 | 19,851 | 50,086 | 25,500 | 31,595.97 | 3.18 (einstein_radius) | source_pix[1] |
+
+Against the archived pre-speedup A100 rows (chain search wall, seed 0 / seed 1):
+
+| variant / config | archived chain (s) | new chain (s) | archived / new |
+|---|---|---|---|
+| `slam_base` dense | 2,571 / 2,863 | 2,468 / 2,365 | 1.04 / 1.21 |
+| `slam_base` sparse | 3,985 / 4,012 | 3,930 / 3,915 | 1.01 / 1.02 |
+| `delaunay_1250` dense | 4,770 / 5,095 | 4,390 / 5,210 | 1.09 / 0.98 |
+| `delaunay_1250` sparse | 9,112 / 8,486 | 7,454 / 8,013 | 1.22 / 1.06 |
+
+Archived `mass_total[1]` log Z for reference: `slam_base` dense 31,592.70 / 31,596.11,
+sparse 31,589.52 / 31,592.44; `delaunay_1250` dense 31,512.9 / 31,503.0, sparse
+31,515.5 / 31,534.7. Archived `delaunay_1250` seed-0 `mass_total[1]` `truth_delta_sigma`:
+5.4σ dense, 4.7σ sparse.
+
+**What we learned.** These are proposed readings for the human, not rulings:
+
+- (a) Proposed: the inference-level speedup from the likelihood work is modest on the A100,
+  roughly 1.0 to 1.2x on the chain (0.98 to 1.22x across the eight legs above).
+- (b) Proposed: the `delaunay_1250` seed-0 `mass_total[1]` offset (5.98σ dense, 5.12σ sparse,
+  6.62σ `numba_cpu`, against 2.18σ / 3.57σ / 3.92σ at seed 1) now reproduces on three
+  backends. The 2026-09-24 "confirm or retire" question would then be answered as confirmed,
+  and the offset reads as a property of that target and seed rather than of a backend.
+- (c) Proposed: the `slam_base` `mass_total[1]` log Z spread across all six legs is about
+  8 nats (31,589.22 to 31,597.52), against a seed-to-seed spread within one config of 1 to
+  4 nats.
+
+**Limits.**
+
+- Both `numba_cpu` arrays were requeued after their first start on 2026-09-24 (the 09-24
+  entry saw them RUNNING at +1 min; sacct now shows Start 2026-09-25T09:45 for 350682 and
+  2026-10-03T09:41 for 350684, Reason BeginTime). Each row therefore carries one `resumed`
+  stage (`slam_base`: `source_pix[1]`; `delaunay_1250`: `mass_total[1]`), and the CPU chain
+  walls and the resumed stage walls span more than one attempt. They are not single-attempt
+  measurements. The clean CPU stage walls are the non-resumed ones, notably `slam_base`
+  `mass_total[1]` at 44,221 / 50,086 s.
+- The A100 chain walls are single-attempt and clean.
+- Result schema v2 does not record the job id or the library revisions. The job ids above
+  come from the pulled logs and the Cortex ledger; the revisions come from the 2026-09-24
+  entry.
+- One simulated target, two seeds per config. No scientific acceptance is implied by any row.
+- The `slam_base` parity row still lacks three CPU legs (`jax_cpu` dense and sparse,
+  `numba_cpu` dense).
+
+**Next.** The fixed-lens-light `mass_total[1]` variant and the sampler comparison on the mass
+stage, now coordinated as the PyAutoInsight campaign `hst-imaging-mass-samplers`
+([campaigns.yaml](https://github.com/PyAutoLabs/PyAutoInsight/blob/main/campaigns.yaml)).
+No run was submitted during this landing.
