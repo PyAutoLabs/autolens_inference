@@ -75,6 +75,18 @@ CONFIG = (
     "lens_light_mode",
     "results_tag",
     "release_pin",
+    # --stages-from (autolens_inference#31): a stage loaded from another
+    # config's completed fit names that config, and the backend that fitted it.
+    "stages_from",
+    "shared_from_config",
+    "fitted_backend",
+)
+
+#: The timing definition a shared stage's record carries instead of the fitted
+#: one: its clocks are another config's fit, kept for the record.
+SHARED_STAGE_TIMING_NOTE = (
+    "Stage loaded from shared_from_config's completed fit (--stages-from), not "
+    "fitted by this run; sampling_s is that fit's clock, total_s is null"
 )
 
 #: Result schema versions this exporter reads. v3 adds ``lens_light_mode``,
@@ -208,6 +220,10 @@ def record(payload, path, *, stage=None, parent=None, archived=False):
     }
     if is_pipeline:
         result["configuration"].setdefault("lens_light_mode", DEFAULT_LENS_LIGHT_MODE)
+    if not is_parent and row.get("shared_from_config"):
+        result["timings"]["definitions"] = {
+            k: SHARED_STAGE_TIMING_NOTE for k in result["timings"]["definitions"]
+        }
     for key in ("target", "model", "sampler", "backend", "precision", "seed", "measured_at"):
         if result[key] is None:
             result["unknown_reasons"][key] = "Not recorded in source result"

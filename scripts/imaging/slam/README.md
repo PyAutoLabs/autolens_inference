@@ -15,7 +15,7 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
     --backend {jax_cpu,numba_cpu,jax_gpu} --inversion {dense,sparse} \
     --config-name <config> [--seed 0] [--cores N] [--stages source_lp] [--output-dir DIR] \
     [--mesh {rect,delaunay}] [--mesh-pixels N] [--lens-light {linear,fixed,both}] \
-    [--results-tag TAG] [--export-prepared DIR]
+    [--results-tag TAG] [--export-prepared DIR] [--stages-from <config>:source_lp]
 ```
 
 - The **instrument is a flag** (`--instrument hst`, the default), never a directory. The HST
@@ -37,6 +37,8 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
 - `--results-tag TAG` keeps a re-measurement's rows apart from earlier rows of the same
   variant, config and seed: they land under `<config_name>__<TAG>/` and form their own
   parity groups. The clean-slate submits use `cleanslate_2026_10_17`.
+- `--stages-from <config>:source_lp` **loads** `source_lp[1]` from another config's completed
+  chain instead of fitting it. See "Shared stages" below.
 - `--output-dir` overrides the **PyAutoFit run-output root** for this leaf (default
   `output/slam/imaging/hst/<variant>/<config_name>/seed_<n>/`); the result row always lands
   under `results/`.
@@ -134,6 +136,42 @@ release 2026.10.17.1 with `--lens-light both`, seeds 0–1: pinned libraries
 so the 2026-09-24 trees are never resumed, and `--results-tag cleanslate_2026_10_17` so their
 rows never overwrite the 2026-09-24 rows. Details in
 [`../../../hpc/README.md`](../../../hpc/README.md).
+
+`hpc/batch_cpu/submit_hst_cleanslate_numba_cpu_{dense,sparse}` (autolens_inference#31) add
+the `numba_cpu` base on 8 `ral` CPUs, same pin, root, tag, light modes and seeds, and share
+the jax_cpu dense chain's `source_lp[1]` (next section). Each job waits in-job for that stage
+(`hpc/wait_for_stage.sh`: 5-minute polls, 8 h cap, exit 4 on timeout) before the runner
+starts.
+
+### Shared stages: `--stages-from` (a declared departure)
+
+The human chose on 2026-10-17 that the clean-slate numba_cpu chain "spawns off" the jax_cpu
+`source_lp[1]`. That stage is parametric (no inversion), so the two CPU backends fit the same
+likelihood there. Sharing it makes the numba and jax_cpu chains identical through stage 1,
+which tightens their parity downstream.
+
+- **What it does.** For each listed stage, the PyAutoFit `path_prefix` names the other config
+  (`slam/<dataset_class>/<instrument>/<variant>/<other config>/seed_<n>`, same output root,
+  variant and seed). The completed fit there is loaded exactly as a PyAutoFit resume loads one,
+  and is used only as a result object for prior passing. Stages 2–5 are this leg's own fits,
+  and `use_jax=False` stays on every Analysis a numba leg builds.
+- **Only `source_lp` may be shared.** A pixelized stage's inversion is what a backend
+  comparison measures, so it is never shared. The flag also refuses this run's own config and a
+  config at a different precision (exit 2).
+- **Refusal, not a refit.** The run exits **3**, fitting nothing and writing no row, when the
+  stage is not complete there: no identifier directory holds `.completed`, checked before the
+  dataset loads. It also exits 3 when this run's own model and search hash to an identifier
+  that is not the completed one, which would otherwise be a fresh fit written into the other
+  config's tree. `python3 scripts/misc/slam/_runner.py --stage-complete <seed_dir>` runs the
+  same `.completed` test (exit 0/1), and the wait helper polls it.
+- **Provenance in the row.** The shared stage's entry carries `shared_from_config`,
+  `fitted_backend` (read from that config name) with the matching `use_jax`, and
+  `shared_stage_note`. It keeps the loaded fit's `wall_s` and `likelihood_evals` for the
+  record. `total_wall_s` is null; this process's load time is `shared_load_s`. The payload
+  records `stages_from`. `chain_wall_s` sums `wall_s` over the stages this process fitted
+  (null if any lacks one) and lists the excluded stages in `chain_wall_excludes`. The README
+  table shows the shared stage's wall as "shared from `<config>`", and a "Chain walls" view
+  lists `chain_wall_s` per config. A shared stage's wall is never this config's measurement.
 
 ### Why `hst_delaunay.py` is a separate leaf
 

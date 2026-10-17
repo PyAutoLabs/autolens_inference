@@ -33,3 +33,11 @@ Sampler wave 1 (2026-10-17, phase 3, autolens_inference#27): the four sampler le
 submitted `afterok` on the GPU dense base array; the `ral` `jax_cpu` dense arms wait for
 the CPU base rows. `scripts/misc/experiments/wave.py` holds the arm table, and
 `--account` reports each arm as row, failed or missing.
+
+numba_cpu base (2026-10-17, autolens_inference#31): `submit_hst_cleanslate_numba_cpu_{dense,sparse}`
+(8 `ral` CPUs, seeds 0 and 1, both light modes, same pin, root and tag) load the jax_cpu
+dense chain's `source_lp[1]` via `--stages-from hpc_a100_jax_cpu_dense_fp64:source_lp` rather
+than fitting it. That stage is parametric, so the chains are identical through stage 1, which
+was the human's choice. The rows declare it with `shared_from_config` on that stage, and
+`chain_wall_s` excludes it (`chain_wall_excludes`). An incomplete shared stage is a refusal
+(exit 3), never a refit. The job waits in-job for it (5 min polls, 8 h cap, exit 4).

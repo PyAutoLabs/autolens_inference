@@ -75,6 +75,50 @@ BASE_VARIANT = "slam_base"
 #: measured from a ``source_lp``-only leg without paying for the whole chain.
 STAGES = ("source_lp", "source_pix_1", "source_pix_2", "light", "mass_total")
 
+#: The stages ``--stages-from`` may share with another config's chain. Only the
+#: parametric ``source_lp[1]`` qualifies: it carries no inversion, so two
+#: backends fit exactly the same likelihood there, and a numba chain that loads
+#: the jax_cpu fit is the jax_cpu chain through stage 1 (autolens_inference#31).
+#: A pixelized stage is never shared — its inversion IS what a backend comparison
+#: measures.
+SHAREABLE_STAGES = ("source_lp",)
+
+
+def parse_stages_from(value: str) -> tuple[str, tuple[str, ...]]:
+    """Parse ``--stages-from <config_name>:<stage>[,<stage>]``.
+
+    Returns ``(config_name, stages)`` and raises ``ValueError`` naming the
+    problem for a malformed value, a config name outside the grammar, a stage
+    outside :data:`STAGES` or a stage that may not be shared
+    (:data:`SHAREABLE_STAGES`). The checks that need this run's own flags (same
+    config, same precision) live in the driver.
+    """
+    config_name, sep, stage_list = str(value).partition(":")
+    config_name = config_name.strip()
+    if not sep or not config_name or not stage_list.strip():
+        raise ValueError(
+            f"--stages-from {value!r} must be <config_name>:<stage>[,<stage>], "
+            "e.g. hpc_a100_jax_cpu_dense_fp64:source_lp"
+        )
+    if not CONFIG_NAME_RE.match(config_name):
+        raise ValueError(
+            f"--stages-from config {config_name!r} does not match the config-name "
+            "grammar {local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
+        )
+    stages = []
+    for stage in (s.strip() for s in stage_list.split(",")):
+        if stage not in STAGES:
+            raise ValueError(f"--stages-from stage {stage!r} is not one of {STAGES}")
+        if stage not in SHAREABLE_STAGES:
+            raise ValueError(
+                f"--stages-from stage {stage!r} cannot be shared: only {SHAREABLE_STAGES} "
+                "(parametric, no inversion) may be loaded from another config's chain"
+            )
+        if stage not in stages:
+            stages.append(stage)
+    return config_name, tuple(stages)
+
+
 #: The ``--lens-light`` vocabulary — how the lens light enters ``mass_total[1]``.
 #: ``linear`` is the chain as it has always run (the ``light[1]`` linear MGE
 #: carried as an instance, its intensities re-solved by every inversion);
@@ -135,6 +179,7 @@ class InferenceCLI:
     export_prepared: Path | None = None
     lens_light: str = LENS_LIGHT_DEFAULT
     results_tag: str | None = None
+    stages_from: tuple[str, tuple[str, ...]] | None = None
 
 
 def parse_inference_cli(
@@ -393,12 +438,30 @@ def parse_inference_cli(
         ),
     )
 
+    parser.add_argument(
+        "--stages-from",
+        default=None,
+        help=(
+            "<config_name>:<stage>[,<stage>] — load these stages from another "
+            "config's completed chain (same output root, variant and seed) instead "
+            "of fitting them. Only source_lp may be shared. The run refuses (exit 3, "
+            "nothing fitted) when that stage is not complete there; its row marks "
+            "the stage shared_from_config and excludes its wall from chain_wall_s."
+        ),
+    )
+
     args, _unknown = parser.parse_known_args()
     if args.results_tag is not None and not RESULTS_TAG_RE.match(args.results_tag):
         parser.error(
             f"--results-tag {args.results_tag!r} must be lower-case words joined by "
             "underscores (e.g. cleanslate_2026_10_17)"
         )
+    stages_from = None
+    if args.stages_from is not None:
+        try:
+            stages_from = parse_stages_from(args.stages_from)
+        except ValueError as exc:
+            parser.error(str(exc))
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
     mesh = args.mesh or default_mesh or MESH_DEFAULT
@@ -430,6 +493,7 @@ def parse_inference_cli(
         export_prepared=args.export_prepared,
         lens_light=args.lens_light,
         results_tag=args.results_tag,
+        stages_from=stages_from,
     )
 
 

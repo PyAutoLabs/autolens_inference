@@ -1,0 +1,106 @@
+#!/bin/bash -l
+#
+# HST clean slate — `numba_cpu` x sparse on the RAL CPU partition, both lens-light modes, seeds 0-1,
+# SHARING the jax_cpu dense chain's `source_lp[1]` (autolens_inference#31).
+#
+# `--partition=ral` ONLY. CPU arrays never go on `gpu` (nor `ral,gpu` / `gpu,ral`): bulk CPU
+# jobs there starve the A100s. There is NO `cpu` partition on RAL.
+#
+# The human (2026-10-17, Insight chat) added numba_cpu base legs on 8 CPUs to the clean-slate
+# campaign `hst-imaging-mass-samplers` and chose that they "spawn off" the jax_cpu
+# `source_lp[1]`: that stage is parametric (no inversion), so both CPU backends fit the same
+# likelihood there, and sharing it makes this chain identical to the jax_cpu chain through
+# stage 1. Decisions: an in-job wait for the jax_cpu stage, submitted now.
+#
+#   - `--stages-from hpc_a100_jax_cpu_dense_fp64:source_lp`: stage 1 is LOADED from
+#     output/cleanslate_2026_10_17/slam/imaging/hst/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_<n>/
+#     (the jax_cpu dense array, same seed), never refitted. The sparse numba leg shares the DENSE
+#     jax_cpu stage on purpose: source_lp[1] carries no inversion, so dense and sparse are the
+#     same fit there. The row marks the stage `shared_from_config` and `chain_wall_s`
+#     excludes it (`chain_wall_excludes`). If the stage is not complete when the runner
+#     starts, it exits 3 and fits nothing.
+#   - `hpc/wait_for_stage.sh` polls for that stage every 5 min, capped at 8 h, before the
+#     runner starts; on timeout the job exits 4.
+#   - Stages 2-5 are this leg's own numba fits: `use_jax=False` on every Analysis, and
+#     PYAUTO_DISABLE_JAX=1 below as the process-wide belt.
+#   - Pinned and fresh like the jax legs: PYAUTO_LIB_BASE / PYAUTO_RELEASE_PIN = 2026.10.17.1,
+#     `--output-dir output/cleanslate_2026_10_17`, `--results-tag cleanslate_2026_10_17`.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This submit runs ONE cell, `imaging/slam/hst`: stages 2-5 fitted (stage 1 loaded), plus a
+#   second mass_total[1], and it declares itself `unmeasured` on purpose. No numba_cpu rate
+#   measured on this cell's pixelized stages on a RAL node exists. The September numba rows
+#   (submit_slam_hst_numba_cpu_*) are superseded and are a prior observation only, never a rate.
+#   `steps:` is the same FLOOR the base submits use (128 evals per live point x the chain's 725
+#   live points = 92800), not an estimate. No `wall:` is offered. `--time` below is a
+#   CONTAINMENT (it also absorbs up to 8 h of waiting), not a derived budget. The first arm
+#   IS the probe: read `stages[*].wall_s / stages[*].likelihood_evals` from its rows.
+#   cell: imaging/slam/hst  device: ral_numba_cpu  precision: fp64
+#   lanes: 1  steps: 92800  source: unmeasured  probe-first: yes
+#
+#SBATCH -J hst_cleanslate_numba_cpu_sparse
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64gb
+#SBATCH --time=5-00:00:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/inference/autolens_inference
+
+# The release pin: exported BEFORE activate.sh, which reads PYAUTO_LIB_BASE.
+export PYAUTO_LIB_BASE=/mnt/ral/jnightin/inference/pins/2026.10.17.1
+export PYAUTO_RELEASE_PIN=2026.10.17.1
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=True
+
+# NPROC throttles JAX's CPU thread pool (JAX stays importable on a numba leg). Unset, a job
+# takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# PYAUTO_DISABLE_JAX is process-wide and belongs next to the --backend numba_cpu flag that
+# motivates it: the belt to use_jax=False's braces, never a substitute for the flag.
+export PYAUTO_DISABLE_JAX=1
+
+# --mem=64gb: the same request as the jax_cpu sparse clean-slate leg (21.6 GB measured at
+# source_pix[1] on jax_cpu sparse, 2026-09-11). The numba legs are lighter (nautilus takes the
+# number_of_cores multiprocessing path, no vmap), so 64 GB is containment, not a measurement.
+
+SHARED_SEED_DIR=$AP_ROOT/output/cleanslate_2026_10_17/slam/imaging/hst/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_$SLURM_ARRAY_TASK_ID
+
+echo "=========================================="
+date
+echo "Cell:       imaging/slam/hst"
+echo "Instrument: hst"
+echo "Config:     hpc_a100_numba_cpu_sparse_fp64"
+echo "Light:      both (slam_base + slam_base_lightfixed)"
+echo "Shared:     source_lp[1] from hpc_a100_jax_cpu_dense_fp64 ($SHARED_SEED_DIR)"
+echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
+echo "Seed:       $SLURM_ARRAY_TASK_ID"
+
+cd $AP_ROOT
+
+# In-job wait: 5-minute polls, 8 h cap, exit 4 on timeout.
+bash hpc/wait_for_stage.sh "$SHARED_SEED_DIR" source_lp 300 28800
+
+python3 scripts/imaging/rectangular/baseline_slam.py \
+    --instrument hst \
+    --backend numba_cpu \
+    --inversion sparse \
+    --seed $SLURM_ARRAY_TASK_ID \
+    --config-name hpc_a100_numba_cpu_sparse_fp64 \
+    --lens-light both \
+    --stages-from hpc_a100_jax_cpu_dense_fp64:source_lp \
+    --output-dir output/cleanslate_2026_10_17 \
+    --results-tag cleanslate_2026_10_17 \
+    --export-prepared output/prepared/cleanslate_2026_10_17/hpc_a100_numba_cpu_sparse_fp64/seed_$SLURM_ARRAY_TASK_ID \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date
