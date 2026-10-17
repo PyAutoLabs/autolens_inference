@@ -233,3 +233,69 @@ def test_format_share_and_per_call():
     assert build_readme._format_share(None) == "—"
     assert build_readme._format_per_call(2.5e-4) == "250.0 µs"
     assert build_readme._format_per_call(0.0125) == "12.50 ms"
+
+
+# ---------------------------------------------------------------------------
+# The gradient search (MultiStartAdam) admission seams
+# ---------------------------------------------------------------------------
+
+
+def test_gradient_search_evals_is_steps_times_starts():
+    assert runner.gradient_search_evals(1101, 48) == 52848
+    assert runner.gradient_search_evals("300", 48) == 14400
+
+
+@pytest.mark.parametrize("steps, starts", [(None, 48), (300, None), (300, 0), (-1, 48), ("x", 48)])
+def test_gradient_search_evals_refuses_missing_or_nonsense(steps, starts):
+    assert runner.gradient_search_evals(steps, starts) is None
+
+
+def test_gradient_labels_resolve_to_step_ceilings():
+    assert runner.GRADIENT_LABELS["multi_start_adam"] == runner.MSA_N_STEPS
+    assert runner.GRADIENT_LABELS["multi_start_adam_n3000"] == 3000
+
+
+def _reference_row(sigma, status="complete", test_mode=False):
+    return {
+        "status": status,
+        "test_mode": test_mode,
+        "posterior": {"einstein_radius": {"median": 1.6, "sigma": sigma}},
+    }
+
+
+def test_reference_sigma_is_the_median_over_complete_rows():
+    rows = [
+        _reference_row(0.01),
+        _reference_row(0.03),
+        _reference_row(0.02),
+        _reference_row(9.0, status="failed: X"),
+        _reference_row(5.0, test_mode=True),
+    ]
+    assert runner.reference_sigma_from_rows(rows) == {"einstein_radius": pytest.approx(0.02)}
+
+
+def test_reference_sigma_skips_zero_and_missing_widths():
+    assert runner.reference_sigma_from_rows([_reference_row(0.0), _reference_row(None)]) == {}
+
+
+def test_map_delta_sigma_in_reference_units():
+    deltas = runner.map_delta_sigma(
+        {"einstein_radius": 1.62, "centre_0": 0.0},
+        {"einstein_radius": 1.6, "centre_0": 0.0, "ell_comps_0": 0.05},
+        {"einstein_radius": 0.01},
+    )
+    assert deltas["einstein_radius"] == pytest.approx(2.0)
+    # A MAP and a truth but no reference width: compared, width unknown -> None.
+    assert deltas["centre_0"] is None
+    # No MAP for the key: not compared at all.
+    assert "ell_comps_0" not in deltas
+
+
+def test_load_reference_rows_reads_only_the_reference_sampler(tmp_path):
+    base = tmp_path / "results" / "searches" / "point_source"
+    for sampler in ("nautilus", "multi_start_adam"):
+        directory = base / sampler / "simple" / "source_plane_solved" / "cfg"
+        directory.mkdir(parents=True)
+        (directory / "search_seed0.json").write_text(json.dumps({"sampler": sampler}))
+    rows = runner.load_reference_rows(tmp_path, "point_source", "simple", "source_plane_solved")
+    assert [row["sampler"] for row in rows] == ["nautilus"]

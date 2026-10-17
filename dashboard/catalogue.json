@@ -13,15 +13,15 @@
     },
     "observed": {
       "archived_records": 50,
-      "execution_complete": 127,
+      "execution_complete": 147,
       "execution_stopped_early": 1,
-      "records": 128,
-      "runs": 27
+      "records": 148,
+      "runs": 47
     }
   },
   "evidence_updated_at": null,
   "evidence_updated_at_reason": "Legacy result rows do not record measurement timestamps",
-  "generated_at": "2026-10-17T13:13:52Z",
+  "generated_at": "2026-10-17T13:49:46Z",
   "generation_basis": "Source commit timestamp; not a measurement or check-in time",
   "limitations": [
     "No scientific acceptance or convergence inferred from process completion",
@@ -30,7 +30,7 @@
     "Archived rows belong to this project's September 2026 runs and are historical, not current baselines"
   ],
   "prepared_problems": [],
-  "producer_revision": "b0b81c3dba24d5b3ce10da208b1ab5aa9311be9b",
+  "producer_revision": "6801d9b365eb8b59fabfbd71b19863da865f5884",
   "project": "autolens_inference",
   "records": [
     {
@@ -10217,6 +10217,4036 @@
         "measured_at": "Not recorded in source result",
         "model": "Not recorded in source result",
         "sampler": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed0",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 14400,
+          "likelihood_share": 0.008080905365028783,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 15.904641352633458,
+          "per_call_s": 5.206718924455345e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00024992250837385654,
+              "min_s": 0.00020702206529676914,
+              "n": 200,
+              "p16_s": 0.00023479294031858444,
+              "p84_s": 0.00027332804165780544,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.00012426753528416157,
+              "min_s": 9.906897321343422e-05,
+              "n": 200,
+              "p16_s": 0.00011346396058797836,
+              "p84_s": 0.0001379181630909443,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.2662145080976188,
+            "compile_s": 3.0681390850804746,
+            "compile_single_s": 2.4084116120357066,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00013744900934398174,
+              "min_s": 0.00010543293319642544,
+              "n": 200,
+              "p16_s": 0.0001258759293705225,
+              "p84_s": 0.0001537860371172428,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed0.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-2",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "0",
+        "slurm_job_id": "412496"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed0.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_0/multi_start_adam/7b8dfd52c5007389c8da63e80ed8fad8"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 0,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed0",
+      "timings": {
+        "compile_s": 3.0681390850804746,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 9.278261423110962,
+        "setup_s": null,
+        "total_s": 15.062871138099581
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed1",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 14400,
+          "likelihood_share": 0.008110931247197665,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 16.176413689610033,
+          "per_call_s": 5.200655626443525e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.0002496314700692892,
+              "min_s": 0.0002060320693999529,
+              "n": 200,
+              "p16_s": 0.00023320899344980717,
+              "p84_s": 0.0002629950176924467,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.00013048516120761633,
+              "min_s": 0.0001074399333447218,
+              "n": 200,
+              "p16_s": 0.00012150080874562263,
+              "p84_s": 0.00014143786393105984,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.2779506959486753,
+            "compile_s": 3.0383828710764647,
+            "compile_single_s": 2.3716629471164197,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00014096649829298258,
+              "min_s": 0.00011471007019281387,
+              "n": 200,
+              "p16_s": 0.0001275071408599615,
+              "p84_s": 0.00015088682994246483,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed1.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-2",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "1",
+        "slurm_job_id": "412497"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed1.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_1/multi_start_adam/8833de66c86efb7d95eb8e8c6783220b"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 1,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed1",
+      "timings": {
+        "compile_s": 3.0383828710764647,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 9.233149528503418,
+        "setup_s": null,
+        "total_s": 14.96879301709123
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed2",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 14400,
+          "likelihood_share": 0.009754015626528919,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 16.22015645444627,
+          "per_call_s": 5.091572044572483e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00024439545813947916,
+              "min_s": 0.0002036718651652336,
+              "n": 200,
+              "p16_s": 0.00022796401754021645,
+              "p84_s": 0.0002635049168020487,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.00013270904310047626,
+              "min_s": 0.00010776519775390625,
+              "n": 200,
+              "p16_s": 0.0001218779943883419,
+              "p84_s": 0.00014224601909518242,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3767510030884296,
+            "compile_s": 1.858904171967879,
+            "compile_single_s": 1.1581302450504154,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0001238224795088172,
+              "min_s": 9.928317740559578e-05,
+              "n": 200,
+              "p16_s": 0.00011428119614720345,
+              "p84_s": 0.00013326993212103844,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed2.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-2",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "2",
+        "slurm_job_id": "412500"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed2.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_2/multi_start_adam/6237ccfea948e0ad0283df19748cf929"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 2,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed2",
+      "timings": {
+        "compile_s": 1.858904171967879,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 7.516764402389526,
+        "setup_s": null,
+        "total_s": 12.892311723902822
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed3",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 14400,
+          "likelihood_share": 0.008900053932368002,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 15.907839055229164,
+          "per_call_s": 4.69566536291192e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00022539193741977215,
+              "min_s": 0.00018948805518448353,
+              "n": 200,
+              "p16_s": 0.00020808191038668156,
+              "p84_s": 0.00024250498972833157,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.00012470653746277094,
+              "min_s": 0.00010532001033425331,
+              "n": 200,
+              "p16_s": 0.00011598714627325535,
+              "p84_s": 0.0001352259423583746,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3593163241166621,
+            "compile_s": 1.859348826110363,
+            "compile_single_s": 1.1719480308238417,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00012520444579422474,
+              "min_s": 9.962893091142178e-05,
+              "n": 200,
+              "p16_s": 0.00011637108400464058,
+              "p84_s": 0.00013554701581597328,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed3.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-2",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "3",
+        "slurm_job_id": "412501"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed3.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_3/multi_start_adam/e843bd0abb315702b652f97d6103a227"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 3,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed3",
+      "timings": {
+        "compile_s": 1.859348826110363,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 7.597434997558594,
+        "setup_s": null,
+        "total_s": 12.991334571968764
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed4",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 12432,
+          "likelihood_share": 0.008901929372380634,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 16.42527467123831,
+          "per_call_s": 5.052395863458514e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00024251500144600868,
+              "min_s": 0.00020146113820374012,
+              "n": 200,
+              "p16_s": 0.00022533093579113483,
+              "p84_s": 0.00026076892390847206,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.00013064814265817404,
+              "min_s": 0.0001041339710354805,
+              "n": 200,
+              "p16_s": 0.00012152199633419514,
+              "p84_s": 0.000143163139000535,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3557212229352444,
+            "compile_s": 1.856245995964855,
+            "compile_single_s": 1.2217711620032787,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0001200264086946845,
+              "min_s": 9.572901763021946e-05,
+              "n": 200,
+              "p16_s": 0.00010999711230397224,
+              "p84_s": 0.0001315590925514698,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed4.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-2",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "4",
+        "slurm_job_id": "412502"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed4.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_4/multi_start_adam/7ac130e264dda5b6353be2016cd4e369"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 4,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed4",
+      "timings": {
+        "compile_s": 1.856245995964855,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 7.05592942237854,
+        "setup_s": null,
+        "total_s": 12.43586680595763
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed0",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 14400,
+          "likelihood_share": 0.003241921352233446,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 15.904641352658007,
+          "per_call_s": 8.327394122413049e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00039971491787582636,
+              "min_s": 0.0003642360679805279,
+              "n": 200,
+              "p16_s": 0.00037873489782214165,
+              "p84_s": 0.0004235848318785429,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0003253065515309572,
+              "min_s": 0.0002663459163159132,
+              "n": 200,
+              "p16_s": 0.00030800607055425644,
+              "p84_s": 0.00034207594580948353,
+              "warmup": 10
+            },
+            "compile_forward_s": 2.2718972018919885,
+            "compile_s": 6.021000897046179,
+            "compile_single_s": 4.761227064067498,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0003635204629972577,
+              "min_s": 0.0003359159454703331,
+              "n": 200,
+              "p16_s": 0.00034769601188600063,
+              "p84_s": 0.0004120250232517719,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed0.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "0",
+        "slurm_job_id": "412499"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed0.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_0/multi_start_adam/7b8dfd52c5007389c8da63e80ed8fad8"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 0,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed0",
+      "timings": {
+        "compile_s": 6.021000897046179,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 36.98870587348938,
+        "setup_s": null,
+        "total_s": 44.85737360618077
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed1",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 14400,
+          "likelihood_share": 0.00571298072327112,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 16.17641368960513,
+          "per_call_s": 7.622836468120416e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00036589615046977997,
+              "min_s": 0.00032455590553581715,
+              "n": 200,
+              "p16_s": 0.00033908593468368053,
+              "p84_s": 0.0003976859152317047,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0002883269917219877,
+              "min_s": 0.00024462700821459293,
+              "n": 200,
+              "p16_s": 0.00027918792329728603,
+              "p84_s": 0.0003119460307061672,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.215203361120075,
+            "compile_s": 2.3762708532158285,
+            "compile_single_s": 1.7094511068426073,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0003533954732120037,
+              "min_s": 0.0003299158997833729,
+              "n": 200,
+              "p16_s": 0.0003375760279595852,
+              "p84_s": 0.0003944558557122946,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed1.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "1",
+        "slurm_job_id": "412506"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed1.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_1/multi_start_adam/8833de66c86efb7d95eb8e8c6783220b"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 1,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed1",
+      "timings": {
+        "compile_s": 2.3762708532158285,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 19.21393585205078,
+        "setup_s": null,
+        "total_s": 25.198120431043208
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed2",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 14400,
+          "likelihood_share": 0.005210596556336486,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 16.220156454372294,
+          "per_call_s": 7.072427251841873e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.0003394765080884099,
+              "min_s": 0.00030537601560354233,
+              "n": 200,
+              "p16_s": 0.00032552587799727917,
+              "p84_s": 0.00037248595617711544,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0002773314481601119,
+              "min_s": 0.0002147778868675232,
+              "n": 200,
+              "p16_s": 0.0002634881529957056,
+              "p84_s": 0.00031582615338265896,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.4083445940632373,
+            "compile_s": 2.5102636402007192,
+            "compile_single_s": 1.7187328259460628,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00033753097523003817,
+              "min_s": 0.00030474690720438957,
+              "n": 200,
+              "p16_s": 0.0003206459805369377,
+              "p84_s": 0.00036950595676898956,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed2.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "2",
+        "slurm_job_id": "412508"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed2.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_2/multi_start_adam/6237ccfea948e0ad0283df19748cf929"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 2,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed2",
+      "timings": {
+        "compile_s": 2.5102636402007192,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 19.545353651046753,
+        "setup_s": null,
+        "total_s": 25.660742588108405
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed3",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 14400,
+          "likelihood_share": 0.005019186398313137,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 15.907839047698456,
+          "per_call_s": 7.062510121613741e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00033900048583745956,
+              "min_s": 0.00032351608388125896,
+              "n": 200,
+              "p16_s": 0.00033093616366386414,
+              "p84_s": 0.00036402512341737747,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0002642924664542079,
+              "min_s": 0.0002513870131224394,
+              "n": 200,
+              "p16_s": 0.00025800615549087524,
+              "p84_s": 0.0002755471505224705,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.2169400199782103,
+            "compile_s": 2.3689107240643352,
+            "compile_single_s": 1.7189038631040603,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0003256765194237232,
+              "min_s": 0.00030025700107216835,
+              "n": 200,
+              "p16_s": 0.0003145958762615919,
+              "p84_s": 0.0003555561415851116,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed3.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "3",
+        "slurm_job_id": "412509"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed3.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_3/multi_start_adam/e843bd0abb315702b652f97d6103a227"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 3,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed3",
+      "timings": {
+        "compile_s": 2.3689107240643352,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 20.262277126312256,
+        "setup_s": null,
+        "total_s": 26.272511888993904
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed4",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 12432,
+          "likelihood_share": 0.004899030599979742,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 16.425274668086516,
+          "per_call_s": 7.329811827124407e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00035183096770197153,
+              "min_s": 0.00032932707108557224,
+              "n": 200,
+              "p16_s": 0.00033659604378044605,
+              "p84_s": 0.00039162603206932545,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.00029459595680236816,
+              "min_s": 0.00024149706587195396,
+              "n": 200,
+              "p16_s": 0.0002864259295165539,
+              "p84_s": 0.0003183060325682163,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.4016774860210717,
+            "compile_s": 2.51718994602561,
+            "compile_single_s": 1.7018513078801334,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0003436615224927664,
+              "min_s": 0.00032777595333755016,
+              "n": 200,
+              "p16_s": 0.0003337759990245104,
+              "p84_s": 0.00038220686838030815,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed4.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "4",
+        "slurm_job_id": "412510"
+      },
+      "id": "results/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed4.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_4/multi_start_adam/7ac130e264dda5b6353be2016cd4e369"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 4,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed4",
+      "timings": {
+        "compile_s": 2.51718994602561,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 18.600459575653076,
+        "setup_s": null,
+        "total_s": 24.687780508073047
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed0",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 33792,
+          "likelihood_share": 0.02172400379866237,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 16.46302481873648,
+          "per_call_s": 5.034778344755371e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00024166936054825783,
+              "min_s": 0.00020504998974502087,
+              "n": 200,
+              "p16_s": 0.00022758706472814083,
+              "p84_s": 0.00025996705517172813,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.00012820539996027946,
+              "min_s": 0.00010704505257308483,
+              "n": 200,
+              "p16_s": 0.00011844211257994175,
+              "p84_s": 0.00013906997628509998,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3362591108307242,
+            "compile_s": 1.8494265160989016,
+            "compile_single_s": 1.1446711090393364,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00012403354048728943,
+              "min_s": 9.913509711623192e-05,
+              "n": 200,
+              "p16_s": 0.00011398107744753361,
+              "p84_s": 0.00013553816825151443,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed0.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-2",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "5",
+        "slurm_job_id": "412503"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed0.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_0/multi_start_adam_n3000/7b8dfd52c5007389c8da63e80ed8fad8"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 0,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed0",
+      "timings": {
+        "compile_s": 1.8494265160989016,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 7.831670045852661,
+        "setup_s": null,
+        "total_s": 13.218872852157801
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed1",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 52848,
+          "likelihood_share": 0.030315468933766954,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 16.459238715429453,
+          "per_call_s": 5.032986033863078e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00024158332962542772,
+              "min_s": 0.00020591705106198788,
+              "n": 200,
+              "p16_s": 0.00022518588230013847,
+              "p84_s": 0.00026070186868309975,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0001339815789833665,
+              "min_s": 0.00010562012903392315,
+              "n": 200,
+              "p16_s": 0.00012173503637313843,
+              "p84_s": 0.00014366395771503448,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3747327430173755,
+            "compile_s": 2.1425887958612293,
+            "compile_single_s": 1.2779381070286036,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00012378755491226912,
+              "min_s": 9.998097084462643e-05,
+              "n": 200,
+              "p16_s": 0.00011540204286575317,
+              "p84_s": 0.00013507693074643612,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed1.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-3",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "6",
+        "slurm_job_id": "412504"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed1.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_1/multi_start_adam_n3000/8833de66c86efb7d95eb8e8c6783220b"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 1,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed1",
+      "timings": {
+        "compile_s": 2.1425887958612293,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 8.773845672607422,
+        "setup_s": null,
+        "total_s": 14.814029730856419
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed2",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 68736,
+          "likelihood_share": 0.03688173529068311,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 16.490778401342258,
+          "per_call_s": 5.061301635578275e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.0002429424785077572,
+              "min_s": 0.0001987861469388008,
+              "n": 200,
+              "p16_s": 0.00022631394676864147,
+              "p84_s": 0.0002573360688984394,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0001335014821961522,
+              "min_s": 0.00010660989210009575,
+              "n": 200,
+              "p16_s": 0.0001236919779330492,
+              "p84_s": 0.00014508701860904694,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3755211038514972,
+            "compile_s": 2.1426347258966416,
+            "compile_single_s": 1.2778357220813632,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00012356601655483246,
+              "min_s": 0.0001005150843411684,
+              "n": 200,
+              "p16_s": 0.00011217594146728516,
+              "p84_s": 0.0001346459612250328,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed2.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-3",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "7",
+        "slurm_job_id": "412505"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed2.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_2/multi_start_adam_n3000/6237ccfea948e0ad0283df19748cf929"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 2,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed2",
+      "timings": {
+        "compile_s": 2.1426347258966416,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 9.432680606842041,
+        "setup_s": null,
+        "total_s": 15.450706155970693
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed3",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 61488,
+          "likelihood_share": 0.03575507193983184,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 16.477378591391457,
+          "per_call_s": 5.110875160122911e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00024532200768589973,
+              "min_s": 0.0002136679831892252,
+              "n": 200,
+              "p16_s": 0.00023130490444600582,
+              "p84_s": 0.0002601868472993374,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.000134157482534647,
+              "min_s": 0.00010537891648709774,
+              "n": 200,
+              "p16_s": 0.00012287311255931854,
+              "p84_s": 0.00014248094521462917,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3262434790376574,
+            "compile_s": 1.8254097409080714,
+            "compile_single_s": 1.2197369770146906,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0001261775614693761,
+              "min_s": 9.95879527181387e-05,
+              "n": 200,
+              "p16_s": 0.0001168570015579462,
+              "p84_s": 0.00013464619405567646,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed3.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-2",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "8",
+        "slurm_job_id": "412507"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed3.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_3/multi_start_adam_n3000/e843bd0abb315702b652f97d6103a227"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 3,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed3",
+      "timings": {
+        "compile_s": 1.8254097409080714,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 8.789172410964966,
+        "setup_s": null,
+        "total_s": 14.14808831200935
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_cpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed4",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_cpu_dense_fp64",
+        "cores": 8,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 12432,
+          "likelihood_share": 0.008053802072875075,
+          "log_likelihood_at_truth": 15.902398430037966,
+          "max_log_likelihood": 16.42527467123831,
+          "per_call_s": 4.812885890714824e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00023101852275431156,
+              "min_s": 0.0001920128706842661,
+              "n": 200,
+              "p16_s": 0.00021547707729041576,
+              "p84_s": 0.00024394900538027287,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0001248904736712575,
+              "min_s": 0.0001008850522339344,
+              "n": 200,
+              "p16_s": 0.00011442508548498154,
+              "p84_s": 0.00013580592349171638,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3367505071219057,
+            "compile_s": 1.9213432110846043,
+            "compile_single_s": 1.1434523691423237,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00012798851821571589,
+              "min_s": 0.00010315794497728348,
+              "n": 200,
+              "p16_s": 0.00011906912550330162,
+              "p84_s": 0.00013759685680270195,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed4.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 8,
+        "device": {
+          "backend": "cpu",
+          "cpu_count": 236,
+          "device": "cpu:0",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-compute-10-4",
+        "slurm_array_job_id": "412495",
+        "slurm_array_task_id": "9",
+        "slurm_job_id": "412495"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/search_seed4.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_cpu_dense_fp64/seed_4/multi_start_adam_n3000/7ac130e264dda5b6353be2016cd4e369"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 4,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed4",
+      "timings": {
+        "compile_s": 1.9213432110846043,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 7.429260969161987,
+        "setup_s": null,
+        "total_s": 13.157052749069408
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed0",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 33792,
+          "likelihood_share": 0.011774257403705883,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 16.463024826585016,
+          "per_call_s": 7.205460860859603e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00034586212132126093,
+              "min_s": 0.0003265270497649908,
+              "n": 200,
+              "p16_s": 0.0003358160611242056,
+              "p84_s": 0.00037863594479858875,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0002838815562427044,
+              "min_s": 0.0002673468552529812,
+              "n": 200,
+              "p16_s": 0.0002751471474766731,
+              "p84_s": 0.0003064970951527357,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.2169418500270694,
+            "compile_s": 2.356719881063327,
+            "compile_single_s": 1.7024460011161864,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0003437604755163193,
+              "min_s": 0.0003149760887026787,
+              "n": 200,
+              "p16_s": 0.0003286660648882389,
+              "p84_s": 0.00039379484951496124,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed0.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "5",
+        "slurm_job_id": "412511"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed0.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_0/multi_start_adam_n3000/7b8dfd52c5007389c8da63e80ed8fad8"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 0,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed0",
+      "timings": {
+        "compile_s": 2.356719881063327,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 20.67960000038147,
+        "setup_s": null,
+        "total_s": 26.893733385019004
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed1",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 52848,
+          "likelihood_share": 0.017633445298548565,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 16.45923891382841,
+          "per_call_s": 7.329697837121785e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00035182549618184566,
+              "min_s": 0.00033064582385122776,
+              "n": 200,
+              "p16_s": 0.0003371948841959238,
+              "p84_s": 0.0003859950229525566,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.00028966099489480257,
+              "min_s": 0.000268016941845417,
+              "n": 200,
+              "p16_s": 0.000278746010735631,
+              "p84_s": 0.0003135260194540024,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.234963343013078,
+            "compile_s": 2.369033141992986,
+            "compile_single_s": 1.7282609010580927,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.00033975555561482906,
+              "min_s": 0.00032110605388879776,
+              "n": 200,
+              "p16_s": 0.00033072615042328835,
+              "p84_s": 0.0003903650213032961,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed1.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "6",
+        "slurm_job_id": "412512"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed1.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_1/multi_start_adam_n3000/8833de66c86efb7d95eb8e8c6783220b"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 1,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed1",
+      "timings": {
+        "compile_s": 2.369033141992986,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 21.967339038848877,
+        "setup_s": null,
+        "total_s": 28.002735085086897
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed2",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 68736,
+          "likelihood_share": 0.02271235990705017,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 16.490778401342208,
+          "per_call_s": 7.996456891608735e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.0003838299307972193,
+              "min_s": 0.00033985613845288754,
+              "n": 200,
+              "p16_s": 0.0003624260425567627,
+              "p84_s": 0.0004090538714081049,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0003136009909212589,
+              "min_s": 0.00026408699341118336,
+              "n": 200,
+              "p16_s": 0.0002979058772325516,
+              "p84_s": 0.0003327361773699522,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.4052798519842327,
+            "compile_s": 2.5383006331976503,
+            "compile_single_s": 1.7158476510085166,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.000366560067050159,
+              "min_s": 0.0003205258399248123,
+              "n": 200,
+              "p16_s": 0.0003429069183766842,
+              "p84_s": 0.0003929859958589077,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed2.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "7",
+        "slurm_job_id": "412513"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed2.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_2/multi_start_adam_n3000/6237ccfea948e0ad0283df19748cf929"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 2,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed2",
+      "timings": {
+        "compile_s": 2.5383006331976503,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 24.200235605239868,
+        "setup_s": null,
+        "total_s": 30.311015208950266
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed3",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 61488,
+          "likelihood_share": 0.01821137680127308,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 16.47737859133434,
+          "per_call_s": 6.951059428198884e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.00033365085255354643,
+              "min_s": 0.00030416715890169144,
+              "n": 200,
+              "p16_s": 0.00032083597034215927,
+              "p84_s": 0.00035797501914203167,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0002727274550125003,
+              "min_s": 0.0002315870951861143,
+              "n": 200,
+              "p16_s": 0.00026532704941928387,
+              "p84_s": 0.0002956870011985302,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.4075439639855176,
+            "compile_s": 2.5757574120070785,
+            "compile_single_s": 1.7225242399144918,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0003256215713918209,
+              "min_s": 0.0003110861871391535,
+              "n": 200,
+              "p16_s": 0.00031607598066329956,
+              "p84_s": 0.00037646503187716007,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed3.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "8",
+        "slurm_job_id": "412514"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed3.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_3/multi_start_adam_n3000/e843bd0abb315702b652f97d6103a227"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 3,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed3",
+      "timings": {
+        "compile_s": 2.5757574120070785,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 23.469216346740723,
+        "setup_s": null,
+        "total_s": 29.453690645983443
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
+      },
+      "work": {
+        "definitions": {
+          "effective_sample_size": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "gradient_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "iterations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "likelihood_evaluations": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations",
+          "retained_samples": "Not recorded with warmup/burn-in and aggregation scope; no conversion from sampler iterations"
+        },
+        "effective_sample_size": null,
+        "effective_sample_size_reason": "Work count/estimator scope not recorded",
+        "gradient_evaluations": null,
+        "gradient_evaluations_reason": "Work count/estimator scope not recorded",
+        "iterations": null,
+        "iterations_reason": "Work count/estimator scope not recorded",
+        "likelihood_evaluations": null,
+        "likelihood_evaluations_reason": "Work count/estimator scope not recorded",
+        "retained_samples": null,
+        "retained_samples_reason": "Work count/estimator scope not recorded"
+      }
+    },
+    {
+      "archived": false,
+      "backend": "jax_gpu",
+      "comparison": {
+        "declared_target": "simple/source_plane_solved/seed4",
+        "group": null,
+        "note": "Declared target is not a verified comparison group; no ranking"
+      },
+      "configuration": {
+        "config_name": "hpc_a100_jax_gpu_dense_fp64",
+        "cores": 4,
+        "fit_positions_cls": "FitPositionsSourceSolved",
+        "free_parameters": 5,
+        "inversion": "dense",
+        "n_batch": null,
+        "n_live": null,
+        "priors": {
+          "einstein_radius": "U(0.5, 4.0)",
+          "others": "library-default Isothermal priors"
+        },
+        "resumed": false,
+        "test_mode": false,
+        "use_jax": true,
+        "variant": "source_plane_solved"
+      },
+      "dataset": {
+        "class": "point_source",
+        "id": null,
+        "instrument": "simple"
+      },
+      "dependency_revisions": {
+        "autoarray": null,
+        "autofit": null,
+        "autogalaxy": null,
+        "autolens": null,
+        "autonerves": null
+      },
+      "diagnostics": {
+        "status": "available",
+        "values": {
+          "inversion_applies": false,
+          "likelihood_evals": 12432,
+          "likelihood_share": 0.005123312814033354,
+          "log_likelihood_at_truth": 15.902398430038186,
+          "max_log_likelihood": 16.425274668086516,
+          "per_call_s": 7.869071851018816e-06,
+          "positions_info_present": false,
+          "posterior": {},
+          "timing": {
+            "batch": 48,
+            "batched": {
+              "median_s": 0.0003777154488489032,
+              "min_s": 0.0003453460521996021,
+              "n": 200,
+              "p16_s": 0.00035941600799560547,
+              "p84_s": 0.0004091248847544193,
+              "warmup": 10
+            },
+            "batched_forward": {
+              "median_s": 0.0003195113968104124,
+              "min_s": 0.00026630586944520473,
+              "n": 200,
+              "p16_s": 0.00030243699438869953,
+              "p84_s": 0.0003421448636800051,
+              "warmup": 10
+            },
+            "compile_forward_s": 1.3378168630879372,
+            "compile_s": 2.590439324034378,
+            "compile_single_s": 1.7197092440910637,
+            "gradient_mode": "forward",
+            "single": {
+              "median_s": 0.0003703199326992035,
+              "min_s": 0.00033108494244515896,
+              "n": 200,
+              "p16_s": 0.00035312515683472157,
+              "p84_s": 0.00039910501800477505,
+              "warmup": 10
+            },
+            "vector": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              2.25
+            ]
+          },
+          "truth_delta_sigma": {},
+          "truths": {
+            "centre_0": 0.0,
+            "centre_1": 0.0,
+            "einstein_radius": 1.6,
+            "ell_comps_0": 0.05263157894736841,
+            "ell_comps_1": 3.2227547345982974e-18
+          }
+        }
+      },
+      "environment": {
+        "cache": "unknown",
+        "cache_reason": "Cache state not recorded",
+        "compilation": "unknown",
+        "compilation_reason": "Separate compile probe does not establish fit compilation state",
+        "hardware_id": null,
+        "hardware_id_reason": "Resource/concurrency identity not recorded"
+      },
+      "evidence_paths": [
+        "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed4.json"
+      ],
+      "execution": {
+        "completed": true,
+        "reason": null,
+        "status": "complete"
+      },
+      "experiment_protocol": null,
+      "experiment_protocol_reason": "Exact prepared scientific identity/protocol not recorded",
+      "hardware": {
+        "cores": 4,
+        "device": {
+          "backend": "gpu",
+          "cpu_count": 124,
+          "device": "cuda:0",
+          "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB",
+          "omp_num_threads": null,
+          "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+        },
+        "host": "euclid-ral-gpu-1",
+        "slurm_array_job_id": "412498",
+        "slurm_array_task_id": "9",
+        "slurm_job_id": "412498"
+      },
+      "id": "results/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/search_seed4.json",
+      "initialization": {
+        "mode": "unknown",
+        "reason": "No pinned sampler start or checkpoint provenance",
+        "recipe": "Historical sampler initialization was not recorded",
+        "sources": []
+      },
+      "library_version": "2026.10.17.1",
+      "measured_at": null,
+      "model": "L5: Isothermal (5 free) + PointSolved source",
+      "parent_run_id": null,
+      "pipeline": null,
+      "precision": "fp64",
+      "problem_id": null,
+      "problem_id_reason": "Exact prepared scientific identity/protocol not recorded",
+      "sampler": "multi_start_adam_n3000",
+      "samples": {
+        "access": "project-storage-not-published",
+        "availability": "unknown",
+        "note": "Committed results do not verify current archive/sample availability; unsafe absolute paths omitted",
+        "path": "output/searches/point_source/multi_start_adam_n3000/simple/source_plane_solved/hpc_a100_jax_gpu_dense_fp64/seed_4/multi_start_adam_n3000/7ac130e264dda5b6353be2016cd4e369"
+      },
+      "scientific": {
+        "acceptance": "not_assessed",
+        "convergence": "not_assessed",
+        "reason": "Exporter does not make scientific rulings; consult Cortex"
+      },
+      "seed": 4,
+      "setup_id": "point_source/simple/simple",
+      "stage": null,
+      "target": "simple/source_plane_solved/seed4",
+      "timings": {
+        "compile_s": 2.590439324034378,
+        "definitions": {
+          "compile_s": "Separate likelihood warm-up probe; not added to total_s",
+          "initialization_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "preparation_s": "Not measured separately; inclusion in fit/sampling clocks and resumed segment scope unknown; never inferred or summed",
+          "sampling_s": "wall_s: sampler clock from samples_info.json; includes sampler overhead",
+          "setup_s": "Not measured separately; unknown, not total minus sampling",
+          "total_s": "total_wall_s: elapsed search.fit call; excludes prior compile probe and dataset/model setup"
+        },
+        "initialization_s": null,
+        "initialization_s_reason": "Not measured separately",
+        "preparation_s": null,
+        "preparation_s_reason": "Not measured separately",
+        "sampling_s": 19.094735145568848,
+        "setup_s": null,
+        "total_s": 25.102053588954732
+      },
+      "unknown_reasons": {
+        "dataset.id": "Dataset content identity not recorded",
+        "measured_at": "Not recorded in source result"
       },
       "work": {
         "definitions": {
@@ -26752,7 +30782,7 @@
       "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
     }
   ],
-  "source_commit": "b0b81c3dba24d5b3ce10da208b1ab5aa9311be9b",
+  "source_commit": "6801d9b365eb8b59fabfbd71b19863da865f5884",
   "valid_until": null,
   "version": 2
 }

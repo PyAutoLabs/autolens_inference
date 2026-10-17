@@ -188,6 +188,26 @@ seventh column. The ledger is [`wiki/project/state.md`](wiki/project/state.md).
 <!-- BEGIN auto-table:searches -->
 | Target | Sampler | Instrument | Config | Seed | Wall | Evals | Per call | Share | Log evidence | Version |
 |---|---|---|---|---|---|---|---|---|---|---|
+| `simple/source_plane_solved/seed0` | multi_start_adam | simple | `hpc_a100_jax_cpu_dense_fp64` | 0 | 9.3 s | 14,400 | 5.2 µs | 0.8% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed1` | multi_start_adam | simple | `hpc_a100_jax_cpu_dense_fp64` | 1 | 9.2 s | 14,400 | 5.2 µs | 0.8% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed2` | multi_start_adam | simple | `hpc_a100_jax_cpu_dense_fp64` | 2 | 7.5 s | 14,400 | 5.1 µs | 1.0% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed3` | multi_start_adam | simple | `hpc_a100_jax_cpu_dense_fp64` | 3 | 7.6 s | 14,400 | 4.7 µs | 0.9% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed4` | multi_start_adam | simple | `hpc_a100_jax_cpu_dense_fp64` | 4 | 7.1 s | 12,432 | 5.1 µs | 0.9% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed0` | multi_start_adam | simple | `hpc_a100_jax_gpu_dense_fp64` | 0 | 37.0 s | 14,400 | 8.3 µs | 0.3% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed1` | multi_start_adam | simple | `hpc_a100_jax_gpu_dense_fp64` | 1 | 19.2 s | 14,400 | 7.6 µs | 0.6% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed2` | multi_start_adam | simple | `hpc_a100_jax_gpu_dense_fp64` | 2 | 19.5 s | 14,400 | 7.1 µs | 0.5% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed3` | multi_start_adam | simple | `hpc_a100_jax_gpu_dense_fp64` | 3 | 20.3 s | 14,400 | 7.1 µs | 0.5% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed4` | multi_start_adam | simple | `hpc_a100_jax_gpu_dense_fp64` | 4 | 18.6 s | 12,432 | 7.3 µs | 0.5% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed0` | multi_start_adam_n3000 | simple | `hpc_a100_jax_cpu_dense_fp64` | 0 | 7.8 s | 33,792 | 5.0 µs | 2.2% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed1` | multi_start_adam_n3000 | simple | `hpc_a100_jax_cpu_dense_fp64` | 1 | 8.8 s | 52,848 | 5.0 µs | 3.0% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed2` | multi_start_adam_n3000 | simple | `hpc_a100_jax_cpu_dense_fp64` | 2 | 9.4 s | 68,736 | 5.1 µs | 3.7% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed3` | multi_start_adam_n3000 | simple | `hpc_a100_jax_cpu_dense_fp64` | 3 | 8.8 s | 61,488 | 5.1 µs | 3.6% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed4` | multi_start_adam_n3000 | simple | `hpc_a100_jax_cpu_dense_fp64` | 4 | 7.4 s | 12,432 | 4.8 µs | 0.8% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed0` | multi_start_adam_n3000 | simple | `hpc_a100_jax_gpu_dense_fp64` | 0 | 20.7 s | 33,792 | 7.2 µs | 1.2% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed1` | multi_start_adam_n3000 | simple | `hpc_a100_jax_gpu_dense_fp64` | 1 | 22.0 s | 52,848 | 7.3 µs | 1.8% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed2` | multi_start_adam_n3000 | simple | `hpc_a100_jax_gpu_dense_fp64` | 2 | 24.2 s | 68,736 | 8.0 µs | 2.3% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed3` | multi_start_adam_n3000 | simple | `hpc_a100_jax_gpu_dense_fp64` | 3 | 23.5 s | 61,488 | 7.0 µs | 1.8% | — | 2026.10.17.1 |
+| `simple/source_plane_solved/seed4` | multi_start_adam_n3000 | simple | `hpc_a100_jax_gpu_dense_fp64` | 4 | 19.1 s | 12,432 | 7.9 µs | 0.5% | — | 2026.10.17.1 |
 | `simple/source_plane_solved/seed0` | nautilus | simple | `hpc_a100_jax_cpu_dense_fp64` | 0 | 56.6 s | 4,850 | 4.7 µs | 0.041% | -7.15 | 2026.8.17.1 |
 | `simple/source_plane_solved/seed1` | nautilus | simple | `hpc_a100_jax_cpu_dense_fp64` | 1 | 54.2 s | 4,850 | 5.0 µs | 0.045% | -7.16 | 2026.8.17.1 |
 | `simple/source_plane_solved/seed2` | nautilus | simple | `hpc_a100_jax_cpu_dense_fp64` | 2 | 53.8 s | 4,800 | 4.8 µs | 0.043% | -7.13 | 2026.8.17.1 |

@@ -159,3 +159,11 @@ jobs:
           python scripts/point_source/simple/baseline.py \
             --instrument simple --backend jax_cpu --inversion dense \
             --config-name local_jax_cpu_dense_fp64
+          # The gradient-search leaves (MultiStartAdam, default and raised step
+          # ceiling) share the runner and the same short-circuit.
+          python scripts/point_source/simple/multi_start_adam.py \
+            --instrument simple --backend jax_cpu --inversion dense \
+            --config-name local_jax_cpu_dense_fp64
+          python scripts/point_source/simple/multi_start_adam_n3000.py \
+            --instrument simple --backend jax_cpu --inversion dense \
+            --config-name local_jax_cpu_dense_fp64

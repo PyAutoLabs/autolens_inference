@@ -7,3 +7,8 @@ Run `python scripts/point_source/simple/baseline.py --instrument simple
 shared in `scripts/misc/searches/_point_runner.py`.
 Historical rows retain their original source_plane_solved result identities.
 No prepared scientific identity or accepted reference is inferred.
+
+Gradient search: `scripts/point_source/simple/multi_start_adam.py` (library-default
+300-step ceiling) and `multi_start_adam_n3000.py` (ceiling 3000; auto-convergence ends
+the run) fit the same model with `af.MultiStartAdam` in the analysis's declared forward
+gradient mode. First rows: issue #25 (2026-10-17, released 2026.10.17.1 stack).

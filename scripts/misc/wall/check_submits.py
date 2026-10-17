@@ -210,6 +210,12 @@ LEGACY_CELLS = {
     "imaging/rectangular/baseline_slam": "imaging/slam/hst",
     "imaging/delaunay/baseline_slam": "imaging/slam/hst_delaunay",
     "point_source/simple/baseline": "point_source/searches/nautilus/simple_source_plane",
+    # Setup-layout gradient leaves keep the `<dataset>/searches/<sampler>/<instrument>`
+    # cell grammar, so the leaf-is-the-instrument check still applies (autolens_inference#25).
+    "point_source/simple/multi_start_adam": "point_source/searches/multi_start_adam/simple",
+    "point_source/simple/multi_start_adam_n3000": (
+        "point_source/searches/multi_start_adam_n3000/simple"
+    ),
 }
 
 

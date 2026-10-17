@@ -100,6 +100,40 @@ the fit. Every row therefore carries, beside the sampler's own ``wall_s`` and
 ``log_evidence``), so a search row and a SLaM stage row mean the same thing by
 the same word.
 
+The gradient search (``sampler="multi_start_adam"``)
+----------------------------------------------------
+
+The same model, priors, dataset and likelihood fitted with ``af.MultiStartAdam``
+— the library's gradient search that honours ``Analysis.gradient_mode`` (so the
+point-source analysis's declared ``"forward"`` mode reaches it; BlackJAX NUTS /
+SMC do not, ``honours_gradient_mode = False``). It runs at the library defaults
+(:data:`MSA_N_STARTS` starts, a :data:`MSA_N_STEPS`-step ceiling, auto-convergence
+on, Adam learning rate ``1e-2``), so the row measures the search as a user
+would first meet it, not a tuned one.
+
+It is an optimiser: it returns one MAP point, not a posterior. Its row therefore
+carries the admission bar under the gradient's own words:
+
+``per_call_s``
+    The median wall of one ``jax.jit(jax.vmap(value_and_grad))`` call on an
+    ``(n_starts, n_dim)`` array, divided by ``n_starts`` — the batched
+    value-and-gradient evaluation each optimiser step makes
+    (``per_call_basis = "batched_value_and_grad_vmap"``), built from the same
+    ``Fitness`` factory and the same resolved ``gradient_mode`` the search uses.
+    ``per_call_forward_s`` is the batched value-only cost on the same array, so
+    ``gradient_over_forward`` says what the gradient costs on top.
+
+``likelihood_evals``
+    ``total_steps * n_starts`` — one value-and-gradient per start per step
+    (:func:`gradient_search_evals`). The broad-start draws filtered before the
+    first step are not counted (a few per start; noted in the row).
+
+Correctness is the MAP point against truth, in units of the **reference**
+posterior width: the median σ per parameter over the committed Nautilus rows of
+the same target (:func:`reference_sigma_from_rows`), written as
+``map_delta_sigma``; and ``max_log_likelihood`` beside ``log_likelihood_at_truth``.
+These are evidence for a reader. The row never says "admitted".
+
 Hazards (inherited from the SLaM runner; see ``slam/_runner.py``)
 -----------------------------------------------------------------
 
@@ -151,6 +185,25 @@ SCHEMA_VERSION = 1
 N_LIVE = 100
 N_BATCH = 50
 
+#: The samplers this driver runs: the nested sampler and the gradient search.
+SAMPLERS = ("nautilus", "multi_start_adam")
+
+#: Gradient-search run labels -> step ceiling. ``multi_start_adam`` is the library
+#: default ceiling; ``multi_start_adam_n3000`` raises only the ceiling so that
+#: auto-convergence, not the budget, ends the run (steps *to convergence*). The
+#: label is the ``sampler`` column and path segment, so the two never resume or
+#: overwrite each other.
+GRADIENT_LABELS = {"multi_start_adam": 300, "multi_start_adam_n3000": 3000}
+
+#: ``af.MultiStartAdam`` settings — the library defaults, stated so a default
+#: change cannot silently move the measurement.
+MSA_N_STARTS = 48
+MSA_N_STEPS = 300
+
+#: Where the reference posterior widths for ``map_delta_sigma`` are read from:
+#: the committed Nautilus rows of the same target (any config).
+REFERENCE_SAMPLER = "nautilus"
+
 #: The θ_E prior bound (see the module docstring — the default ``U(0, 8)``
 #: reaches a no-ring basin near 2.4" on this lens).
 EINSTEIN_RADIUS_LOWER = 0.5
@@ -197,6 +250,63 @@ def likelihood_share(per_call_s, likelihood_evals, wall_s) -> float | None:
     except (TypeError, ValueError):
         return None
     return per_call * evals / wall
+
+
+def gradient_search_evals(total_steps, n_starts) -> int | None:
+    """``total_steps * n_starts`` — the value-and-gradient evaluations a multi-start
+    gradient search makes (one per start per step), or ``None`` if either is missing."""
+    try:
+        steps = int(total_steps)
+        starts = int(n_starts)
+    except (TypeError, ValueError):
+        return None
+    if steps < 0 or starts <= 0:
+        return None
+    return steps * starts
+
+
+def reference_sigma_from_rows(rows: list[dict]) -> dict:
+    """``{key: median posterior sigma}`` over the given (complete) search rows.
+
+    The reference width a MAP offset is measured in. Rows that are not complete,
+    or whose sigma is missing / non-positive, are skipped per key; a key with no
+    usable sigma is absent.
+    """
+    columns: dict[str, list[float]] = {}
+    for row in rows:
+        if row.get("status") != "complete" or row.get("test_mode"):
+            continue
+        for key, entry in (row.get("posterior") or {}).items():
+            sigma = _as_float((entry or {}).get("sigma"))
+            if sigma is not None and sigma > 0:
+                columns.setdefault(key, []).append(sigma)
+    return {key: float(statistics.median(values)) for key, values in columns.items() if values}
+
+
+def map_delta_sigma(map_params: dict, truths: dict, reference_sigma: dict) -> dict:
+    """``(MAP - truth) / reference_sigma`` per key the three share; ``None`` where the
+    reference width is zero or missing for a key that has a MAP and a truth."""
+    deltas: dict[str, float | None] = {}
+    for key, truth in truths.items():
+        if key not in map_params:
+            continue
+        sigma = reference_sigma.get(key)
+        deltas[key] = None if not sigma else (float(map_params[key]) - float(truth)) / sigma
+    return deltas
+
+
+def load_reference_rows(root: Path, dataset_class: str, instrument: str, variant: str) -> list:
+    """Every committed ``search_seed*.json`` of :data:`REFERENCE_SAMPLER` for this target."""
+    directory = (
+        root / "results" / "searches" / dataset_class / REFERENCE_SAMPLER / instrument / variant
+    )
+    rows = []
+    for path in sorted(directory.glob("*/search_seed*.json")):
+        try:
+            rows.append(json.loads(path.read_text()))
+        except (OSError, ValueError):
+            continue
+    return rows
 
 
 def timing_summary(samples: list[float]) -> dict:
@@ -340,6 +450,36 @@ def library_revisions() -> dict:
     return revisions
 
 
+#: Distributions whose installed versions a row records — the provenance of a run
+#: from an installed release (where ``library_revisions`` reads ``None``: no checkout).
+DISTRIBUTIONS = (
+    "autonerves",
+    "autofit",
+    "autoarray",
+    "autogalaxy",
+    "autolens",
+    "jax",
+    "jaxlib",
+    "jax-cuda12-plugin",
+    "optax",
+    "nautilus-sampler",
+    "numpy",
+)
+
+
+def package_versions() -> dict:
+    """``{distribution: installed version or None}`` for :data:`DISTRIBUTIONS`."""
+    from importlib import metadata
+
+    versions: dict[str, str | None] = {}
+    for name in DISTRIBUTIONS:
+        try:
+            versions[name] = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            versions[name] = None
+    return versions
+
+
 # ---------------------------------------------------------------------------
 # Model
 # ---------------------------------------------------------------------------
@@ -408,15 +548,17 @@ def run_point_search(
     dataset_class: str = "point_source",
     default_instrument: str = "simple",
 ) -> int:
-    """Fit the L5 point-source model with Nautilus for one ``(config_name, seed)`` leg.
+    """Fit the L5 point-source model with ``sampler`` for one ``(config_name, seed)`` leg.
 
     Returns the process exit code: 0 on success, 2 on a flag / environment
     refusal (a malformed or lying config name, ``--inversion sparse``, the
     ``numba_cpu`` backend, or ``--backend jax_gpu`` on a host with no GPU).
     """
-    if sampler != "nautilus":  # pragma: no cover — one sampler today
+    if sampler not in SAMPLERS and sampler not in GRADIENT_LABELS:  # pragma: no cover
         print(f"ERROR: sampler {sampler!r} is not implemented", file=sys.stderr)
         return 2
+    gradient = sampler in GRADIENT_LABELS
+    msa_n_steps = GRADIENT_LABELS.get(sampler, MSA_N_STEPS)
 
     cli = parse_inference_cli()
     instrument = cli.instrument or default_instrument
@@ -437,7 +579,7 @@ def run_point_search(
     if cli.backend == "numba_cpu":
         print(
             "ERROR: the numba_cpu leg is not implemented for the point-source search leaf: "
-            "the admission bar times the jitted Fitness call Nautilus makes under use_jax=True.",
+            "the admission bar times the jitted Fitness call the search makes under use_jax=True.",
             file=sys.stderr,
         )
         return 2
@@ -516,24 +658,76 @@ def run_point_search(
     )
 
     path_prefix = output_path_prefix(dataset_class, sampler, instrument, variant, config_name, seed)
-    search_name = "nautilus"
-    search = af.Nautilus(
-        path_prefix=path_prefix,
-        name=search_name,
-        unique_tag=None,
-        n_live=N_LIVE,
-        n_batch=N_BATCH,
-        seed=seed,
-        number_of_cores=1,
-    )
+    search_name = sampler
+    if gradient:
+        search = af.MultiStartAdam(
+            path_prefix=path_prefix,
+            name=search_name,
+            unique_tag=None,
+            n_starts=MSA_N_STARTS,
+            n_steps=msa_n_steps,
+            seed=seed,
+        )
+    else:
+        search = af.Nautilus(
+            path_prefix=path_prefix,
+            name=search_name,
+            unique_tag=None,
+            n_live=N_LIVE,
+            n_batch=N_BATCH,
+            seed=seed,
+            number_of_cores=1,
+        )
     search_root = with_test_mode_segment(output_root) / path_prefix
     keys = posterior_keys(list(model.all_names))
 
     timing: dict = {}
     log_likelihood_at_truth = None
 
+    def gradient_admission_bar_timing() -> None:
+        """Time the batched value-and-gradient each MultiStartAdam step makes, built
+        from the search's own ``Fitness`` factory and resolved ``gradient_mode``."""
+        from autofit.jax.gradient import value_and_grad_from
+
+        fitness = search.make_fitness(analysis=analysis, model=model, paths=None)
+        mode = search.execution_settings(analysis).gradient_mode
+        objective = fitness.objective("scalar", compile=False)
+        vector = np.asarray(model.physical_values_from_prior_medians, dtype=float)
+        batch = np.tile(vector, (MSA_N_STARTS, 1))
+        timing["gradient_mode"] = mode
+        timing["batch"] = MSA_N_STARTS
+
+        batched = jax.jit(jax.vmap(value_and_grad_from(objective, mode)))
+        start = time.perf_counter()
+        jax.block_until_ready(batched(batch))
+        timing["compile_s"] = time.perf_counter() - start
+        timing["batched"] = time_calls(batched, batch, block=jax.block_until_ready)
+
+        forward = jax.jit(jax.vmap(objective))
+        start = time.perf_counter()
+        jax.block_until_ready(forward(batch))
+        timing["compile_forward_s"] = time.perf_counter() - start
+        timing["batched_forward"] = time_calls(forward, batch, block=jax.block_until_ready)
+
+        single = jax.jit(value_and_grad_from(objective, mode))
+        start = time.perf_counter()
+        jax.block_until_ready(single(vector))
+        timing["compile_single_s"] = time.perf_counter() - start
+        timing["single"] = time_calls(single, vector, block=jax.block_until_ready)
+        timing["vector"] = vector.tolist()
+
+        nonlocal log_likelihood_at_truth
+        truth = truth_vector(keys, truths)
+        if truth is not None:
+            log_likelihood_at_truth = float(
+                analysis.log_likelihood_function(instance=model.instance_from_vector(vector=truth))
+            )
+
     def admission_bar_timing() -> None:
         """Time the Fitness call Nautilus makes, on a Fitness of our own."""
+        if gradient:
+            gradient_admission_bar_timing()
+            return
         fitness = Fitness(
             model=model,
             analysis=analysis,
@@ -570,25 +764,42 @@ def run_point_search(
     resumed = checkpoint_exists(search_root, search_name)
     posterior: dict = {}
     max_log_likelihood = None
+    map_params: dict = {}
+    max_log_posterior = None
     try:
         if is_test_mode():
             timing["note"] = "admission-bar timing skipped under PYAUTO_TEST_MODE"
         else:
             admission_bar_timing()
+            width = MSA_N_STARTS if gradient else N_BATCH
             print(
-                f"  per-call (batched, /{N_BATCH}): "
-                f"{timing['batched']['median_s'] / N_BATCH * 1e6:.2f} µs; single: "
+                f"  per-call (batched, /{width}): "
+                f"{timing['batched']['median_s'] / width * 1e6:.2f} µs; single: "
                 f"{timing['single']['median_s'] * 1e6:.1f} µs; compile {timing['compile_s']:.2f} s"
             )
 
-        print(f"\n--- {search_name} (n_live={N_LIVE}, n_batch={N_BATCH}) ---")
+        settings = (
+            f"n_starts={MSA_N_STARTS}, n_steps={msa_n_steps}"
+            if gradient
+            else f"n_live={N_LIVE}, n_batch={N_BATCH}"
+        )
+        print(f"\n--- {search_name} ({settings}) ---")
         start = time.perf_counter()
         result = search.fit(model=model, analysis=analysis)
         total_wall_s = time.perf_counter() - start
 
         try:
-            posterior = posterior_from_result(af, result)
-            max_log_likelihood = float(result.samples.max_log_likelihood_sample.log_likelihood)
+            if gradient:
+                # Sample 0 is the best-basin MAP (weight 1); the rest are each
+                # start's final point with a NaN likelihood (diagnostics only).
+                samples = result.samples
+                map_vector = [float(v) for v in samples.parameter_lists[0]]
+                map_params = dict(zip(keys, map_vector))
+                max_log_likelihood = float(samples.log_likelihood_list[0])
+                max_log_posterior = max_log_likelihood + float(samples.log_prior_list[0])
+            else:
+                posterior = posterior_from_result(af, result)
+                max_log_likelihood = float(result.samples.max_log_likelihood_sample.log_likelihood)
         except Exception as exc:
             print(f"  WARNING: posterior capture failed — {exc}")
     except BaseException as exc:
@@ -599,8 +810,8 @@ def run_point_search(
         row = _stage_row(
             search_name,
             output_path,
-            n_live=N_LIVE,
-            n_batch=N_BATCH,
+            n_live=None if gradient else N_LIVE,
+            n_batch=None if gradient else N_BATCH,
             free_parameters=model.prior_count,
             total_wall_s=total_wall_s,
             compile_s=timing.get("compile_s"),
@@ -616,10 +827,60 @@ def run_point_search(
                 row["output_path"] = str(output_path.relative_to(output_root))
             except ValueError:
                 pass
+        gradient_fields: dict = {}
+        if gradient:
+            info = {}
+            if output_path is not None:
+                try:
+                    info = json.loads((output_path / "files" / "samples_info.json").read_text())
+                except (OSError, ValueError):
+                    info = {}
+            row["likelihood_evals"] = gradient_search_evals(
+                info.get("total_steps"), info.get("n_starts")
+            )
+            reference_rows = load_reference_rows(root, dataset_class, instrument, variant)
+            reference_sigma = reference_sigma_from_rows(reference_rows)
+            fom_history = info.get("fom_history") or []
+            gradient_fields = {
+                "n_starts": info.get("n_starts"),
+                "n_steps": info.get("n_steps"),
+                "total_steps": info.get("total_steps"),
+                "stop_reason": info.get("stop_reason"),
+                "converged": info.get("converged"),
+                "convergence": info.get("convergence"),
+                "gradient_mode": info.get("gradient_mode"),
+                "optax_method": info.get("optax_method"),
+                "learning_rate": info.get("learning_rate"),
+                "n_value_nan_lane_steps": info.get("n_value_nan_lane_steps"),
+                "n_grad_nan_lane_steps": info.get("n_grad_nan_lane_steps"),
+                "likelihood_evals_note": (
+                    "total_steps * n_starts value-and-gradient evaluations; the "
+                    "broad-start draws filtered before the first step are not counted"
+                ),
+                "map": map_params,
+                "max_log_posterior": max_log_posterior,
+                "map_delta_sigma": map_delta_sigma(map_params, truths, reference_sigma),
+                "reference_sigma": reference_sigma,
+                "reference_rows": len(reference_rows),
+                "reference_note": (
+                    f"median posterior sigma over the committed {REFERENCE_SAMPLER} rows "
+                    f"of {target_id(instrument, variant, 0).rsplit('/seed', 1)[0]}"
+                ),
+                "fom_best_final": fom_history[-1] if fom_history else None,
+            }
+        width = MSA_N_STARTS if gradient else N_BATCH
         batched = timing.get("batched") or {}
         single = timing.get("single") or {}
         per_batch_s = batched.get("median_s")
-        per_call_s = per_batch_s / N_BATCH if per_batch_s is not None else None
+        per_call_s = per_batch_s / width if per_batch_s is not None else None
+        forward_batch_s = (timing.get("batched_forward") or {}).get("median_s")
+        if gradient:
+            gradient_fields["per_call_forward_s"] = (
+                forward_batch_s / width if forward_batch_s is not None else None
+            )
+            gradient_fields["gradient_over_forward"] = (
+                per_batch_s / forward_batch_s if per_batch_s and forward_batch_s else None
+            )
         share = likelihood_share(per_call_s, row["likelihood_evals"], row["wall_s"])
         likelihood_s = (
             per_call_s * row["likelihood_evals"]
@@ -632,6 +893,11 @@ def run_point_search(
             "sampler": sampler,
             "variant": variant,
             "model": "L5: Isothermal (5 free) + PointSolved source",
+            "search_settings": (
+                {"n_starts": MSA_N_STARTS, "n_steps": msa_n_steps, "optimiser": "adam"}
+                if gradient
+                else {"n_live": N_LIVE, "n_batch": N_BATCH}
+            ),
             "fit_positions_cls": FIT_POSITIONS_CLS,
             "priors": {
                 "einstein_radius": f"U({EINSTEIN_RADIUS_LOWER}, {EINSTEIN_RADIUS_UPPER})",
@@ -646,6 +912,7 @@ def run_point_search(
             "seed": seed,
             "version": al.__version__,
             "library_revisions": library_revisions(),
+            "package_versions": package_versions(),
             "device": _device_info(),
             "host": os.uname().nodename,
             "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
@@ -657,12 +924,16 @@ def run_point_search(
             "status": status,
             # --- the search (same words as a SLaM stage row) -----------------
             **{k: v for k, v in row.items() if k != "name"},
-            "log_evidence_err_note": LOG_EVIDENCE_ERR_NOTE,
+            "log_evidence_err_note": None if gradient else LOG_EVIDENCE_ERR_NOTE,
             "log_likelihood_at_truth": log_likelihood_at_truth,
             "truths": truths,
             # --- the admission bar ------------------------------------------
             "per_call_s": per_call_s,
-            "per_call_basis": "batched_vmap" if per_call_s is not None else None,
+            "per_call_basis": (
+                None
+                if per_call_s is None
+                else ("batched_value_and_grad_vmap" if gradient else "batched_vmap")
+            ),
             "per_batch_s": per_batch_s,
             "per_call_single_s": single.get("median_s"),
             "compile_single_s": timing.get("compile_single_s"),
@@ -680,6 +951,7 @@ def run_point_search(
                 single.get("median_s"), row["likelihood_evals"], row["wall_s"]
             ),
             "timing": timing,
+            **gradient_fields,
         }
         json_path, png_path = results_paths(
             root, dataset_class, sampler, instrument, variant, config_name, seed
