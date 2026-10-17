@@ -107,6 +107,8 @@ side by side under one target because their setups differ in something the confi
 does not carry, that difference is a bug in the run, not a new table: fix the run.
 The first parity row is the 5-stage HST SLaM chain across
 numba-CPU / JAX-CPU / A100 × dense / sparse.
+The lens-light mode (`--lens-light linear|fixed|both`) is a run **variant**, never a
+config: `fixed` names its own variant (`slam_base_lightfixed`) and its own parity rows.
 
 ## Backend facts (get these wrong and the parity row is a lie)
 

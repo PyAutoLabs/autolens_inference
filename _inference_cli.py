@@ -75,6 +75,30 @@ BASE_VARIANT = "slam_base"
 #: measured from a ``source_lp``-only leg without paying for the whole chain.
 STAGES = ("source_lp", "source_pix_1", "source_pix_2", "light", "mass_total")
 
+#: The ``--lens-light`` vocabulary — how the lens light enters ``mass_total[1]``.
+#: ``linear`` is the chain as it has always run (the ``light[1]`` linear MGE
+#: carried as an instance, its intensities re-solved by every inversion);
+#: ``fixed`` replaces every linear profile by an ordinary one carrying the
+#: intensity ``light[1]``'s maximum-likelihood fit solved for, so the mass
+#: stage's inversion carries no lens-light columns; ``both`` runs stages 1 to 4
+#: once and ``mass_total[1]`` twice, linear then fixed.
+LENS_LIGHT_MODES = ("linear", "fixed", "both")
+
+#: The light mode a run uses when ``--lens-light`` is not given: today's chain,
+#: so every existing invocation is unchanged.
+LENS_LIGHT_DEFAULT = "linear"
+
+#: What a ``fixed`` mass stage appends to its variant name. The light mode is a
+#: run VARIANT (what was fitted), never a config name (what ran it): a fixed-
+#: light mass stage is a different model, and its rows must form their own
+#: parity group. ``linear`` appends nothing, so the rows already written keep
+#: their names.
+LENS_LIGHT_FIXED_SUFFIX = "_lightfixed"
+
+#: The grammar of ``--results-tag``: lower-case words joined by underscores, so
+#: the tag can sit in a directory name (``<config_name>__<tag>``) unquoted.
+RESULTS_TAG_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*$")
+
 
 def default_cores() -> int:
     """Cores to parallelise over when ``--cores`` is not given.
@@ -109,6 +133,8 @@ class InferenceCLI:
     cores: int = 1
     stages: str | None = None
     export_prepared: Path | None = None
+    lens_light: str = LENS_LIGHT_DEFAULT
+    results_tag: str | None = None
 
 
 def parse_inference_cli(
@@ -339,7 +365,40 @@ def parse_inference_cli(
         help="Freeze mass_total[1] under a project-relative storage directory",
     )
 
+    parser.add_argument(
+        "--lens-light",
+        choices=LENS_LIGHT_MODES,
+        default=LENS_LIGHT_DEFAULT,
+        help=(
+            "How the lens light enters mass_total[1]. 'linear' (the default) is "
+            "today's chain: the light[1] linear MGE, intensities re-solved by "
+            "every inversion. 'fixed' replaces every linear light profile by an "
+            "ordinary one carrying the intensity light[1]'s maximum-likelihood "
+            "fit solved for, so the mass stage's inversion carries no lens-light "
+            "columns; its rows are the run variant '<variant>_lightfixed'. "
+            "'both' runs stages 1 to 4 once and mass_total[1] twice (linear then "
+            "fixed), writing one result row per variant."
+        ),
+    )
+    parser.add_argument(
+        "--results-tag",
+        default=None,
+        help=(
+            "Optional campaign tag that keeps a re-measurement's result rows "
+            "apart from earlier rows of the same variant, config and seed: the "
+            "row lands under results/slam/<dataset_class>/<instrument>/<variant>/"
+            "<config_name>__<tag>/ and records results_tag. Lower-case words "
+            "joined by underscores (e.g. cleanslate_2026_10_17). Omitted = the "
+            "untagged path, unchanged."
+        ),
+    )
+
     args, _unknown = parser.parse_known_args()
+    if args.results_tag is not None and not RESULTS_TAG_RE.match(args.results_tag):
+        parser.error(
+            f"--results-tag {args.results_tag!r} must be lower-case words joined by "
+            "underscores (e.g. cleanslate_2026_10_17)"
+        )
     config_name = args.config_name or default_config_name
     output_dir = Path(args.output_dir).resolve() if args.output_dir else None
     mesh = args.mesh or default_mesh or MESH_DEFAULT
@@ -369,10 +428,31 @@ def parse_inference_cli(
         cores=int(args.cores) if args.cores else default_cores(),
         stages=args.stages,
         export_prepared=args.export_prepared,
+        lens_light=args.lens_light,
+        results_tag=args.results_tag,
     )
 
 
-def variant_name(cli: InferenceCLI) -> str:
+def base_variant_name(cli: InferenceCLI) -> str:
+    """The mesh-only variant: what stages 1 to 4 are, whatever the light mode.
+
+    Stages 1 to 4 never see the light mode (it only changes ``mass_total[1]``),
+    so their PyAutoFit ``path_prefix`` keeps this name and a ``fixed`` run
+    resumes a completed ``linear`` chain's first four stages.
+    """
+    if cli.mesh == "rect" and cli.mesh_pixels == MESH_PIXELS_DEFAULT["rect"]:
+        return BASE_VARIANT
+    return f"{cli.mesh}_{cli.mesh_pixels}"
+
+
+def lens_light_modes(cli: InferenceCLI) -> tuple[str, ...]:
+    """The single light modes this run's ``mass_total[1]`` is fitted under, in order."""
+    if cli.lens_light == "both":
+        return ("linear", "fixed")
+    return (cli.lens_light,)
+
+
+def variant_name(cli: InferenceCLI, lens_light_mode: str | None = None) -> str:
     """The run-variant name for this leg — one directory level and one target field.
 
     A variant is *what was fitted*, as distinct from the config name, which is
@@ -384,10 +464,22 @@ def variant_name(cli: InferenceCLI) -> str:
     (``"slam_base"``) — the baseline, and the name the result rows already on
     disk were written under. Anything else names its mesh and its pixel count:
     ``rect_40``, ``delaunay_1250``.
+
+    The lens-light mode is part of the variant too: ``fixed`` appends
+    :data:`LENS_LIGHT_FIXED_SUFFIX` (``slam_base_lightfixed``,
+    ``delaunay_1250_lightfixed``) and ``linear`` appends nothing.
+    ``lens_light_mode`` names the single mode to resolve; it defaults to the
+    run's ``--lens-light``, and ``both`` has no single variant, so a caller
+    resolving a ``both`` run must name the mode it means.
     """
-    if cli.mesh == "rect" and cli.mesh_pixels == MESH_PIXELS_DEFAULT["rect"]:
-        return BASE_VARIANT
-    return f"{cli.mesh}_{cli.mesh_pixels}"
+    mode = lens_light_mode or cli.lens_light
+    if mode not in ("linear", "fixed"):
+        raise ValueError(
+            f"variant_name needs a single lens-light mode ('linear' or 'fixed'), got {mode!r}; "
+            "a 'both' run has one variant per mode — pass lens_light_mode explicitly."
+        )
+    base = base_variant_name(cli)
+    return base + LENS_LIGHT_FIXED_SUFFIX if mode == "fixed" else base
 
 
 #: What ``--regularization`` resolves to for the Delaunay-family models when

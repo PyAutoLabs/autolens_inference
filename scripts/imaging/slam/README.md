@@ -14,7 +14,8 @@ joined it: the same chain and the same runner, with the two pixelized source sta
 python3 scripts/imaging/rectangular/baseline_slam.py \
     --backend {jax_cpu,numba_cpu,jax_gpu} --inversion {dense,sparse} \
     --config-name <config> [--seed 0] [--cores N] [--stages source_lp] [--output-dir DIR] \
-    [--mesh {rect,delaunay}] [--mesh-pixels N]
+    [--mesh {rect,delaunay}] [--mesh-pixels N] [--lens-light {linear,fixed,both}] \
+    [--results-tag TAG] [--export-prepared DIR]
 ```
 
 - The **instrument is a flag** (`--instrument hst`, the default), never a directory. The HST
@@ -31,6 +32,11 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
   of the target id. Each leaf carries its own default — `hst.py` is `rect` at 28, the
   workspace default; `hst_delaunay.py` is `delaunay` at 1250 — so neither flag is normally
   typed.
+- `--lens-light` chooses how the lens light enters `mass_total[1]` — a **run variant**, see
+  "The lens-light mode" below. `linear` (the default) is the chain as it always ran.
+- `--results-tag TAG` keeps a re-measurement's rows apart from earlier rows of the same
+  variant, config and seed: they land under `<config_name>__<TAG>/` and form their own
+  parity groups. The clean-slate submits use `cleanslate_2026_10_17`.
 - `--output-dir` overrides the **PyAutoFit run-output root** for this leaf (default
   `output/slam/imaging/hst/<variant>/<config_name>/seed_<n>/`); the result row always lands
   under `results/`.
@@ -41,7 +47,7 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
 ## What a leg writes
 
 - One result row per `(variant, config_name, seed)`:
-  `results/slam/imaging/hst/<variant>/<config_name>/stages_seed<n>.json`, schema version 2,
+  `results/slam/imaging/hst/<variant>/<config_name>/stages_seed<n>.json`, schema version 3,
   with a `stages` list of five rows (`source_lp[1]`, `source_pix[1]`, `source_pix[2]`, `light[1]`,
   `mass_total[1]`) carrying wall clock, reject-inclusive likelihood evals, log evidence,
   posterior (median + 1σ), `truth_delta_sigma` against `dataset/imaging/hst/tracer.json`,
@@ -53,11 +59,17 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
   `null` on the rectangular family: a row saying only "delaunay, 1250" could not be
   reproduced, because what places those 1250 vertices is the image mesh and its weights. v1 rows still read: every reader treats an absent `variant` as `slam_base`,
   which is what those rows are.
+  **Schema v3** (2026-10-17) adds `lens_light_mode` (`linear` / `fixed`), `results_tag`, and
+  the row's provenance: `library_revisions` (HEAD commits of the five import-selected PyAuto*
+  checkouts, or `null` with `library_revisions_note` when they cannot be pinned),
+  `release_pin` (`PYAUTO_RELEASE_PIN`, exported by a pinned submit) and `slurm_job_id`
+  (`<array job>_<task>` inside an array, else `SLURM_JOB_ID`, else `null`). v1/v2 rows read
+  as `linear` with `null` provenance.
 - The full PyAutoFit output tree under `output/` (gitignored — see `AGENTS.md`, "Outputs are
   KEPT"). Budget ~150 MB per 5-stage lens per leg.
 
 `build_readme.py` flattens those stage lists into the root README's `slam` table and renders a
-**parity view** per (target, seed): the `mass_total[1]` posterior of every config side by side,
+**parity view** per (target, seed, results tag): the `mass_total[1]` posterior of every config side by side,
 each cell the difference from the alphabetically-first config in units of that reference leg's
 1σ.
 
@@ -85,6 +97,43 @@ workspace default (`rect` at 28) is the one variant not named after its mesh —
 `slam_base`, the baseline, and the name the rows already on disk were written under. Every
 other combination names itself: `delaunay_1250`, `rect_40`. Its target id says so too —
 `hst/slam5/seed0` for the base run, `hst/slam5_delaunay_1250/seed0` for the variant.
+
+## The lens-light mode: a variant, not a config
+
+`--lens-light` changes **one stage**, `mass_total[1]`, and only where its lens light comes from:
+
+| `--lens-light` | `mass_total[1]` lens light | variant |
+|---|---|---|
+| `linear` (default) | `light[1]`'s instance: the linear MGE, intensities re-solved by every inversion | `slam_base` (unchanged) |
+| `fixed` | the same profiles as **ordinary** ones carrying the intensities `light[1]`'s maximum-likelihood fit solved for (`FitImaging.model_obj_linear_light_profiles_to_light_profiles`), so the inversion carries no lens-light columns | `slam_base_lightfixed` |
+| `both` | stages 1–4 once, then `mass_total[1]` linear, then fixed — two rows from one process | both of the above |
+
+Everything else in the stage — the `PowerLaw` chained from `source_pix[1]`'s `Isothermal`
+with the centre unfixed, the source from `source_pix[2]`, the positions likelihood, the adapt
+images, Nautilus `n_live=150` / `n_batch=20` and the seed — is identical, and the driver
+refuses a `fixed` model that still holds a linear light profile. The rule is the mesh's:
+`<variant>_lightfixed` for any mesh (`delaunay_1250_lightfixed`), and `linear` appends nothing,
+so no existing row or output path moves. The target id carries it
+(`hst/slam5_slam_base_lightfixed/seed0`), so the two modes never share a parity group.
+
+Only the mass stage's PyAutoFit `path_prefix` carries the light-mode variant; stages 1–4 keep
+the mesh-only variant's prefix, so a `fixed` run **resumes** a completed `linear` chain's
+first four stages. Each row's `stages` list still holds all five stages (the shared four plus
+that mode's mass stage), so readers stay uniform. `--export-prepared DIR` freezes each mode's
+mass problem: a single-mode run exports to `DIR`, a `both` run to `DIR/<variant>/`, and the two
+problem ids differ (the model differs, and the controls carry `variant` and
+`lens_light_mode`); the setup id stays `imaging/rectangular/<instrument>`, so the
+rectangular sampler leaves accept both.
+
+### The clean-slate submits (2026-10-17)
+
+`hpc/batch_gpu/submit_hst_cleanslate_jax_gpu_{dense,sparse}` and
+`hpc/batch_cpu/submit_hst_cleanslate_jax_cpu_{dense,sparse}` re-measure the HST base on PyAuto
+release 2026.10.17.1 with `--lens-light both`, seeds 0–1: pinned libraries
+(`PYAUTO_LIB_BASE`, `PYAUTO_RELEASE_PIN`), a fresh `--output-dir output/cleanslate_2026_10_17`
+so the 2026-09-24 trees are never resumed, and `--results-tag cleanslate_2026_10_17` so their
+rows never overwrite the 2026-09-24 rows. Details in
+[`../../../hpc/README.md`](../../../hpc/README.md).
 
 ### Why `hst_delaunay.py` is a separate leaf
 
