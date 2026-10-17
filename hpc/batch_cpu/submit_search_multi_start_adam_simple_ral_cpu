@@ -1,0 +1,82 @@
+#!/bin/bash -l
+#
+# MultiStartAdam on the simple point source, source-plane solved χ² — the gradient-search
+# admission measurement (autolens_inference#25; PyAutoPulse campaign point-source-source).
+# Array of 10: tasks 0-4 = multi_start_adam (library default 300-step ceiling) seeds 0-4,
+# tasks 5-9 = multi_start_adam_n3000 (ceiling 3000, auto-convergence ends the run) seeds
+# 0-4. jax_cpu, 8 CPUs, --partition=ral only (human rule 2026-09-30: CPU arrays never on
+# gpu). The legacy config token hpc_a100 names RAL in this repo's grammar; jax_cpu names
+# the device. A point source has no inversion.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   No RAL measurement of these cells exists. The laptop plumbing runs (2026-10-17, not a
+#   basis) took ~25 s end to end per leg; --time is containment, 0:30:00 per task.
+#   cell: point_source/searches/multi_start_adam/simple  device: ral_jax_cpu  precision: fp64
+#   lanes: 48  steps: 300  source: unmeasured  probe-first: yes
+#   cell: point_source/searches/multi_start_adam_n3000/simple  device: ral_jax_cpu  precision: fp64
+#   lanes: 48  steps: 3000  source: unmeasured  probe-first: yes
+#
+#SBATCH -J ps_msa_ral_cpu
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16gb
+#SBATCH --time=0:30:00
+#SBATCH --array=0-9%2
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+
+# The released 2026.10.17.1 stack, not the shared mirror: a private venv of the PyPI wheels
+# (`pip install autolens==2026.10.17.1 "jax[cuda12]==0.11.2"` — jax 0.11.2 is what the
+# release resolves; the shared venv carries jax 0.10.2, which autonerves 2026.10.17.1
+# excludes). activate.sh is still sourced for its SLURM errexit guard and the cache
+# variables; its shared venv and PYTHONPATH are then replaced. PS_BASE is the private
+# measurement root (autolens_inference#25); never HPCPullPyAuto the shared mirror.
+export PS_BASE=${PS_BASE:-/mnt/ral/jnightin/inference/ps_source_grad_admission}
+export AP_ROOT=${AP_ROOT:-$PS_BASE/autolens_inference}
+source $AP_ROOT/activate.sh
+source $PS_BASE/venv/bin/activate
+unset PYTHONPATH
+
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=True
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+CELLS=(multi_start_adam multi_start_adam_n3000)
+I=$((SLURM_ARRAY_TASK_ID / 5))
+SEED=$((SLURM_ARRAY_TASK_ID % 5))
+CELL=${CELLS[$I]}
+
+echo "=========================================="
+date
+hostname
+lscpu | grep 'Model name' || true
+echo "partition:  ${SLURM_JOB_PARTITION:-unset}  cpus: ${SLURM_CPUS_PER_TASK}"
+echo "loadavg:    $(cat /proc/loadavg)"
+echo "Cell:       point_source/simple/$CELL"
+echo "Instrument: simple"
+echo "Config:     hpc_a100_jax_cpu_dense_fp64"
+echo "Seed:       $SEED"
+
+cd $AP_ROOT
+python3 -c "
+import autolens, autofit, jax, sys
+assert autolens.__version__ == \"2026.10.17.1\", autolens.__version__
+assert \"site-packages\" in autolens.__file__ and \"site-packages\" in autofit.__file__, autolens.__file__
+print(\"autolens\", autolens.__version__, autolens.__file__)
+print(\"jax\", jax.__version__, jax.devices(), jax.default_backend())
+"
+
+python3 scripts/point_source/simple/${CELL}.py \
+    --instrument simple \
+    --backend jax_cpu \
+    --inversion dense \
+    --seed $SEED \
+    --config-name hpc_a100_jax_cpu_dense_fp64 \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date

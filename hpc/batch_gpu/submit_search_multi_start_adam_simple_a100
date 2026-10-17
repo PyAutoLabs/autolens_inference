@@ -1,0 +1,80 @@
+#!/bin/bash -l
+#
+# MultiStartAdam on the simple point source, source-plane solved χ² — the A100 legs of the
+# gradient-search admission measurement (autolens_inference#25). Array of 10: tasks 0-4 =
+# multi_start_adam (300-step ceiling) seeds 0-4, tasks 5-9 = multi_start_adam_n3000 seeds
+# 0-4. --exclusive so the timing node is shared with nothing, and %1 so this array holds
+# at most one of the two A100 nodes at a time.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   No A100 measurement of these cells exists; --time is containment, 0:30:00 per task.
+#   cell: point_source/searches/multi_start_adam/simple  device: a100  precision: fp64
+#   lanes: 48  steps: 300  source: unmeasured  probe-first: yes
+#   cell: point_source/searches/multi_start_adam_n3000/simple  device: a100  precision: fp64
+#   lanes: 48  steps: 3000  source: unmeasured  probe-first: yes
+#
+#SBATCH -J ps_msa_a100
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --exclusive
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32gb
+#SBATCH --time=0:30:00
+#SBATCH --array=0-9%1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+
+# The released 2026.10.17.1 stack, not the shared mirror: a private venv of the PyPI wheels
+# (`pip install autolens==2026.10.17.1 "jax[cuda12]==0.11.2"` — jax 0.11.2 is what the
+# release resolves; the shared venv carries jax 0.10.2, which autonerves 2026.10.17.1
+# excludes). activate.sh is still sourced for its SLURM errexit guard and the cache
+# variables; its shared venv and PYTHONPATH are then replaced. PS_BASE is the private
+# measurement root (autolens_inference#25); never HPCPullPyAuto the shared mirror.
+export PS_BASE=${PS_BASE:-/mnt/ral/jnightin/inference/ps_source_grad_admission}
+export AP_ROOT=${AP_ROOT:-$PS_BASE/autolens_inference}
+source $AP_ROOT/activate.sh
+source $PS_BASE/venv/bin/activate
+unset PYTHONPATH
+
+export JAX_PLATFORMS=cuda,cpu
+export JAX_ENABLE_X64=True
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export NPROC=$SLURM_CPUS_PER_TASK
+
+CELLS=(multi_start_adam multi_start_adam_n3000)
+I=$((SLURM_ARRAY_TASK_ID / 5))
+SEED=$((SLURM_ARRAY_TASK_ID % 5))
+CELL=${CELLS[$I]}
+
+nvidia-smi || true
+echo "=========================================="
+date
+hostname
+echo "nodelist:   ${SLURM_JOB_NODELIST:-unset}"
+echo "loadavg:    $(cat /proc/loadavg)"
+echo "Cell:       point_source/simple/$CELL"
+echo "Instrument: simple"
+echo "Config:     hpc_a100_jax_gpu_dense_fp64"
+echo "Seed:       $SEED"
+
+cd $AP_ROOT
+python3 -c "
+import autolens, autofit, jax, sys
+assert autolens.__version__ == \"2026.10.17.1\", autolens.__version__
+assert \"site-packages\" in autolens.__file__ and \"site-packages\" in autofit.__file__, autolens.__file__
+print(\"autolens\", autolens.__version__, autolens.__file__)
+print(\"jax\", jax.__version__, jax.devices(), jax.default_backend())
+"
+
+python3 scripts/point_source/simple/${CELL}.py \
+    --instrument simple \
+    --backend jax_gpu \
+    --inversion dense \
+    --seed $SEED \
+    --config-name hpc_a100_jax_gpu_dense_fp64 \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "loadavg: $(cat /proc/loadavg)"
+echo "Finished."
+date
