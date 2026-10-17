@@ -12,6 +12,15 @@ recover truth within 0.74σ and take 50–59 seconds. The warmed batch timing im
 for the timing assumptions and limits. This is a source-plane measurement; it does not
 measure PointSolver image-plane performance or gradient-sampler costs.
 
+The gradient search lives beside it in the setup layout:
+`scripts/point_source/simple/multi_start_adam.py` and `multi_start_adam_n3000.py`
+(`af.MultiStartAdam`, forward gradient mode). On the released 2026.10.17.1 stack, with the ceiling
+raised to 3000, all five seeds converge in 259–1432 steps to the Nautilus log-likelihood
+range. The batched value-and-gradient is 0.8–3.7% of search wall on RAL CPU and
+0.3–2.3% on A100; a fixed per-fit cost (compile, start draws, output) and the per-step optimiser loop are the rest. See the
+[journal entry](../../../wiki/project/state.md#2026-10-17--point-source-gradient-search-admission-measurement-multistartadam-20261017)
+and issue #25.
+
 Leaves are added one sampler at a time, each in its own directory:
 
 ```
