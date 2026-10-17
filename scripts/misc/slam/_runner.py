@@ -107,7 +107,9 @@ from _inference_cli import (  # noqa: E402
     STAGES,
     InferenceCLI,
     auto_simulate_if_missing,
+    base_variant_name,
     device_info_dict,
+    lens_light_modes,
     parse_inference_cli,
     rect_mesh_classes,
     variant_name,
@@ -120,7 +122,22 @@ from _inference_cli import (  # noqa: E402
 #: with ``mesh_shape`` now ``null`` on a row whose mesh has no shape (Delaunay
 #: takes a vertex count). v1 rows are still read — every reader falls back to
 #: the base variant when the field is absent, which is what those rows are.
-SCHEMA_VERSION = 2
+#:
+#: v3 added the lens-light mode and the row's provenance: ``lens_light_mode``
+#: (``linear`` / ``fixed``; the ``fixed`` mode is also the ``_lightfixed``
+#: variant suffix), ``library_revisions`` (the five import-selected PyAuto*
+#: checkouts' HEAD commits, or ``null`` with ``library_revisions_note`` when
+#: they cannot be pinned), ``release_pin`` (``PYAUTO_RELEASE_PIN``, exported by
+#: a submit that runs against a pinned release checkout, else ``null``),
+#: ``slurm_job_id`` (``<array job>_<task>`` inside an array, ``SLURM_JOB_ID``
+#: otherwise, else ``null``) and ``results_tag`` (``--results-tag``, else
+#: ``null``). v1/v2 rows still read: an absent ``lens_light_mode`` is
+#: ``linear`` (the only mode that existed), absent provenance is ``null``.
+SCHEMA_VERSION = 3
+
+#: What a v1/v2 row's ``lens_light_mode`` is when the field is absent: the only
+#: mode the chain had before v3.
+DEFAULT_LENS_LIGHT_MODE = "linear"
 
 #: Search name per stage key, in chain order. These are the names that appear in
 #: the output tree and in every result row, so they are the citable identity of a
@@ -1078,6 +1095,65 @@ def light_lp(
     return model, analysis, search
 
 
+def linear_light_profiles_in(al, obj) -> list:
+    """Every linear light profile reachable from ``obj`` (a galaxy, a profile, a basis).
+
+    ``Galaxy.cls_list_from`` does not look inside a ``Basis`` (measured: it
+    returns nothing for a galaxy whose bulge is a 20-Gaussian linear MGE), so
+    the walk is explicit — galaxy attributes, ``Basis.profile_list`` and plain
+    lists.
+    """
+    linear_cls = al.lp_linear.LightProfileLinear
+    if obj is None:
+        return []
+    if isinstance(obj, linear_cls):
+        return [obj]
+    if isinstance(obj, (list, tuple)):
+        return [p for item in obj for p in linear_light_profiles_in(al, item)]
+    profile_list = getattr(obj, "profile_list", None)
+    if profile_list is not None:
+        return linear_light_profiles_in(al, list(profile_list))
+    if isinstance(obj, al.Galaxy):
+        return [
+            p
+            for value in vars(obj).values()
+            if not isinstance(value, (int, float, str))
+            for p in linear_light_profiles_in(al, value)
+        ]
+    return []
+
+
+def fixed_lens_light_from(al, light_result, *, lens_redshift: float):
+    """The lens galaxy of ``light[1]``'s maximum-likelihood fit, with every linear
+    light profile replaced by an ordinary one carrying its solved intensity.
+
+    ``FitImaging.model_obj_linear_light_profiles_to_light_profiles``
+    (``autogalaxy/abstract_fit.py``) returns the fit's tracer with that
+    replacement made. The lens is found by name when the tracer's galaxies are a
+    model instance (they are, for a tracer built from a SLaM result), else as the
+    single galaxy at the lens redshift; anything else is refused rather than
+    guessed.
+    """
+    tracer = light_result.max_log_likelihood_fit.model_obj_linear_light_profiles_to_light_profiles
+    galaxies = tracer.galaxies
+    lens = getattr(galaxies, "lens", None)
+    if lens is None:
+        candidates = [g for g in galaxies if getattr(g, "redshift", None) == lens_redshift]
+        if len(candidates) != 1:
+            raise ValueError(
+                f"Cannot identify the lens galaxy in light[1]'s fixed-light tracer: "
+                f"{len(candidates)} galaxies at z={lens_redshift}"
+            )
+        lens = candidates[0]
+    leftover = linear_light_profiles_in(al, lens)
+    if leftover:
+        raise ValueError(
+            f"model_obj_linear_light_profiles_to_light_profiles left {len(leftover)} linear "
+            f"light profile(s) on the lens galaxy"
+        )
+    return lens
+
+
 def mass_total(
     af,
     al,
@@ -1095,10 +1171,25 @@ def mass_total(
     settings=None,
     n_live: int = 150,
     n_batch: int = 20,
+    lens_light_mode: str = "linear",
 ):
     """The headline stage: a ``PowerLaw`` mass, priors chained from the SOURCE PIX
     ``Isothermal`` with the mass centre unfixed. This is the stage the parity
-    view reads."""
+    view reads.
+
+    ``lens_light_mode`` decides only where the lens light comes from:
+
+    - ``linear`` (the chain as it has always run): ``light[1]``'s instance, whose
+      MGE is linear light profiles, so every mass-stage inversion re-solves the
+      lens-light intensities alongside the source.
+    - ``fixed``: the lens galaxy of
+      ``light_result.max_log_likelihood_fit.model_obj_linear_light_profiles_to_light_profiles``
+      — the same profiles as ordinary ones carrying the intensities ``light[1]``'s
+      maximum-likelihood fit solved for — so the inversion carries no lens-light
+      columns. The built model is checked to hold no linear light profile.
+
+    Everything else (the mass chaining, the source, the positions likelihood,
+    the adapt images and the Nautilus settings) is identical between the two."""
     adapt_images = _adapt_images(
         al, source_result_for_lens, meshes=meshes, dataset=dataset, mask_radius=mask_radius
     )
@@ -1120,19 +1211,37 @@ def mass_total(
 
     source = al.util.chaining.source_from(result=source_result_for_source)
 
+    lens_redshift = source_result_for_lens.instance.galaxies.lens.redshift
+    if lens_light_mode == "fixed":
+        lens_light = fixed_lens_light_from(al, light_result, lens_redshift=lens_redshift)
+    elif lens_light_mode == "linear":
+        lens_light = light_result.instance.galaxies.lens
+    else:
+        raise ValueError(f"Unknown lens_light_mode {lens_light_mode!r}")
+
     model = af.Collection(
         galaxies=af.Collection(
             lens=af.Model(
                 al.Galaxy,
-                redshift=source_result_for_lens.instance.galaxies.lens.redshift,
-                bulge=light_result.instance.galaxies.lens.bulge,
-                disk=light_result.instance.galaxies.lens.disk,
+                redshift=lens_redshift,
+                bulge=lens_light.bulge,
+                disk=lens_light.disk,
                 mass=mass,
             ),
             source=source,
         ),
         fields=field,
     )
+
+    if lens_light_mode == "fixed":
+        leftover = linear_light_profiles_in(al, model.instance_from_prior_medians().galaxies.lens)
+        if leftover:
+            raise ValueError(
+                f"lens_light_mode='fixed' built a mass_total[1] model whose lens still holds "
+                f"{len(leftover)} linear light profile(s) "
+                f"({sorted({type(p).__name__ for p in leftover})}); the fixed-light variant "
+                f"would silently be the linear one."
+            )
 
     search = af.Nautilus(
         name=STAGE_SEARCH_NAMES["mass_total"],
@@ -1157,10 +1266,18 @@ def results_paths(
     variant: str,
     config_name: str,
     seed: int,
+    results_tag: str | None = None,
 ):
     """``(json_path, png_path)`` for one ``(variant, config_name, seed)``.
 
     ``results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/stages_seed<n>.json``.
+
+    A ``results_tag`` (``--results-tag``) suffixes the config directory as
+    ``<config_name>__<tag>`` — the convention the archived rate-probe rows
+    already use — so a re-measurement of the same variant, config and seed (the
+    2026-10-17 clean slate re-runs the configs the 2026-09-24 rows were written
+    under) can never overwrite the earlier row, locally or through
+    ``hpc/sync pull``. The row's ``config_name`` field is unchanged.
 
     One file per ``(config_name, seed)`` — the seed is in the *filename*, not
     only in the payload, so a reliability sweep over seeds does not overwrite
@@ -1168,7 +1285,8 @@ def results_paths(
     of one variant are a parity row, and two variants sharing a directory would
     read as backends of one run rather than as two different models.
     """
-    directory = root / "results" / "slam" / dataset_class / instrument / variant / config_name
+    config_dir = f"{config_name}__{results_tag}" if results_tag else config_name
+    directory = root / "results" / "slam" / dataset_class / instrument / variant / config_dir
     directory.mkdir(parents=True, exist_ok=True)
     return directory / f"stages_seed{seed}.json", directory / f"stages_seed{seed}.png"
 
@@ -1202,6 +1320,69 @@ def target_id(instrument: str, variant: str, seed: int) -> str:
     if variant == BASE_VARIANT:
         return f"{instrument}/slam5/seed{seed}"
     return f"{instrument}/slam5_{variant}/seed{seed}"
+
+
+def slurm_job_id_from(environ) -> str | None:
+    """The SLURM job a row was measured in, from the job's environment.
+
+    Inside an array task it is ``<SLURM_ARRAY_JOB_ID>_<SLURM_ARRAY_TASK_ID>`` —
+    the id ``sacct`` and the ``.out`` file name (``%A_%a``) use, and the one a
+    reader can look up. Outside an array it is ``SLURM_JOB_ID``; outside SLURM
+    (a laptop, a CI witness) it is ``None``, never an invented id.
+    """
+    array_job = environ.get("SLURM_ARRAY_JOB_ID")
+    array_task = environ.get("SLURM_ARRAY_TASK_ID")
+    if array_job and array_task:
+        return f"{array_job}_{array_task}"
+    return environ.get("SLURM_JOB_ID") or None
+
+
+def release_pin_from(environ) -> str | None:
+    """The PyAuto release a submit pinned its libraries to (``PYAUTO_RELEASE_PIN``).
+
+    A pinned submit exports it next to ``PYAUTO_LIB_BASE`` (see
+    ``hpc/README.md``, "Running against a pinned release"). It is a *claim*;
+    ``library_revisions`` is the evidence, and a reader checks one against the
+    other.
+    """
+    return environ.get("PYAUTO_RELEASE_PIN") or None
+
+
+def library_revisions_or_note(root: Path) -> tuple[dict | None, str | None]:
+    """``(library_revisions, note)`` for the row, never fatal.
+
+    ``experiments.prepared.library_revisions`` pins the five import-selected
+    PyAuto* checkouts' HEAD commits and refuses (``ValueError``) a library that
+    is not a clean tracked checkout. A prepared export must refuse — a frozen
+    problem bound to an unknown revision is unverifiable — but a SLaM leg must
+    not die for it: the row records ``null`` and says why, which is the honest
+    record of a run made against an unpinnable tree.
+    """
+    from experiments.prepared import library_revisions
+
+    try:
+        return library_revisions(root), None
+    except (ValueError, OSError) as exc:
+        return None, f"library revisions could not be pinned: {exc}"
+
+
+def lens_light_mode_of(payload: dict) -> str:
+    """The light mode of a result row of any schema version (absent = linear)."""
+    return payload.get("lens_light_mode") or DEFAULT_LENS_LIGHT_MODE
+
+
+def prepared_export_dir(export_prepared: Path, modes: tuple[str, ...], variant: str) -> Path:
+    """Where one light mode's frozen ``mass_total[1]`` problem is exported.
+
+    One directory identifies one problem (``export_problem`` refuses to put a
+    second into it), so a single-mode run exports to the directory given — as
+    before — and a ``both`` run exports each mode to ``<dir>/<variant>/``. The two
+    problems' ids differ anyway: the model differs, and the controls carry the
+    variant and ``lens_light_mode``.
+    """
+    if len(modes) == 1:
+        return Path(export_prepared)
+    return Path(export_prepared) / variant
 
 
 def _write_results(json_path: Path, payload: dict) -> None:
@@ -1270,7 +1451,11 @@ def run_slam(
     """
     cli = parse_inference_cli(default_mesh=default_mesh, default_mesh_pixels=default_mesh_pixels)
     instrument = cli.instrument or default_instrument
-    variant = variant_name(cli)
+    # Stages 1 to 4 are the mesh-only variant whatever the light mode; each
+    # light mode's mass_total[1] (and its result row) is that mode's variant.
+    variant = base_variant_name(cli)
+    modes = lens_light_modes(cli)
+    variants = {mode: variant_name(cli, mode) for mode in modes}
     cores = cli.cores
 
     error = validate_config_name(cli)
@@ -1336,6 +1521,8 @@ def run_slam(
     print(f"SLaM run — {dataset_class} / {instrument} / {variant} / {config_name} / seed {seed}")
     print("=" * 78)
     print(f"  variant:    {variant}  (mesh={cli.mesh}, mesh_pixels={cli.mesh_pixels})")
+    print(f"  lens light: {cli.lens_light}  (mass_total[1] variants: {list(variants.values())})")
+    print(f"  results tag: {cli.results_tag}")
     print(f"  backend:    {cli.backend}  (use_jax={use_jax}, cores={cores})")
     print(f"  inversion:  {cli.inversion}")
     print(f"  precision:  {precision}")
@@ -1402,6 +1589,15 @@ def run_slam(
         nnls_warm_start_memo=cli.memo == "on",
     )
 
+    # --- row provenance (schema v3) ----------------------------------------
+    # Sampled once, before any fit: the import-selected library checkouts, the
+    # release the submit says it pinned, and the SLURM job this process is.
+    library_revisions, library_revisions_note = library_revisions_or_note(root)
+    release_pin = release_pin_from(os.environ)
+    slurm_job_id = slurm_job_id_from(os.environ)
+    print(f"  libraries:  {library_revisions or library_revisions_note}")
+    print(f"  release pin: {release_pin}   slurm job: {slurm_job_id}")
+
     # --- search settings --------------------------------------------------
     # See `output_path_prefix`: config_name, variant and seed_<n> live in the
     # PATH because `seed` is an autofit identifier field and the other two are
@@ -1420,20 +1616,53 @@ def run_slam(
     )
     search_root = with_test_mode_segment(output_root) / path_prefix
 
+    # The mass stage alone carries the light-mode variant in its path_prefix:
+    # stages 1 to 4 above keep the mesh-only variant, so a `fixed` run resumes a
+    # completed `linear` chain's first four stages, while the two mass fits can
+    # never resume each other (the lens light is not an identifier field any
+    # more than the mesh is). For `linear` this is exactly the prefix above.
+    mass_settings_search = {}
+    mass_search_root = {}
+    for mode in modes:
+        mass_prefix = output_path_prefix(
+            dataset_class, instrument, variants[mode], config_name, seed
+        )
+        mass_settings_search[mode] = af.SettingsSearch(
+            path_prefix=mass_prefix,
+            unique_tag=None,
+            info=None,
+            session=None,
+            number_of_cores=1 if use_jax else cores,
+        )
+        mass_search_root[mode] = with_test_mode_segment(output_root) / mass_prefix
+
     meshes = mesh_models(af, al, cli)
 
-    stages: list[dict] = []
+    shared_stages: list[dict] = []
+    mass_rows: dict[str, dict] = {}
+    written: set[str] = set()
     stop_after = cli.stages
     preparation_started = time.perf_counter()
+    # Wall time of mass fits already run in this process. Under `both` the
+    # fixed export's preparation_s must not include the linear mass fit.
+    mass_fit_elapsed = [0.0]
 
-    def run_stage(stage_key: str, built) -> tuple[object, dict]:
+    def run_stage(
+        stage_key: str,
+        built,
+        *,
+        stage_search_root: Path | None = None,
+        mode: str | None = None,
+    ) -> tuple[object, dict]:
         """Fit one stage and capture its row."""
         model, analysis, search = built
         n_live, n_batch = STAGE_SAMPLING[stage_key]
         search_name = STAGE_SEARCH_NAMES[stage_key]
+        stage_root = stage_search_root if stage_search_root is not None else search_root
+        stage_started = time.perf_counter()
 
         # Sampled BEFORE the fit: nautilus deletes checkpoint.hdf5 on completion.
-        resumed = checkpoint_exists(search_root, search_name)
+        resumed = checkpoint_exists(stage_root, search_name)
         prepared_manifest = None
         if stage_key == "mass_total" and cli.export_prepared is not None:
             import hashlib
@@ -1441,17 +1670,25 @@ def run_slam(
             from experiments.prepared import export_problem
 
             model = analysis.modify_model(model)
+            mode_variant = variants[mode]
             baseline_path = results_paths(
-                root, dataset_class, instrument, variant, config_name, seed
+                root,
+                dataset_class,
+                instrument,
+                mode_variant,
+                config_name,
+                seed,
+                cli.results_tag,
             )[0]
             baseline_id = (
                 baseline_path.relative_to(root).as_posix()
                 + "#stage-"
                 + hashlib.sha256(search_name.encode()).hexdigest()[:16]
             )
+            export_dir = prepared_export_dir(cli.export_prepared, modes, mode_variant)
             prepared_manifest = export_problem(
                 root,
-                cli.export_prepared,
+                export_dir,
                 model,
                 analysis,
                 setup_id=f"imaging/{'delaunay' if cli.mesh == 'delaunay' else 'rectangular'}/{instrument}",
@@ -1459,14 +1696,15 @@ def run_slam(
                 controls=dict(
                     dataset_class=dataset_class,
                     instrument=instrument,
-                    variant=variant,
+                    variant=mode_variant,
+                    lens_light_mode=mode,
                     config_name=config_name,
                     backend=cli.backend,
                     precision=precision,
                     seed=seed,
                     use_jax=use_jax,
                 ),
-                preparation_s=time.perf_counter() - preparation_started,
+                preparation_s=(time.perf_counter() - preparation_started - mass_fit_elapsed[0]),
             )
 
         compile_s = None
@@ -1487,7 +1725,7 @@ def run_slam(
         result = search.fit(model=model, analysis=analysis, **settings_search.fit_dict)
         total_wall_s = time.perf_counter() - start
 
-        output_path = stage_output_dir(search_root, search_name)
+        output_path = stage_output_dir(stage_root, search_name)
 
         posterior: dict = {}
         max_log_likelihood = None
@@ -1539,7 +1777,11 @@ def run_slam(
                 ],
                 library_revisions=manifest["dependency_revisions"],
             )
-        stages.append(row)
+        if stage_key == "mass_total":
+            mass_rows[mode] = row
+            mass_fit_elapsed[0] += time.perf_counter() - stage_started
+        else:
+            shared_stages.append(row)
         print(
             f"  {search_name}: wall {row['wall_s']}s, evals {row['likelihood_evals']}, "
             f"log Z {row['log_evidence']}, positions.info "
@@ -1547,14 +1789,29 @@ def run_slam(
         )
         return result, row
 
-    def write(status: str) -> None:
+    def write(status: str, mode: str) -> None:
+        """Write the result row of one light mode.
+
+        Every row carries the shared stages 1 to 4 plus *that* mode's
+        ``mass_total[1]`` (when it ran), so a ``both`` run's two rows read
+        exactly like two single-mode runs that shared a prefix.
+        """
+        mode_variant = variants[mode]
+        stages = list(shared_stages)
+        if mode in mass_rows:
+            stages.append(mass_rows[mode])
         json_path, png_path = results_paths(
-            root, dataset_class, instrument, variant, config_name, seed
+            root, dataset_class, instrument, mode_variant, config_name, seed, cli.results_tag
         )
         payload = {
             "schema_version": SCHEMA_VERSION,
-            "target": target_id(instrument, variant, seed),
-            "variant": variant,
+            "target": target_id(instrument, mode_variant, seed),
+            "variant": mode_variant,
+            "lens_light_mode": mode,
+            "results_tag": cli.results_tag,
+            "library_revisions": library_revisions,
+            "release_pin": release_pin,
+            "slurm_job_id": slurm_job_id,
             "config_name": config_name,
             "backend": cli.backend,
             "inversion": cli.inversion,
@@ -1592,12 +1849,20 @@ def run_slam(
             "status": status,
             "stages": stages,
         }
+        if library_revisions_note:
+            payload["library_revisions_note"] = library_revisions_note
         _write_results(json_path, payload)
         try:
             _plot_stages(png_path, payload)
         except Exception as exc:  # pragma: no cover — a plot must not kill a run
             print(f"  WARNING: stage plot failed — {exc}")
+        written.add(mode)
         print(f"\n  Result row: {json_path}")
+
+    def write_all(status: str) -> None:
+        for mode in modes:
+            if mode not in written:
+                write(status, mode)
 
     # The whole chain runs inside one try/except so that a leg which dies part
     # way through still leaves the stages it *did* finish on disk, under
@@ -1624,7 +1889,7 @@ def run_slam(
             ),
         )
         if stop_after == "source_lp":
-            write("stopped_early")
+            write_all("stopped_early")
             return 0
 
         source_pix_result_1, _ = run_stage(
@@ -1651,7 +1916,7 @@ def run_slam(
             ),
         )
         if stop_after == "source_pix_1":
-            write("stopped_early")
+            write_all("stopped_early")
             return 0
 
         # Adaptive pixelization over-sampling (workspace default, kept): the source
@@ -1697,7 +1962,7 @@ def run_slam(
             ),
         )
         if stop_after == "source_pix_2":
-            write("stopped_early")
+            write_all("stopped_early")
             return 0
 
         light_result, _ = run_stage(
@@ -1723,37 +1988,45 @@ def run_slam(
             ),
         )
         if stop_after == "light":
-            write("stopped_early")
+            write_all("stopped_early")
             return 0
 
-        run_stage(
-            "mass_total",
-            mass_total(
-                af,
-                al,
-                settings_search,
-                dataset,
-                source_result_for_lens=source_pix_result_1,
-                source_result_for_source=source_pix_result_2,
-                light_result=light_result,
-                meshes=meshes,
-                mask_radius=mask_radius,
-                use_jax=use_jax,
-                seed=seed,
-                settings=settings,
-                positions_likelihood=positions_likelihood_from(
-                    al,
-                    source_pix_result_2,
-                    fallback_positions=fallback_positions,
-                    stage=STAGE_SEARCH_NAMES["mass_total"],
-                ),
-            ),
+        # One positions likelihood for every light mode: both mass fits must
+        # see the same threshold, or they would differ by more than the light.
+        mass_positions_likelihood = positions_likelihood_from(
+            al,
+            source_pix_result_2,
+            fallback_positions=fallback_positions,
+            stage=STAGE_SEARCH_NAMES["mass_total"],
         )
+        for mode in modes:
+            print(f"\n=== mass_total[1] — lens light {mode} (variant {variants[mode]}) ===")
+            run_stage(
+                "mass_total",
+                mass_total(
+                    af,
+                    al,
+                    mass_settings_search[mode],
+                    dataset,
+                    source_result_for_lens=source_pix_result_1,
+                    source_result_for_source=source_pix_result_2,
+                    light_result=light_result,
+                    meshes=meshes,
+                    mask_radius=mask_radius,
+                    use_jax=use_jax,
+                    seed=seed,
+                    settings=settings,
+                    positions_likelihood=mass_positions_likelihood,
+                    lens_light_mode=mode,
+                ),
+                stage_search_root=mass_search_root[mode],
+                mode=mode,
+            )
+            write("complete", mode)
 
-        write("complete")
         return 0
     except BaseException as exc:
-        write(f"failed: {type(exc).__name__}: {exc}")
+        write_all(f"failed: {type(exc).__name__}: {exc}")
         raise
 
 

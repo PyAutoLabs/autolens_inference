@@ -72,7 +72,18 @@ CONFIG = (
     "mesh_shape",
     "stages_requested",
     "resumed",
+    "lens_light_mode",
+    "results_tag",
+    "release_pin",
 )
+
+#: Result schema versions this exporter reads. v3 adds ``lens_light_mode``,
+#: ``results_tag``, ``library_revisions``, ``release_pin`` and ``slurm_job_id``;
+#: a v1/v2 pipeline row predates the light mode and is ``linear`` by definition.
+SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3)
+
+#: What a pipeline row's ``lens_light_mode`` is when the field is absent.
+DEFAULT_LENS_LIGHT_MODE = "linear"
 
 
 def safe_path(value):
@@ -195,6 +206,8 @@ def record(payload, path, *, stage=None, parent=None, archived=False):
         "archived": archived,
         "unknown_reasons": {},
     }
+    if is_pipeline:
+        result["configuration"].setdefault("lens_light_mode", DEFAULT_LENS_LIGHT_MODE)
     for key in ("target", "model", "sampler", "backend", "precision", "seed", "measured_at"):
         if result[key] is None:
             result["unknown_reasons"][key] = "Not recorded in source result"
@@ -237,7 +250,7 @@ def build(root, revision, generated_at):
             if not isinstance(payload, dict):
                 raise ValueError("result must be an object")
             finite(payload)
-            if payload.get("schema_version") not in (1, 2):
+            if payload.get("schema_version") not in SUPPORTED_SCHEMA_VERSIONS:
                 raise ValueError("unsupported result schema_version")
             stages = payload.get("stages", [])
             if not isinstance(stages, list) or any(not isinstance(s, dict) for s in stages):

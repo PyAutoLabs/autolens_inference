@@ -1,0 +1,95 @@
+#!/bin/bash -l
+#
+# HST clean slate — A100 leg, `jax_gpu` x dense, both lens-light modes, seeds 0-1.
+#
+# HST clean slate (PyAutoInsight campaign `hst-imaging-mass-samplers`, phase 1; autolens_inference#24):
+# the Nautilus SLaM base re-measured from scratch on PyAuto release 2026.10.17.1, seeds 0-1, with
+# mass_total[1] run under BOTH lens-light modes from one chain (`--lens-light both`): stages 1-4
+# once, then mass_total[1] with the linear lens light (variant `slam_base`) and again with the lens
+# light fixed to ordinary profiles at light[1]'s solved intensities (variant `slam_base_lightfixed`).
+#
+# Pinned, fresh, never resumed:
+#   - PYAUTO_LIB_BASE points PYTHONPATH at the private pin directory (five checkouts at tag
+#     2026.10.17.1, hpc/README.md "Running against a pinned release"); the shared mirror is
+#     never pulled. PYAUTO_RELEASE_PIN is recorded in each row beside the library_revisions
+#     actually imported, and a reader checks one against the other.
+#   - `--output-dir output/cleanslate_2026_10_17` is a fresh PyAutoFit root, so the 2026-09-24
+#     trees under output/slam/ are never resumed.
+#   - `--results-tag cleanslate_2026_10_17` writes the rows under
+#     results/slam/imaging/hst/<variant>/<config_name>__cleanslate_2026_10_17/, so they can never
+#     overwrite the 2026-09-24 rows of the same config and seed (autolens_inference#23).
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This submit runs ONE cell, `imaging/slam/hst`, all five stages plus a second mass_total[1],
+#   and it declares itself `unmeasured` on purpose: the pin changes nothing about the cell, and
+#   no rate measured on this cell's pixelized stages exists for the A100.
+#   Prior observation only, never a rate: the 2026-09-24 A100 `dense` rows (autolens_inference#23,
+#   seeds 0-1) record a linear mass_total[1] sampler wall of 521-562 s. They were measured on an
+#   older release and say nothing about the fixed-light mass stage or the other four stages.
+#   `steps:` is the same FLOOR the base submits use (128 evals per live point x the chain's 725
+#   live points = 92800), not an estimate; the second mass stage adds 150 live points on top.
+#   No `wall:` is offered. `--time` below is a CONTAINMENT, not a derived budget. The first arm
+#   IS the probe: read `stages[*].wall_s / stages[*].likelihood_evals` from its rows.
+#   cell: imaging/slam/hst  device: a100  precision: fp64
+#   lanes: 1  steps: 92800  source: unmeasured  probe-first: yes
+#
+#SBATCH -J hst_cleanslate_jax_gpu_dense
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64gb
+#SBATCH --time=12:00:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/inference/autolens_inference
+
+# The release pin: exported BEFORE activate.sh, which reads PYAUTO_LIB_BASE.
+export PYAUTO_LIB_BASE=/mnt/ral/jnightin/inference/pins/2026.10.17.1
+export PYAUTO_RELEASE_PIN=2026.10.17.1
+source $AP_ROOT/activate.sh
+
+# JAX_PLATFORMS and JAX_ENABLE_X64 are exported EXPLICITLY, never inherited: without the
+# first, this job can silently fall back to CPU and report a "GPU" wall clock that is
+# nothing of the kind; without the second, an fp64 config runs in fp32. The driver also
+# asserts jax.default_backend() == "gpu" and exits 2 rather than fall back silently.
+export JAX_PLATFORM_NAME=cuda
+export JAX_PLATFORMS=cuda,cpu
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_ENABLE_X64=True
+
+# NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# Proof of what the job actually got. A four-second CUDA init failure and a healthy run
+# look identical in sacct; they do not look identical here.
+nvidia-smi
+
+echo "=========================================="
+date
+echo "Cell:       imaging/slam/hst"
+echo "Instrument: hst"
+echo "Config:     hpc_a100_jax_gpu_dense_fp64"
+echo "Light:      both (slam_base + slam_base_lightfixed)"
+echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
+echo "Seed:       $SLURM_ARRAY_TASK_ID"
+
+cd $AP_ROOT
+
+python3 scripts/imaging/rectangular/baseline_slam.py \
+    --instrument hst \
+    --backend jax_gpu \
+    --inversion dense \
+    --seed $SLURM_ARRAY_TASK_ID \
+    --config-name hpc_a100_jax_gpu_dense_fp64 \
+    --lens-light both \
+    --output-dir output/cleanslate_2026_10_17 \
+    --results-tag cleanslate_2026_10_17 \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date

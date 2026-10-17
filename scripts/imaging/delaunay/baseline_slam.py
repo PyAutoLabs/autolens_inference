@@ -37,6 +37,12 @@ row.
 import sys
 from pathlib import Path
 
+# This leaf's directory also holds `nautilus.py` and `emcee.py`, which would shadow
+# the sampler packages of the same name for every import made by this process
+# (`from nautilus import Sampler` inside PyAutoFit found this directory's leaf).
+# Python puts the script's directory first on sys.path, so drop it.
+_HERE = Path(__file__).resolve().parent
+sys.path[:] = [p for p in sys.path if Path(p or ".").resolve() != _HERE]
 _ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 for _path in (str(_ROOT), str(_ROOT / "scripts" / "misc")):
     if _path not in sys.path:

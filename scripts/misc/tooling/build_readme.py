@@ -41,6 +41,13 @@ failing the build:
 
     target          the thing being fitted — dataset + model + pipeline
     variant         the run variant (slam_base / delaunay_1250 / ...), schema v2+
+    lens_light_mode linear / fixed — how the lens light entered mass_total[1],
+                    schema v3+ (absent = linear); ``fixed`` is also the
+                    ``_lightfixed`` variant suffix, so the two never share a
+                    parity group
+    results_tag     a re-measurement campaign tag (schema v3+, absent = none):
+                    the row sits under ``<config_name>__<tag>/`` and forms
+                    its own parity groups, apart from the untagged rows
     status          complete / stopped_early / failed: ... — only complete rows render
     config_name     {local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
     instrument      hst / euclid / sma / ...
@@ -224,6 +231,26 @@ def _variant_of(row: dict) -> str:
     return DEFAULT_VARIANT
 
 
+#: The lens-light mode of a row that predates the field (schema v1/v2): the only
+#: mode the chain had then.
+DEFAULT_LENS_LIGHT_MODE = "linear"
+
+
+def _lens_light_of(row: dict) -> str:
+    return str(row.get("lens_light_mode") or DEFAULT_LENS_LIGHT_MODE)
+
+
+def _config_label(row: dict) -> str:
+    """The config as the table shows it: ``<config_name>`` or ``<config_name>__<tag>``.
+
+    A tagged re-measurement re-uses its config names, so the tag is shown
+    beside it — the same spelling as the row's directory.
+    """
+    tag = row.get("results_tag")
+    config = _cell(row.get("config_name"))
+    return f"{config}__{tag}" if tag else config
+
+
 def _is_complete(row: dict) -> bool:
     """Whether a row is a finished run, and so renderable as a result.
 
@@ -316,7 +343,7 @@ def _stage_sort_key(row: dict) -> tuple:
         str(row.get("seed", "")),
         index,
         stage,
-        str(row.get("config_name", "")),
+        _config_label(row),
     )
 
 
@@ -374,7 +401,13 @@ def _parity_delta_sigma(entry, reference) -> float | None:
 
 
 def _render_parity(rows: list[dict]) -> str:
-    """The parity view: one block per (target, seed), configs as columns."""
+    """The parity view: one block per (target, seed, results tag), configs as columns.
+
+    The target carries the variant (and so the lens-light mode), which keeps a
+    fixed-light mass stage out of the linear one's group. The results tag keeps
+    a re-measurement campaign out of the group of the rows it supersedes: two
+    runs of one config at one seed on different releases are not two backends.
+    """
     groups: dict[tuple, dict[str, dict]] = {}
     for row in rows:
         if row.get("stage") != PARITY_STAGE:
@@ -382,16 +415,21 @@ def _render_parity(rows: list[dict]) -> str:
         posterior = (row.get("_stage") or {}).get("posterior") or row.get("posterior") or {}
         if not posterior:
             continue
-        key = (str(row.get("target", "")), str(row.get("seed", "")))
+        key = (
+            str(row.get("target", "")),
+            str(row.get("seed", "")),
+            str(row.get("results_tag") or ""),
+        )
         groups.setdefault(key, {})[str(row.get("config_name"))] = posterior
 
     if not groups:
         return ""
 
     blocks: list[str] = []
-    for (target, seed), by_config in sorted(groups.items()):
+    for (target, seed, tag), by_config in sorted(groups.items()):
         configs = sorted(by_config)
-        heading = f"\n**Parity — `{target}` (seed {seed}), `{PARITY_STAGE}`**\n"
+        tag_label = f", tag `{tag}`" if tag else ""
+        heading = f"\n**Parity — `{target}` (seed {seed}{tag_label}), `{PARITY_STAGE}`**\n"
         if len(configs) < 2:
             blocks.append(
                 heading + "\n_Only one config has run for this target and seed — "
@@ -433,8 +471,9 @@ def render_slam() -> str:
         [
             f"`{_cell(row.get('target'))}`",
             f"`{_variant_of(row)}`",
+            _lens_light_of(row),
             _cell(row.get("stage")),
-            f"`{_cell(row.get('config_name'))}`",
+            f"`{_config_label(row)}`",
             _cell(row.get("seed")),
             _format_time(row.get("wall_s")),
             _format_evals(row.get("likelihood_evals")),
@@ -444,7 +483,18 @@ def render_slam() -> str:
         for row in sorted(rows, key=_stage_sort_key)
     ]
     table = _render_table(
-        ["Target", "Variant", "Stage", "Config", "Seed", "Wall", "Evals", "log Z", "Version"],
+        [
+            "Target",
+            "Variant",
+            "Light",
+            "Stage",
+            "Config",
+            "Seed",
+            "Wall",
+            "Evals",
+            "log Z",
+            "Version",
+        ],
         body,
     )
     return table + _render_parity(rows)
