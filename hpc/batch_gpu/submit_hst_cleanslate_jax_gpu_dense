@@ -89,6 +89,7 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
     --lens-light both \
     --output-dir output/cleanslate_2026_10_17 \
     --results-tag cleanslate_2026_10_17 \
+    --export-prepared output/prepared/cleanslate_2026_10_17/hpc_a100_jax_gpu_dense_fp64/seed_$SLURM_ARRAY_TASK_ID \
     --cores $SLURM_CPUS_PER_TASK
 
 echo "Finished."
