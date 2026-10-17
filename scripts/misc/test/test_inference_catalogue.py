@@ -160,3 +160,43 @@ def test_portable_export_survives_missing_local_output(tmp_path, monkeypatch):
     assert portable["prepared_problems"][0]["id"] == identity
     assert next(r for r in portable["records"] if r["id"] == rid)["problem_id"] == identity
     assert not portable["coverage"]["excluded"]
+
+
+def test_wave_1_experiment_rows_are_catalogued_under_their_problem_without_ranking(tmp_path):
+    """Wave-1 rows (results/searches/experiments/<run id>.json) keep their problem identity."""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "scripts/misc"))
+    from experiments import wave
+
+    arms = wave.arms()[:2]
+    for a, status in zip(arms, ("complete", "failed: RuntimeError: x")):
+        put(
+            tmp_path,
+            {
+                "schema_version": 2,
+                "dataset_class": "imaging",
+                "instrument": "hst",
+                "variant": a.variant,
+                "pipeline": "slam",
+                "sampler": a.sampler,
+                "seed": a.seed,
+                "setup_id": "imaging/rectangular/hst",
+                "problem_id": "prepared-" + "c" * 64,
+                "experiment_protocol": "frozen-mass-total-v1",
+                "status": status,
+                "completed": status == "complete",
+                "total_wall_s": 3.0,
+            },
+            f"searches/experiments/{a.run_id('hpc_a100_jax_gpu_dense_fp64')}.json",
+        )
+    new = summary.build_catalogue(feed(tmp_path), tmp_path)
+    assert not new["coverage"]["excluded"]
+    rows = {r["sampler"]: r for r in new["records"]}
+    assert set(rows) == {"nautilus", "emcee"}
+    for r in rows.values():
+        assert r["problem_id"] == "prepared-" + "c" * 64
+        assert r["setup_id"] == "imaging/rectangular/hst"
+        assert r["comparison"]["group"] is None
+    assert rows["emcee"]["execution"]["status"].startswith("failed")
+    assert new["comparison_policy"]["ranking"] == "none" and new["comparisons"] == []

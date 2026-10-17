@@ -39,6 +39,51 @@ sbatch hpc/batch_gpu/submit_<name>
 The PyAuto* libraries resolve from sibling source checkouts on `PYTHONPATH` — never
 pip-install them into the venv (`HPCPullPyAuto` is the update story).
 
+## Running against a pinned release
+
+The shared mirror `/mnt/ral/jnightin/PyAuto` follows `main` and other campaigns' jobs
+read it live, so **it is never pulled for a measurement that must name its release**. A
+submit that needs a fixed release points `PYTHONPATH` at a private *pin directory*
+instead: `activate.sh` reads `PYAUTO_LIB_BASE` (default: the shared mirror) for the five
+library checkouts, and keeps the shared venv (`/mnt/ral/jnightin/PyAuto/PyAuto`, third-party
+dependencies only) and the shared cache root, so a pin directory needs nothing but the
+five checkouts.
+
+Create the 2026.10.17.1 pin once, on the login node (documented here; not run by any
+task — the tags carry **no** `v` prefix):
+
+```bash
+PIN=/mnt/ral/jnightin/inference/pins/2026.10.17.1
+mkdir -p "$PIN" && cd "$PIN"
+for repo in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
+    git clone https://github.com/PyAutoLabs/$repo.git
+    git -C $repo checkout 2026.10.17.1
+done
+```
+
+A pinned submit exports, **before** `source activate.sh`:
+
+```bash
+export PYAUTO_LIB_BASE=/mnt/ral/jnightin/inference/pins/2026.10.17.1
+export PYAUTO_RELEASE_PIN=2026.10.17.1
+```
+
+`PYAUTO_RELEASE_PIN` is recorded in every SLaM result row (schema v3, `release_pin`) as a
+*claim*; the row's `library_revisions` — the HEAD commits of the checkouts the process
+actually imported — is the *evidence*, and a reader checks one against the other. For
+2026.10.17.1 a pinned row's `library_revisions` must equal the tag commits:
+
+| repo | tag `2026.10.17.1` |
+|---|---|
+| PyAutoNerves | `42b4d31` |
+| PyAutoFit | `f4d4f60` |
+| PyAutoArray | `9993b42` |
+| PyAutoGalaxy | `f555e31` |
+| PyAutoLens | `02f9402` |
+
+A pin directory is never pulled, rebased or edited after creation; a new release gets a new
+directory. Rows also record `slurm_job_id` (`<array job>_<task>` inside an array).
+
 ## `hpc/sync` — the laptop-side driver
 
 Copy the config first:
@@ -52,7 +97,7 @@ cp hpc/sync.conf.example hpc/sync.conf   # then edit; sync.conf is gitignored
 | `hpc/sync pull` | Download batch logs, then run outputs and results |
 | `hpc/sync logs` | Batch logs only — small and fast, use mid-run |
 | `hpc/sync status` | Dry run: what a pull would transfer |
-| `hpc/sync submit [--gpu\|--cpu] <name>` | `sbatch` a submit script, from `hpc/batch_<type>/` |
+| `hpc/sync submit [--gpu\|--cpu] [--dependency <spec>] <name>` | `sbatch` a submit script, from `hpc/batch_<type>/`; `--dependency` is passed through as `sbatch --dependency=<spec>` |
 | `hpc/sync jobs` / `sacct` / `cancel <id>` | `squeue` / `sacct` / `scancel` |
 | `hpc/sync tail [gpu\|cpu]` | Stream the newest live `.out` |
 | `hpc/sync du` | Remote disk usage (`-d1` — never a bare recursive `du`; RAL's NFS is slow) |
@@ -122,6 +167,23 @@ git pull
 
 The PyAuto* libraries are a separate story again: resolved from the shared checkouts on
 `PYTHONPATH` and updated with `HPCPullPyAuto`, never pip-installed and never rsynced.
+
+### Chaining a submit on another job: `--dependency`
+
+`hpc/sync submit --dependency <spec> <name>` hands `<spec>` to `sbatch` verbatim as
+`--dependency=<spec>`, so a job that reads another job's products can be queued before
+those products exist and starts only once they do:
+
+```bash
+hpc/sync submit --dependency afterok:<base job id> submit_hst_cleanslate_mass_samplers_jax_gpu_dense
+```
+
+`afterok:<id>` on an array job waits for **every** task of that array to exit 0; a single
+failed task leaves the dependent job pending forever with reason
+`DependencyNeverSatisfied`, which `scancel` clears. `afterok:<id>_<task>` waits for one
+task only. The spec is never written into a submit script: the job id it names is only
+known at submit time, and a hard-coded id would chain a resubmission onto a stale job.
+Read the dependency state back with `squeue -j <id>` (reason `Dependency` while waiting).
 
 ## A crashed job FAILS: the SLURM exit-code guard
 
@@ -215,11 +277,13 @@ are in [`../scripts/misc/wall/README.md`](../scripts/misc/wall/README.md).
 
 ## The submits that exist today
 
-Nine, over **two cells**. Seven run `imaging/slam/hst` (`scripts/imaging/rectangular/baseline_slam.py`, the
-backend-parameterised SLaM driver): six are the six legs of the first parity row, and the
-seventh is the rate probe that had to run before any of them could be sized. Two run
+Thirteen run the SLaM chain, over **two cells**. Eleven run `imaging/slam/hst` (`scripts/imaging/rectangular/baseline_slam.py`, the
+backend-parameterised SLaM driver): six are the six legs of the first parity row, the
+seventh is the rate probe that had to run before any of them could be sized, and four are
+the 2026-10-17 **clean slate** (below). Two run
 `imaging/slam/hst_delaunay` (`scripts/imaging/delaunay/baseline_slam.py`) — the same five-stage
-chain on the `delaunay_1250` run variant.
+chain on the `delaunay_1250` run variant. Two more, the clean-slate wave-1 arrays (below),
+run the four sampler leaves of `scripts/imaging/rectangular/` on frozen mass problems.
 
 | submit | cell | partition | array | what it runs |
 |---|---|---|---|---|
@@ -232,6 +296,47 @@ chain on the `delaunay_1250` run variant.
 | `batch_cpu/submit_slam_hst_numba_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | full chain, `numba_cpu` × sparse |
 | `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_dense` | `imaging/slam/hst_delaunay` | `gpu` | `0-1` | full chain on `delaunay_1250`, `jax_gpu` × dense |
 | `batch_gpu/submit_slam_delaunay1250_hst_jax_gpu_sparse` | `imaging/slam/hst_delaunay` | `gpu` | `0-1` | full chain on `delaunay_1250`, `jax_gpu` × sparse |
+| `batch_gpu/submit_hst_cleanslate_jax_gpu_dense` | `imaging/slam/hst` | `gpu` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_gpu` × dense, `--lens-light both` |
+| `batch_gpu/submit_hst_cleanslate_jax_gpu_sparse` | `imaging/slam/hst` | `gpu` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_gpu` × sparse, `--lens-light both` |
+| `batch_cpu/submit_hst_cleanslate_jax_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × dense, `--lens-light both` (48 GB) |
+| `batch_cpu/submit_hst_cleanslate_jax_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × sparse, `--lens-light both` (64 GB) |
+| `batch_gpu/submit_hst_cleanslate_mass_samplers_jax_gpu_dense` | `imaging/rectangular/{nautilus,emcee,nuts,smc}` | `gpu` | `0-23%4` | clean-slate wave 1: four samplers × seeds 0-2 × both light modes on the frozen A100 dense problems; submitted `--dependency afterok:<base>` |
+| `batch_cpu/submit_hst_cleanslate_mass_samplers_jax_cpu_dense` | `imaging/rectangular/{nautilus,emcee,nuts,smc}` | `ral` | `0-23%6` | the same 24 arms on the frozen RAL CPU dense problems; waits for the CPU base rows |
+
+### The clean-slate submits (2026-10-17)
+
+PyAutoInsight campaign `hst-imaging-mass-samplers`, phase 1 (autolens_inference#24). One
+job per (backend, inversion), seeds 0-1 as the array, and `--lens-light both`: stages 1-4
+run once and `mass_total[1]` twice, writing a `slam_base` (linear lens light) and a
+`slam_base_lightfixed` (lens light fixed to ordinary profiles) row per seed. Each runs
+against the pinned 2026.10.17.1 checkouts (above) and is kept apart from everything
+measured before it twice over:
+
+- `--output-dir output/cleanslate_2026_10_17` — a fresh PyAutoFit root, so the 2026-09-24
+  trees under `output/slam/` are never resumed;
+- `--results-tag cleanslate_2026_10_17` — rows land under
+  `results/slam/imaging/hst/<variant>/<config_name>__cleanslate_2026_10_17/`, so they can
+  never overwrite the 2026-09-24 rows of the same config and seed, and they form their own
+  parity groups in the README view.
+
+The CPU pair is `--partition=ral` only — never `gpu`, `ral,gpu` or `gpu,ral`.
+
+### The clean-slate wave-1 sampler submits (2026-10-17)
+
+Phase 3 wave 1 of the same campaign (autolens_inference#27). Two submits, `jax_gpu` and
+`jax_cpu` dense, each a 24-arm array over the frozen `mass_total[1]` problems phase 2 exports
+for base seed 0: every sampler the experiment runner supports (`nautilus`, `emcee`, `nuts`,
+`smc`), cold, at sampler seeds 0-2, on both light modes. The arm table is data in
+[`../scripts/misc/experiments/wave.py`](../scripts/misc/experiments/wave.py); the submit asks
+it for each array index's sampler and leaf arguments, so the mapping lives (and is tested) in
+one place. `python3 scripts/misc/experiments/wave.py --list --config <config>` prints the arms
+and run ids; `--account --config <config>` reports each as `row`, `failed` or `missing` from
+`results/searches/experiments/`.
+
+Each submit runs four cells (one per sampler leaf), all `unmeasured` with `probe-first: yes`:
+the `%4` / `%6` throttles start one arm of every sampler first. The GPU array is submitted
+`--dependency afterok:<GPU dense base array>`; the CPU array waits for the CPU base rows
+(days) and is submitted the same way on the CPU dense base array.
 
 ### Why the second cell exists
 
@@ -283,6 +388,9 @@ only as RAL jobs and why the local rate measurements are `--stages source_lp` on
 ~6.3 GB across nine processes; their pixelized-stage figure is **not** measured, so they
 keep the same request rather than a smaller one guessed from a mechanism. `--mem=64gb` is the template's figure and it stays: it clears the worst measured
 leg by 3x, and a leg killed by the OOM killer at stage two costs a whole night.
+
+The clean-slate `jax_cpu` pair sizes from the same two figures: 48 GB for dense (~3.7x
+its 13 GB) and 64 GB for sparse (~3x its 21.6 GB).
 
 The two `delaunay_1250` submits scale those same measured figures by the mesh: 1250
 vertices against 784 rectangular cells is ~1.6x, so ~21 GB dense and ~35 GB sparse. Dense

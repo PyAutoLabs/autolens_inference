@@ -153,12 +153,12 @@ def test_flat_table_lists_every_stage_in_chain_order(monkeypatch, tmp_path):
     rendered = build_readme.render_slam()
 
     assert (
-        "| Target | Variant | Stage | Config | Seed | Wall | Evals | log Z | Version |"
+        "| Target | Variant | Light | Stage | Config | Seed | Wall | Evals | log Z | Version |"
     ) in rendered
     body = [line for line in rendered.splitlines() if line.startswith("| `hst/slam5")]
     assert len(body) == 10
     # Chain order, not alphabetical: source_lp[1] leads, mass_total[1] closes.
-    stages_in_order = [line.split("|")[3].strip() for line in body]
+    stages_in_order = [line.split("|")[4].strip() for line in body]
     assert stages_in_order[0] == "source_lp[1]"
     assert stages_in_order[-1] == "mass_total[1]"
 

@@ -63,7 +63,124 @@ seventh column. The ledger is [`wiki/project/state.md`](wiki/project/state.md).
 ## Pipeline runs
 
 <!-- BEGIN auto-table:slam -->
-_No pipeline runs yet — the first is the HST SLaM base run (`results/slam/`, phase 4 of the autolens-inference epic)._
+| Target | Variant | Light | Stage | Config | Seed | Wall | Evals | log Z | Version |
+|---|---|---|---|---|---|---|---|---|---|
+| `hst/slam5/seed0` | `slam_base` | linear | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 771.5 s | 89,350 | 31,968.39 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | source_lp[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 766.9 s | 89,350 | 31,968.39 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | source_lp[1] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 2.21 h | 91,900 | 31,968.50 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 755.8 s | 33,920 | 31,421.13 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | source_pix[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 1856.5 s | 33,640 | 31,420.79 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | source_pix[1] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 24.42 h | 33,520 | 31,422.48 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 137.6 s | 3,840 | 31,614.40 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | source_pix[2] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 238.3 s | 5,380 | 31,621.78 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | source_pix[2] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 1.79 h | 3,740 | 31,617.05 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 241.4 s | 10,280 | 31,608.58 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | light[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 231.2 s | 9,760 | 31,618.44 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | light[1] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 6.19 h | 13,000 | 31,610.92 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 562.1 s | 22,600 | 31,589.22 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | mass_total[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 837.2 s | 22,900 | 31,597.52 | 2026.8.17.1 |
+| `hst/slam5/seed0` | `slam_base` | linear | mass_total[1] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 12.28 h | 23,460 | 31,592.05 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 774.5 s | 87,700 | 31,968.14 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_lp[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 777.9 s | 87,700 | 31,968.14 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_lp[1] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 2.13 h | 88,100 | 31,968.36 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 693.2 s | 30,560 | 31,416.31 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_pix[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 1837.8 s | 33,200 | 31,416.49 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_pix[1] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 23.56 h | 32,280 | 31,425.11 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 137.0 s | 3,940 | 31,616.05 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_pix[2] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 182.3 s | 3,620 | 31,621.15 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | source_pix[2] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 4.25 h | 9,000 | 31,620.90 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 239.7 s | 9,980 | 31,609.43 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | light[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 292.0 s | 14,080 | 31,613.56 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | light[1] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 5.51 h | 10,900 | 31,617.60 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 521.1 s | 21,040 | 31,590.06 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | mass_total[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 824.5 s | 22,360 | 31,594.05 | 2026.8.17.1 |
+| `hst/slam5/seed1` | `slam_base` | linear | mass_total[1] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 13.91 h | 25,500 | 31,595.97 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 751.0 s | 89,350 | 31,968.39 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_lp[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 751.3 s | 89,350 | 31,968.39 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_lp[1] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 2.19 h | 91,900 | 31,968.50 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 1877.9 s | 43,300 | 31,543.19 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_pix[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 1.32 h | 51,420 | 31,542.90 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_pix[1] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 96.20 h | 50,020 | 31,545.50 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 109.4 s | 2,260 | 31,526.51 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_pix[2] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 109.5 s | 2,200 | 31,551.70 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | source_pix[2] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 3.21 h | 2,140 | 31,544.10 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 435.2 s | 12,880 | 31,516.58 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | light[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 346.3 s | 10,340 | 31,541.50 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | light[1] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 16.96 h | 11,080 | 31,533.97 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 1216.9 s | 27,940 | 31,499.14 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | mass_total[1] | `hpc_a100_jax_gpu_sparse_fp64` | 0 | 1491.9 s | 27,180 | 31,531.15 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed0` | `delaunay_1250` | linear | mass_total[1] | `hpc_a100_numba_cpu_sparse_fp64` | 0 | 96.01 h | 39,580 | 31,515.84 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 773.9 s | 87,700 | 31,968.14 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_lp[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 757.2 s | 87,700 | 31,968.14 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_lp[1] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 1.88 h | 90,650 | 31,968.42 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 2384.0 s | 55,840 | 31,546.08 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_pix[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 1.41 h | 55,720 | 31,545.51 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_pix[1] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 88.18 h | 48,000 | 31,563.06 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 109.6 s | 2,180 | 31,550.64 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_pix[2] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 111.3 s | 2,300 | 31,564.08 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | source_pix[2] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 3.23 h | 2,240 | 31,568.86 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 405.0 s | 11,320 | 31,539.88 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | light[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 368.4 s | 10,860 | 31,553.15 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | light[1] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 17.08 h | 11,620 | 31,556.74 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 1537.6 s | 35,980 | 31,528.44 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | mass_total[1] | `hpc_a100_jax_gpu_sparse_fp64` | 1 | 1699.2 s | 29,920 | 31,538.40 | 2026.8.17.1 |
+| `hst/slam5_delaunay_1250/seed1` | `delaunay_1250` | linear | mass_total[1] | `hpc_a100_numba_cpu_sparse_fp64` | 1 | 100.15 h | 39,680 | 31,544.76 | 2026.8.17.1 |
+
+**Parity — `hst/slam5/seed0` (seed 0), `mass_total[1]`**
+
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_a100_jax_gpu_sparse_fp64` | `hpc_a100_numba_cpu_sparse_fp64` |
+|---|---|---|---|
+| `einstein_radius` | 1.605 ± 0.0035 | -0.33σ | -0.25σ |
+| `slope` | 2.057 ± 0.044 | -0.21σ | -0.22σ |
+| `shear_magnitude` | 0.0733 ± 0.0022 | +0.78σ | -0.30σ |
+| `centre_0` | -0.0004065 ± 0.00045 | -0.97σ | +0.05σ |
+| `centre_1` | -0.0005637 ± 0.00045 | +0.39σ | +0.00σ |
+| `ell_comps_0` | 0.05554 ± 0.0022 | -0.22σ | -0.40σ |
+| `ell_comps_1` | -0.0003968 ± 0.001 | +8.14σ | +0.03σ |
+| `gamma_1` | 0.05228 ± 0.0023 | +1.25σ | -0.20σ |
+| `gamma_2` | 0.05135 ± 0.00088 | -0.63σ | -0.45σ |
+
+**Parity — `hst/slam5/seed1` (seed 1), `mass_total[1]`**
+
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_a100_jax_gpu_sparse_fp64` | `hpc_a100_numba_cpu_sparse_fp64` |
+|---|---|---|---|
+| `einstein_radius` | 1.6 ± 0.0031 | +1.30σ | +2.20σ |
+| `slope` | 1.991 ± 0.04 | +1.28σ | +2.21σ |
+| `shear_magnitude` | 0.07018 ± 0.002 | +1.13σ | +2.27σ |
+| `centre_0` | -0.0005879 ± 0.00046 | +0.63σ | -0.16σ |
+| `centre_1` | -0.0003854 ± 0.00048 | -0.09σ | -0.41σ |
+| `ell_comps_0` | 0.05306 ± 0.0018 | +1.00σ | +1.94σ |
+| `ell_comps_1` | -0.000944 ± 0.0012 | +0.01σ | +1.38σ |
+| `gamma_1` | 0.04883 ± 0.0021 | +1.13σ | +2.39σ |
+| `gamma_2` | 0.05038 ± 0.00083 | +0.95σ | +1.60σ |
+
+**Parity — `hst/slam5_delaunay_1250/seed0` (seed 0), `mass_total[1]`**
+
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_a100_jax_gpu_sparse_fp64` | `hpc_a100_numba_cpu_sparse_fp64` |
+|---|---|---|---|
+| `einstein_radius` | 1.61 ± 0.0028 | +2.01σ | +1.52σ |
+| `slope` | 2.105 ± 0.034 | +2.24σ | +1.59σ |
+| `shear_magnitude` | 0.07773 ± 0.0015 | +1.91σ | +2.08σ |
+| `centre_0` | -0.0007015 ± 0.00055 | +0.13σ | +0.60σ |
+| `centre_1` | 0.0001288 ± 0.00039 | -0.68σ | -1.60σ |
+| `ell_comps_0` | 0.06029 ± 0.0017 | +1.04σ | +1.72σ |
+| `ell_comps_1` | 0.005179 ± 0.0014 | -0.18σ | +2.99σ |
+| `gamma_1` | 0.05675 ± 0.0017 | +2.22σ | +2.14σ |
+| `gamma_2` | 0.05315 ± 0.00053 | +0.21σ | +1.35σ |
+
+**Parity — `hst/slam5_delaunay_1250/seed1` (seed 1), `mass_total[1]`**
+
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_a100_jax_gpu_sparse_fp64` | `hpc_a100_numba_cpu_sparse_fp64` |
+|---|---|---|---|
+| `einstein_radius` | 1.597 ± 0.002 | +3.01σ | +9.95σ |
+| `slope` | 1.955 ± 0.024 | +3.13σ | +9.94σ |
+| `shear_magnitude` | 0.0692 ± 0.0012 | +3.80σ | +10.17σ |
+| `centre_0` | -0.0002983 ± 0.0003 | +0.15σ | +0.91σ |
+| `centre_1` | 0.0006144 ± 0.00022 | -3.64σ | -3.44σ |
+| `ell_comps_0` | 0.05332 ± 0.00098 | +3.62σ | +10.21σ |
+| `ell_comps_1` | -0.0008448 ± 0.00042 | +7.07σ | +19.10σ |
+| `gamma_1` | 0.04698 ± 0.0014 | +3.76σ | +10.45σ |
+| `gamma_2` | 0.05071 ± 0.00047 | +3.03σ | +5.93σ |
 <!-- END auto-table:slam -->
 
 ## Search runs

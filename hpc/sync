@@ -27,6 +27,8 @@
 #
 # Jobs:
 #   hpc/sync submit <script>     sbatch a submit script from hpc/batch_gpu/ (or --cpu)
+#                                --dependency <spec> is passed to sbatch as
+#                                --dependency=<spec> (e.g. afterok:<job id>).
 #                                GPU jobs run on --partition=gpu; CPU jobs on
 #                                --partition=ral (RAL has NO `cpu` partition).
 #   hpc/sync jobs                Show queued/running jobs (squeue)
@@ -376,20 +378,38 @@ EOF
 # ---------------------------------------------------------------------------
 
 submit() {
-    local script_name="${1:-}"
+    local script_name=""
     local batch_type="gpu"
+    local dependency=""
 
-    if [[ "$script_name" == "--cpu" ]]; then
-        batch_type="cpu"; script_name="${2:-}"
-    elif [[ "$script_name" == "--gpu" ]]; then
-        batch_type="gpu"; script_name="${2:-}"
-    fi
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --cpu) batch_type="cpu" ;;
+            --gpu) batch_type="gpu" ;;
+            --dependency)
+                dependency="${2:-}"; shift
+                [[ -n "$dependency" ]] || { echo "submit: --dependency needs a spec (e.g. afterok:123456)"; exit 1; }
+                ;;
+            --dependency=*) dependency="${1#--dependency=}" ;;
+            "") ;;
+            *) script_name="$1" ;;
+        esac
+        shift
+    done
 
     if [[ -z "$script_name" ]]; then
-        echo "Usage: $(basename "$0") submit [--gpu|--cpu] <submit_script_name>"
+        echo "Usage: $(basename "$0") submit [--gpu|--cpu] [--dependency <spec>] <submit_script_name>"
         echo "  e.g. hpc/sync submit submit_slam_hst_base_a100_jax_gpu_dense_fp64"
+        echo "       hpc/sync submit --dependency afterok:123456 submit_hst_cleanslate_mass_samplers_jax_gpu_dense"
         exit 1
     fi
+    # The spec is handed to sbatch verbatim, so keep it to SLURM's dependency alphabet.
+    if [[ -n "$dependency" && ! "$dependency" =~ ^[A-Za-z0-9_:,?+]+$ ]]; then
+        echo "submit: refusing dependency spec '${dependency}' (want e.g. afterok:123456)"
+        exit 1
+    fi
+    local sbatch_flags=""
+    [[ -n "$dependency" ]] && sbatch_flags="--dependency=${dependency} "
 
     local remote_dir="${REMOTE_ROOT}/hpc/batch_${batch_type}"
 
@@ -397,9 +417,9 @@ submit() {
     # / `-e` paths are relative (output/…, error/…), so submitting from the project root
     # makes SLURM fail to open the error file and kill the batch step at t=1s with
     # ExitCode 0:53 and no .err to read. Jobs 342008-342010 died exactly this way.
-    echo "==> [submit] sbatch ${script_name}  (from hpc/batch_${batch_type}/)  @  ${HPC_HOST}"
+    echo "==> [submit] sbatch ${sbatch_flags}${script_name}  (from hpc/batch_${batch_type}/)  @  ${HPC_HOST}"
     echo ""
-    ssh "${HPC_HOST}" "cd '${remote_dir}' && sbatch '${script_name}'"
+    ssh "${HPC_HOST}" "cd '${remote_dir}' && sbatch ${sbatch_flags}'${script_name}'"
 }
 
 jobs_cmd() {
@@ -517,7 +537,8 @@ print_help() {
     echo "  status                       Dry run — show what a pull would transfer"
     echo ""
     echo "Jobs:"
-    echo "  submit [--gpu|--cpu] <name>  sbatch a submit script (from hpc/batch_<type>/)"
+    echo "  submit [--gpu|--cpu] [--dependency <spec>] <name>"
+    echo "                               sbatch a submit script (from hpc/batch_<type>/)"
     echo "  jobs                         Show queued/running jobs"
     echo "  sacct                        Show job history and exit codes"
     echo "  cancel <job_id>              Cancel a job"
@@ -547,7 +568,7 @@ case "$cmd" in
     logs)     pull_logs ;;
     status)   status ;;
     push)     push ;;
-    submit)   submit "${2:-}" "${3:-}" ;;
+    submit)   shift; submit "$@" ;;
     jobs)     jobs_cmd ;;
     sacct)    sacct_cmd ;;
     cancel)   cancel "${2:-}" ;;
