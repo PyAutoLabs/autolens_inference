@@ -97,7 +97,7 @@ cp hpc/sync.conf.example hpc/sync.conf   # then edit; sync.conf is gitignored
 | `hpc/sync pull` | Download batch logs, then run outputs and results |
 | `hpc/sync logs` | Batch logs only — small and fast, use mid-run |
 | `hpc/sync status` | Dry run: what a pull would transfer |
-| `hpc/sync submit [--gpu\|--cpu] <name>` | `sbatch` a submit script, from `hpc/batch_<type>/` |
+| `hpc/sync submit [--gpu\|--cpu] [--dependency <spec>] <name>` | `sbatch` a submit script, from `hpc/batch_<type>/`; `--dependency` is passed through as `sbatch --dependency=<spec>` |
 | `hpc/sync jobs` / `sacct` / `cancel <id>` | `squeue` / `sacct` / `scancel` |
 | `hpc/sync tail [gpu\|cpu]` | Stream the newest live `.out` |
 | `hpc/sync du` | Remote disk usage (`-d1` — never a bare recursive `du`; RAL's NFS is slow) |
@@ -167,6 +167,23 @@ git pull
 
 The PyAuto* libraries are a separate story again: resolved from the shared checkouts on
 `PYTHONPATH` and updated with `HPCPullPyAuto`, never pip-installed and never rsynced.
+
+### Chaining a submit on another job: `--dependency`
+
+`hpc/sync submit --dependency <spec> <name>` hands `<spec>` to `sbatch` verbatim as
+`--dependency=<spec>`, so a job that reads another job's products can be queued before
+those products exist and starts only once they do:
+
+```bash
+hpc/sync submit --dependency afterok:<base job id> submit_hst_cleanslate_mass_samplers_jax_gpu_dense
+```
+
+`afterok:<id>` on an array job waits for **every** task of that array to exit 0; a single
+failed task leaves the dependent job pending forever with reason
+`DependencyNeverSatisfied`, which `scancel` clears. `afterok:<id>_<task>` waits for one
+task only. The spec is never written into a submit script: the job id it names is only
+known at submit time, and a hard-coded id would chain a resubmission onto a stale job.
+Read the dependency state back with `squeue -j <id>` (reason `Dependency` while waiting).
 
 ## A crashed job FAILS: the SLURM exit-code guard
 
@@ -260,12 +277,13 @@ are in [`../scripts/misc/wall/README.md`](../scripts/misc/wall/README.md).
 
 ## The submits that exist today
 
-Thirteen, over **two cells**. Eleven run `imaging/slam/hst` (`scripts/imaging/rectangular/baseline_slam.py`, the
+Thirteen run the SLaM chain, over **two cells**. Eleven run `imaging/slam/hst` (`scripts/imaging/rectangular/baseline_slam.py`, the
 backend-parameterised SLaM driver): six are the six legs of the first parity row, the
 seventh is the rate probe that had to run before any of them could be sized, and four are
 the 2026-10-17 **clean slate** (below). Two run
 `imaging/slam/hst_delaunay` (`scripts/imaging/delaunay/baseline_slam.py`) — the same five-stage
-chain on the `delaunay_1250` run variant.
+chain on the `delaunay_1250` run variant. Two more, the clean-slate wave-1 arrays (below),
+run the four sampler leaves of `scripts/imaging/rectangular/` on frozen mass problems.
 
 | submit | cell | partition | array | what it runs |
 |---|---|---|---|---|
@@ -282,6 +300,8 @@ chain on the `delaunay_1250` run variant.
 | `batch_gpu/submit_hst_cleanslate_jax_gpu_sparse` | `imaging/slam/hst` | `gpu` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_gpu` × sparse, `--lens-light both` |
 | `batch_cpu/submit_hst_cleanslate_jax_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × dense, `--lens-light both` (48 GB) |
 | `batch_cpu/submit_hst_cleanslate_jax_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × sparse, `--lens-light both` (64 GB) |
+| `batch_gpu/submit_hst_cleanslate_mass_samplers_jax_gpu_dense` | `imaging/rectangular/{nautilus,emcee,nuts,smc}` | `gpu` | `0-23%4` | clean-slate wave 1: four samplers × seeds 0-2 × both light modes on the frozen A100 dense problems; submitted `--dependency afterok:<base>` |
+| `batch_cpu/submit_hst_cleanslate_mass_samplers_jax_cpu_dense` | `imaging/rectangular/{nautilus,emcee,nuts,smc}` | `ral` | `0-23%6` | the same 24 arms on the frozen RAL CPU dense problems; waits for the CPU base rows |
 
 ### The clean-slate submits (2026-10-17)
 
@@ -300,6 +320,23 @@ measured before it twice over:
   parity groups in the README view.
 
 The CPU pair is `--partition=ral` only — never `gpu`, `ral,gpu` or `gpu,ral`.
+
+### The clean-slate wave-1 sampler submits (2026-10-17)
+
+Phase 3 wave 1 of the same campaign (autolens_inference#27). Two submits, `jax_gpu` and
+`jax_cpu` dense, each a 24-arm array over the frozen `mass_total[1]` problems phase 2 exports
+for base seed 0: every sampler the experiment runner supports (`nautilus`, `emcee`, `nuts`,
+`smc`), cold, at sampler seeds 0-2, on both light modes. The arm table is data in
+[`../scripts/misc/experiments/wave.py`](../scripts/misc/experiments/wave.py); the submit asks
+it for each array index's sampler and leaf arguments, so the mapping lives (and is tested) in
+one place. `python3 scripts/misc/experiments/wave.py --list --config <config>` prints the arms
+and run ids; `--account --config <config>` reports each as `row`, `failed` or `missing` from
+`results/searches/experiments/`.
+
+Each submit runs four cells (one per sampler leaf), all `unmeasured` with `probe-first: yes`:
+the `%4` / `%6` throttles start one arm of every sampler first. The GPU array is submitted
+`--dependency afterok:<GPU dense base array>`; the CPU array waits for the CPU base rows
+(days) and is submitted the same way on the CPU dense base array.
 
 ### Why the second cell exists
 
