@@ -34,8 +34,11 @@ add leaves here: it runs the sampler leaves of `scripts/imaging/rectangular/` (`
 (`cleanslate_2026_10_17_wave1`, autolens_inference#27) is:
 
 - **Problems:** base seed 0, both light modes (`slam_base`, `slam_base_lightfixed`), from
-  `output/prepared/cleanslate_2026_10_17/<config>/seed_0/<variant>/manifest.json`; the
-  problem id is read from the manifest at run time and the leaf re-verifies it.
+  `output/autolens/prepared/<config>/seed_0/<variant>/manifest.json`; the problem id is
+  read from the manifest at run time and the leaf re-verifies it. Each arm's PyAutoFit run
+  lands under `output/autolens/experiments/<run id>/` (source snapshots under
+  `output/autolens/experiment_sources/`). The wave and run-id names keep the dated
+  `cleanslate_2026_10_17` / `cs1017` spelling; only the folders were flattened (#35).
 - **Samplers, all `--start cold`:** `nautilus --live 150 --batch 20` (the control: the
   base stage's own settings), `emcee --walkers 50 --steps 2000`,
   `nuts --chains 1 --warmup 500 --steps 1000`, `smc --particles 256 --steps 1000`.
@@ -55,7 +58,7 @@ Zeus) needs runner support first.
 
 **Attempt 1 failed (RAL array 412543, 2026-10-17); attempt 2 re-runs Nautilus and Emcee.**
 Every Nautilus and Emcee arm completed its fit (the PyAutoFit trees exist under
-`output/experiments/cs1017_*`) and then lost its row: `run.py` keyed
+`output/autolens/experiments/cs1017_*` once flattened) and then lost its row: `run.py` keyed
 `max_likelihood_parameters` by `samples.names`, which PyAutoFit returns as *tuples* of dotted
 aliases, and the JSON write refused them (autolens_inference#33; now keyed through the SLaM
 runner's `posterior_path`, and a diagnostics failure after a completed fit is recorded as

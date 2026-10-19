@@ -312,15 +312,23 @@ PyAutoInsight campaign `hst-imaging-mass-samplers`, phase 1 (autolens_inference#
 job per (backend, inversion), seeds 0-1 as the array, and `--lens-light both`: stages 1-4
 run once and `mass_total[1]` twice, writing a `slam_base` (linear lens light) and a
 `slam_base_lightfixed` (lens light fixed to ordinary profiles) row per seed. Each runs
-against the pinned 2026.10.17.1 checkouts (above) and is kept apart from everything
-measured before it twice over:
+against the pinned 2026.10.17.1 checkouts (above). The clean slate is the starting point of
+this repo's runs, so it writes the plain layout (autolens_inference#35):
 
-- `--output-dir output/cleanslate_2026_10_17` — a fresh PyAutoFit root, so the 2026-09-24
-  trees under `output/slam/` are never resumed;
-- `--results-tag cleanslate_2026_10_17` — rows land under
-  `results/slam/imaging/hst/<variant>/<config_name>__cleanslate_2026_10_17/`, so they can
-  never overwrite the 2026-09-24 rows of the same config and seed, and they form their own
-  parity groups in the README view.
+- run tree `output/autolens/imaging/hst/slam/<variant>/<config_name>/seed_<n>/` (dataset
+  class, instrument, then pipeline);
+- rows `results/slam/imaging/hst/<variant>/<config_name>/stages_seed<n>.json`;
+- frozen `mass_total[1]` problems (`--export-prepared`)
+  `output/autolens/prepared/<config_name>/seed_<n>/<variant>/`, and the wave's experiment
+  runs and source snapshots under `output/autolens/experiments/` and
+  `output/autolens/experiment_sources/`.
+
+The 2026-09-24 trees were moved aside on RAL and their rows archived under
+`results/archive/2026-09-24_superseded_by_cleanslate/`, so nothing older is resumed or
+overwritten. The campaign's first arrays wrote a dated `output/cleanslate_2026_10_17/` root
+with `--results-tag cleanslate_2026_10_17`; `scripts/misc/flatten_cleanslate.py` moves those
+trees and rows onto the plain layout once their arrays complete (its docstring has the order:
+RAL, then the laptop mirror).
 
 The CPU pair is `--partition=ral` only — never `gpu`, `ral,gpu` or `gpu,ral`.
 

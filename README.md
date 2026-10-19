@@ -152,16 +152,16 @@ Runnable baselines now live at:
 The wall gate maps these leaves to their existing measured cell identities;
 this migration creates no measurements or new timing justification.
 Run `python scripts/misc/tooling/export_inference_summary.py` to regenerate both
-feeds. Baseline export writes portable manifest metadata under tracked `prepared/<problem-id>/manifest.json` alongside local bulk snapshots in `output/prepared/`. Commit that metadata with the result rows so CI and fresh clones retain the problem declaration. These manifests attach
+feeds. Baseline export writes portable manifest metadata under tracked `prepared/<problem-id>/manifest.json` alongside local bulk snapshots in `output/autolens/prepared/`. Commit that metadata with the result rows so CI and fresh clones retain the problem declaration. These manifests attach
 exact dataset/model/prior identities to their source baseline; unpublished
 artifact paths do not promise publicly downloadable samples.
 
 Export the completed baseline's frozen `mass_total[1]` problem with
-`--export-prepared output/prepared/hst-rectangular` on the rectangular baseline
+`--export-prepared output/autolens/prepared/hst-rectangular` on the rectangular baseline
 command. Then investigate its shared problem with:
 
 ```bash
-python scripts/misc/experiments/run.py --prepared output/prepared/hst-rectangular/manifest.json --problem-id <manifest-id> --run-id hst-rectangular-nautilus-cold-seed0 --sampler nautilus --start cold --hardware-id laptop-cpu-8cores-single-process
+python scripts/misc/experiments/run.py --prepared output/autolens/prepared/hst-rectangular/manifest.json --problem-id <manifest-id> --run-id hst-rectangular-nautilus-cold-seed0 --sampler nautilus --start cold --hardware-id laptop-cpu-8cores-single-process
 ```
 
 Replace `<manifest-id>` with the manifest's exact `id` field and set `--hardware-id` to the actual host/device, allocated resources and concurrency.
@@ -171,7 +171,7 @@ setup family and sampler and refuse a mismatched prepared problem. For example,
 a prepared JAX Delaunay baseline can be investigated with:
 
 ```bash
-python scripts/imaging/delaunay/smc.py --prepared output/prepared/hst-delaunay/manifest.json --problem-id <manifest-id> --run-id hst-delaunay-smc-cold-seed0 --start cold --hardware-id laptop-cpu-8cores-single-process
+python scripts/imaging/delaunay/smc.py --prepared output/autolens/prepared/hst-delaunay/manifest.json --problem-id <manifest-id> --run-id hst-delaunay-smc-cold-seed0 --start cold --hardware-id laptop-cpu-8cores-single-process
 ```
 
 Use `python scripts/misc/experiments/run.py --help` for supported start modes
