@@ -10,7 +10,7 @@
 # (autolens_inference#27). The same 24 arms as
 # ../batch_gpu/submit_hst_cleanslate_mass_samplers_jax_gpu_dense, on the problems phase 2's
 # `submit_hst_cleanslate_jax_cpu_dense` exports to
-# output/prepared/cleanslate_2026_10_17/hpc_a100_jax_cpu_dense_fp64/seed_<n>/<variant>/.
+# output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_<n>/<variant>/.
 # NOT SUBMITTED with the GPU wave: the CPU base chains take days, and this array waits for their
 # rows. Submit it only with a dependency on that base array:
 #

@@ -53,9 +53,10 @@ results/                    Committed result rows:
                             results/slam/<dataset_class>/<instrument>/<variant>/
                               <config_name>/stages_seed<n>.json  (+ results/searches/)
 output/                     PyAutoFit run output — KEPT here (see below), gitignored;
-                            mirrors the same grammar:
-                            output/slam/<dataset_class>/<instrument>/<variant>/
-                              <config_name>/seed_<n>/
+                            dataset class, instrument, then pipeline:
+                            output/autolens/<dataset_class>/<instrument>/slam/
+                              <variant>/<config_name>/seed_<n>/
+                            (+ output/autolens/{prepared,experiments,experiment_sources}/)
 wiki/project/               The Cortex ledger (state.md) + its journal-entry template
 ```
 

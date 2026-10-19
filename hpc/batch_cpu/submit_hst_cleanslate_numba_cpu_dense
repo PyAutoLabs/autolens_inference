@@ -13,7 +13,7 @@
 # stage 1. Decisions: an in-job wait for the jax_cpu stage, submitted now.
 #
 #   - `--stages-from hpc_a100_jax_cpu_dense_fp64:source_lp`: stage 1 is LOADED from
-#     output/cleanslate_2026_10_17/slam/imaging/hst/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_<n>/
+#     output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_<n>/
 #     (the jax_cpu dense array, same seed), never refitted. The dense numba leg shares the DENSE
 #     jax_cpu stage on purpose: source_lp[1] carries no inversion, so dense and sparse are the
 #     same fit there. The row marks the stage `shared_from_config` and `chain_wall_s`
@@ -24,7 +24,8 @@
 #   - Stages 2-5 are this leg's own numba fits: `use_jax=False` on every Analysis, and
 #     PYAUTO_DISABLE_JAX=1 below as the process-wide belt.
 #   - Pinned and fresh like the jax legs: PYAUTO_LIB_BASE / PYAUTO_RELEASE_PIN = 2026.10.17.1,
-#     `--output-dir output/cleanslate_2026_10_17`, `--results-tag cleanslate_2026_10_17`.
+#     run tree output/autolens/imaging/hst/slam/, plain rows (#35 flattened the dated
+#     output/cleanslate_2026_10_17/ root and dropped `--results-tag`).
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
 #   This submit runs ONE cell, `imaging/slam/hst`: stages 2-5 fitted (stage 1 loaded), plus a
@@ -72,7 +73,7 @@ export PYAUTO_DISABLE_JAX=1
 # source_pix[1] on jax_cpu dense, 2026-09-11). The numba legs are lighter (nautilus takes the
 # number_of_cores multiprocessing path, no vmap), so 48 GB is containment, not a measurement.
 
-SHARED_SEED_DIR=$AP_ROOT/output/cleanslate_2026_10_17/slam/imaging/hst/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_$SLURM_ARRAY_TASK_ID
+SHARED_SEED_DIR=$AP_ROOT/output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_$SLURM_ARRAY_TASK_ID
 
 echo "=========================================="
 date
@@ -97,9 +98,7 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
     --config-name hpc_a100_numba_cpu_dense_fp64 \
     --lens-light both \
     --stages-from hpc_a100_jax_cpu_dense_fp64:source_lp \
-    --output-dir output/cleanslate_2026_10_17 \
-    --results-tag cleanslate_2026_10_17 \
-    --export-prepared output/prepared/cleanslate_2026_10_17/hpc_a100_numba_cpu_dense_fp64/seed_$SLURM_ARRAY_TASK_ID \
+    --export-prepared output/autolens/prepared/hpc_a100_numba_cpu_dense_fp64/seed_$SLURM_ARRAY_TASK_ID \
     --cores $SLURM_CPUS_PER_TASK
 
 echo "Finished."

@@ -49,7 +49,9 @@ def make_search(af, model, manifest, items, args):
             seed=args.seed,
         )
     common = dict(
-        name="mass_total[1]", path_prefix=f"experiments/{args.run_id}", number_of_cores=args.cores
+        name="mass_total[1]",
+        path_prefix=f"autolens/experiments/{args.run_id}",
+        number_of_cores=args.cores,
     )
     if args.sampler == "nautilus":
         if args.start == "warm":
@@ -112,7 +114,7 @@ def resume_source(args, manifest, search, model):
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(backend, target)
     # Pin a distinct immutable snapshot of the source before the continuation.
-    snapshot = ROOT / "output" / "experiment_sources" / args.run_id / "checkpoint.hdf"
+    snapshot = ROOT / "output" / "autolens" / "experiment_sources" / args.run_id / "checkpoint.hdf"
     return artifact(
         ROOT,
         snapshot,
@@ -295,7 +297,7 @@ def main(argv=None, *, setup_family=None, sampler=None):
         print(f"Validated {manifest['id']} / {args.sampler} / {args.start}; no fit executed")
         return 0
     destination = ROOT / "results" / "searches" / "experiments" / f"{args.run_id}.json"
-    output = with_test_mode_segment(ROOT / "output") / "experiments" / args.run_id
+    output = with_test_mode_segment(ROOT / "output") / "autolens" / "experiments" / args.run_id
     if destination.exists() or output.exists():
         raise ValueError("Run identity already exists; choose a new run-id")
     sources = []
@@ -395,7 +397,7 @@ def main(argv=None, *, setup_family=None, sampler=None):
             try:
                 row["checkpoint"] = artifact(
                     ROOT,
-                    ROOT / "output" / "experiment_sources" / args.run_id / "final.hdf",
+                    ROOT / "output" / "autolens" / "experiment_sources" / args.run_id / "final.hdf",
                     Path(search.backend_filename).read_bytes(),
                     "checkpoint",
                     destination.relative_to(ROOT).as_posix(),

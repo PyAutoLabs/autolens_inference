@@ -3,7 +3,7 @@
 PyAutoInsight campaign ``hst-imaging-mass-samplers``, task ``hst_mass_samplers_wave1``.
 Phase 2 exports one frozen ``mass_total[1]`` problem per (config, base seed, light mode) to::
 
-    output/prepared/cleanslate_2026_10_17/<config>/seed_<base seed>/<variant>/manifest.json
+    output/autolens/prepared/<config>/seed_<base seed>/<variant>/manifest.json
 
 Wave 1 runs every sampler ``experiments/run.py`` supports today, cold, on the base-seed-0
 problem of both light modes, at three sampler seeds. The arm table below is the single
@@ -49,9 +49,10 @@ from pathlib import Path
 
 ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 
+# WAVE_ID and RUN_PREFIX name the wave and its run ids, not a folder: attempt 2 must match attempt 1.
 WAVE_ID = "cleanslate_2026_10_17_wave1"
 RUN_PREFIX = "cs1017"
-PREPARED_ROOT = "output/prepared/cleanslate_2026_10_17"
+PREPARED_ROOT = "output/autolens/prepared"
 RESULTS_DIR = "results/searches/experiments"
 
 VARIANTS = ("slam_base", "slam_base_lightfixed")

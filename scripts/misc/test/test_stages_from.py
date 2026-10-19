@@ -132,7 +132,7 @@ def test_validate_refuses_self_and_precision_mismatch():
 
 def test_the_shared_prefix_names_the_other_config_at_this_variant_and_seed():
     prefixes = _runner.shared_stage_prefixes(_cli(), "imaging", "hst", "slam_base", 1)
-    assert prefixes == {"source_lp": Path("slam/imaging/hst/slam_base") / JAX / "seed_1"}
+    assert prefixes == {"source_lp": Path("autolens/imaging/hst/slam/slam_base") / JAX / "seed_1"}
     own = _runner.output_path_prefix(
         "imaging", "hst", "slam_base", "hpc_a100_numba_cpu_dense_fp64", 1
     )
@@ -366,16 +366,14 @@ def test_the_numba_submits_pass_the_gate_wait_and_share(name):
         f"--config-name hpc_a100_numba_cpu_{inversion}_fp64",
         "--lens-light both",
         f"--stages-from {JAX}:source_lp",
-        "--output-dir output/cleanslate_2026_10_17",
-        "--results-tag cleanslate_2026_10_17",
-        "--export-prepared output/prepared/cleanslate_2026_10_17/"
+        "--export-prepared output/autolens/prepared/"
         f"hpc_a100_numba_cpu_{inversion}_fp64/seed_$SLURM_ARRAY_TASK_ID",
         "--seed $SLURM_ARRAY_TASK_ID",
     ):
         assert flag in text, flag
-    shared_dir = (
-        f"output/cleanslate_2026_10_17/slam/imaging/hst/slam_base/{JAX}/seed_$SLURM_ARRAY_TASK_ID"
-    )
+    command = "\n".join(line for line in text.splitlines() if not line.startswith("#"))
+    assert "--output-dir" not in command and "--results-tag" not in command
+    shared_dir = f"output/autolens/imaging/hst/slam/slam_base/{JAX}/seed_$SLURM_ARRAY_TASK_ID"
     assert shared_dir in text
     wait = 'bash hpc/wait_for_stage.sh "$SHARED_SEED_DIR" source_lp 300 28800'
     assert wait in text

@@ -36,12 +36,14 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
   "The lens-light mode" below. `linear` (the default) is the chain as it always ran.
 - `--results-tag TAG` keeps a re-measurement's rows apart from earlier rows of the same
   variant, config and seed: they land under `<config_name>__<TAG>/` and form their own
-  parity groups. The clean-slate submits use `cleanslate_2026_10_17`.
+  parity groups. The clean-slate submits no longer tag (#35); their first arrays used
+  `cleanslate_2026_10_17`.
 - `--stages-from <config>:source_lp` **loads** `source_lp[1]` from another config's completed
   chain instead of fitting it. See "Shared stages" below.
 - `--output-dir` overrides the **PyAutoFit run-output root** for this leaf (default
-  `output/slam/imaging/hst/<variant>/<config_name>/seed_<n>/`); the result row always lands
-  under `results/`.
+  `output/`, under which the leg writes
+  `autolens/imaging/hst/slam/<variant>/<config_name>/seed_<n>/`); the result row always
+  lands under `results/`.
 - `--backend jax_gpu` asserts `jax.default_backend() == "gpu"` and exits 2 otherwise. There is
   no silent CPU fallback: a "GPU" leg that ran on CPU reports a wall clock that is nothing of
   the kind.
@@ -79,7 +81,7 @@ each cell the difference from the alphabetically-first config in units of that r
 
 ```
 results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/stages_seed<n>.json
-output/slam/<dataset_class>/<instrument>/<variant>/<config_name>/seed_<n>/
+output/autolens/<dataset_class>/<instrument>/slam/<variant>/<config_name>/seed_<n>/
 ```
 
 The `<variant>` level between the instrument and the config name is **what was fitted**; the
@@ -132,13 +134,15 @@ rectangular sampler leaves accept both.
 `hpc/batch_gpu/submit_hst_cleanslate_jax_gpu_{dense,sparse}` and
 `hpc/batch_cpu/submit_hst_cleanslate_jax_cpu_{dense,sparse}` re-measure the HST base on PyAuto
 release 2026.10.17.1 with `--lens-light both`, seeds 0–1: pinned libraries
-(`PYAUTO_LIB_BASE`, `PYAUTO_RELEASE_PIN`), a fresh `--output-dir output/cleanslate_2026_10_17`
-so the 2026-09-24 trees are never resumed, and `--results-tag cleanslate_2026_10_17` so their
-rows never overwrite the 2026-09-24 rows. Details in
+(`PYAUTO_LIB_BASE`, `PYAUTO_RELEASE_PIN`), the default run tree
+`output/autolens/imaging/hst/slam/` and plain `<config_name>` rows: the 2026-09-24 trees were
+moved aside and their rows archived, so nothing older is resumed or overwritten. The first
+arrays wrote a dated `output/cleanslate_2026_10_17/` root and `__cleanslate_2026_10_17` rows;
+`scripts/misc/flatten_cleanslate.py` moves them onto the plain layout (#35). Details in
 [`../../../hpc/README.md`](../../../hpc/README.md).
 
 `hpc/batch_cpu/submit_hst_cleanslate_numba_cpu_{dense,sparse}` (autolens_inference#31) add
-the `numba_cpu` base on 8 `ral` CPUs, same pin, root, tag, light modes and seeds, and share
+the `numba_cpu` base on 8 `ral` CPUs, same pin, output tree, light modes and seeds, and share
 the jax_cpu dense chain's `source_lp[1]` (next section). Each job waits in-job for that stage
 (`hpc/wait_for_stage.sh`: 5-minute polls, 8 h cap, exit 4 on timeout) before the runner
 starts.
