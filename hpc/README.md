@@ -283,7 +283,7 @@ backend-parameterised SLaM driver): six are the six legs of the first parity row
 seventh is the rate probe that had to run before any of them could be sized, and four are
 the 2026-10-17 **clean slate** (below). Two run
 `imaging/slam/hst_delaunay` (`scripts/imaging/delaunay/baseline_slam.py`) — the same five-stage
-chain on the `delaunay_1250` run variant. Two more, the clean-slate wave-1 arrays (below),
+chain on the Delaunay run variant (`delaunay_1250` then; `slam_delaunay` from 2026-10-19). Two more, the clean-slate wave-1 arrays (below),
 run the four sampler leaves of `scripts/imaging/rectangular/` on frozen mass problems.
 
 | submit | cell | partition | array | what it runs |
@@ -302,7 +302,8 @@ run the four sampler leaves of `scripts/imaging/rectangular/` on frozen mass pro
 | `batch_cpu/submit_hst_cleanslate_jax_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × dense, `--lens-light both` (48 GB) |
 | `batch_cpu/submit_hst_cleanslate_jax_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `jax_cpu` × sparse, `--lens-light both` (64 GB) |
 | `batch_cpu/submit_hst_cleanslate_numba_cpu_dense` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `numba_cpu` × dense, `--lens-light both`, `source_lp[1]` shared from the jax_cpu dense chain (in-job wait) (48 GB) |
-| `batch_cpu/submit_hst_cleanslate_numba_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate: pinned 2026.10.17.1, `numba_cpu` × sparse, `--lens-light both`, `source_lp[1]` shared from the jax_cpu dense chain (in-job wait) (64 GB) |
+| `batch_cpu/submit_hst_cleanslate_numba_cpu_sparse` | `imaging/slam/hst` | `ral` | `0-1` | clean slate **redo** (#38): `hpc_ral_numba_cpu_sparse_fp64`, BLAS/OpenMP pools pinned to 1 thread, pinned 2026.10.17.1, `--lens-light both`, `source_lp[1]` shared from the jax_cpu dense chain (64 GB) |
+| `batch_cpu/submit_hst_cleanslate_numba_cpu_sparse_delaunay` | `imaging/slam/hst_delaunay` | `ral` | `0-1` | the same redo on `slam_delaunay` (+ `slam_delaunay_light_fixed`), the standard SLaM Delaunay chain (96 GB) |
 | `batch_gpu/submit_hst_cleanslate_mass_samplers_jax_gpu_dense` | `imaging/rectangular/{nautilus,emcee}` | `gpu` | `0-11%4` | clean-slate wave 1 attempt 2: Nautilus and Emcee × seeds 0-2 × both light modes on the frozen A100 dense problems (NUTS/SMC deferred, A100 OOM) |
 | `batch_cpu/submit_hst_cleanslate_mass_samplers_jax_cpu_dense` | `imaging/rectangular/{nautilus,emcee}` | `ral` | `0-11%6` | the same 12 arms on the frozen RAL CPU dense problems; waits for the CPU base rows |
 
@@ -311,7 +312,7 @@ run the four sampler leaves of `scripts/imaging/rectangular/` on frozen mass pro
 PyAutoInsight campaign `hst-imaging-mass-samplers`, phase 1 (autolens_inference#24). One
 job per (backend, inversion), seeds 0-1 as the array, and `--lens-light both`: stages 1-4
 run once and `mass_total[1]` twice, writing a `slam_base` (linear lens light) and a
-`slam_base_lightfixed` (lens light fixed to ordinary profiles) row per seed. Each runs
+`slam_base_light_fixed` (lens light fixed to ordinary profiles) row per seed. Each runs
 against the pinned 2026.10.17.1 checkouts (above). The clean slate is the starting point of
 this repo's runs, so it writes the plain layout (autolens_inference#35):
 
@@ -340,6 +341,20 @@ The numba_cpu pair (autolens_inference#31) shares the jax_cpu dense chain's `sou
 helper is a poll, not a cell, so it stays out of the submit's `python3 scripts/...` lines,
 which are what the wall gate reads. The pair can be submitted before the jax_cpu stage
 finishes. If the jax_cpu array is cancelled, cancel these too, or they exit 4 after 8 h.
+
+**The numba thread caps and `hpc_ral` (2026-10-19, autolens_inference#38).** The 10-17
+numba legs ran `source_pix[1]` at 2.6 s wall per evaluation against ~0.06-0.08 s expected:
+nothing set `OPENBLAS/MKL/OMP/VECLIB/NUMEXPR_NUM_THREADS`, so every forked Nautilus worker
+ran a BLAS pool the size of the node. Every numba submit now exports the five as `1` before
+`python3` (the runner also sets them for `numba_cpu`), and the sparse reruns carry the
+`hpc_ral_` config prefix — a RAL CPU node on the `ral` partition, never an A100 (`hpc_a100_`
+stays on the GPU legs and on the rows already written). The superseded
+`hpc_a100_numba_cpu_*` trees and rows are set aside, not deleted, by
+`scripts/misc/rename_light_fixed.py --aside` (rows to
+`results/archive/2026-10-19_numba_thread_oversubscription/`). The same script renames the
+old `_lightfixed` variant folders, rows and prepared problems to `_light_fixed`. The
+Delaunay rerun shares the `slam_base` tree's `source_lp[1]`: the runner resolves a shared
+parametric stage under `slam_base` whatever the mesh.
 
 ### The clean-slate wave-1 sampler submits (2026-10-17)
 

@@ -33,7 +33,7 @@ add leaves here: it runs the sampler leaves of `scripts/imaging/rectangular/` (`
 `mass_total[1]` problems the clean-slate base exports. Wave 1
 (`cleanslate_2026_10_17_wave1`, autolens_inference#27) is:
 
-- **Problems:** base seed 0, both light modes (`slam_base`, `slam_base_lightfixed`), from
+- **Problems:** base seed 0, both light modes (`slam_base`, `slam_base_light_fixed`), from
   `output/autolens/prepared/<config>/seed_0/<variant>/manifest.json`; the problem id is
   read from the manifest at run time and the leaf re-verifies it. Each arm's PyAutoFit run
   lands under `output/autolens/experiments/<run id>/` (source snapshots under

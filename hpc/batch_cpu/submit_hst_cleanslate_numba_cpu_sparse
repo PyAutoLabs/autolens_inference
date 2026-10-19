@@ -1,16 +1,27 @@
 #!/bin/bash -l
 #
-# HST clean slate — `numba_cpu` x sparse on the RAL CPU partition, both lens-light modes, seeds 0-1,
-# SHARING the jax_cpu dense chain's `source_lp[1]` (autolens_inference#31).
+# HST clean slate — `numba_cpu` x sparse on the RAL CPU partition, rectangular mesh, both
+# lens-light modes (`slam_base` + `slam_base_light_fixed`), seeds 0-1, SHARING the jax_cpu
+# dense chain's `source_lp[1]` (autolens_inference#31). Config `hpc_ral_numba_cpu_sparse_fp64`
+# (autolens_inference#38): a RAL CPU node, never an A100.
 #
 # `--partition=ral` ONLY. CPU arrays never go on `gpu` (nor `ral,gpu` / `gpu,ral`): bulk CPU
 # jobs there starve the A100s. There is NO `cpu` partition on RAL.
+#
+# The REDO (2026-10-19, autolens_inference#38). The 2026-10-17 rows of this leg (then under the
+# superseded `hpc_a100_` prefix, now moved aside) ran `source_pix[1]` at 2.6 s wall per
+# likelihood evaluation, against ~0.06-0.08 s expected, and PyAutoFit warned about it at every
+# stage: the submit never set OPENBLAS/MKL/OMP/VECLIB/NUMEXPR_NUM_THREADS, so each of the 8
+# forked Nautilus workers ran a BLAS pool the size of the node (oversubscription, ~35x). The
+# five are exported as 1 below, before `python3`, as the autolens_profiling cells do
+# (`_production_config.pin_thread_env`); the runner sets them too, but only libraries imported
+# after it would see that.
 #
 # The human (2026-10-17, Insight chat) added numba_cpu base legs on 8 CPUs to the clean-slate
 # campaign `hst-imaging-mass-samplers` and chose that they "spawn off" the jax_cpu
 # `source_lp[1]`: that stage is parametric (no inversion), so both CPU backends fit the same
 # likelihood there, and sharing it makes this chain identical to the jax_cpu chain through
-# stage 1. Decisions: an in-job wait for the jax_cpu stage, submitted now.
+# stage 1.
 #
 #   - `--stages-from hpc_a100_jax_cpu_dense_fp64:source_lp`: stage 1 is LOADED from
 #     output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_<n>/
@@ -20,7 +31,8 @@
 #     excludes it (`chain_wall_excludes`). If the stage is not complete when the runner
 #     starts, it exits 3 and fits nothing.
 #   - `hpc/wait_for_stage.sh` polls for that stage every 5 min, capped at 8 h, before the
-#     runner starts; on timeout the job exits 4.
+#     runner starts; on timeout the job exits 4. The stage completed on 2026-10-18, so the
+#     wait returns at once; it stays as the guard.
 #   - Stages 2-5 are this leg's own numba fits: `use_jax=False` on every Analysis, and
 #     PYAUTO_DISABLE_JAX=1 below as the process-wide belt.
 #   - Pinned and fresh like the jax legs: PYAUTO_LIB_BASE / PYAUTO_RELEASE_PIN = 2026.10.17.1,
@@ -29,13 +41,18 @@
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
 #   This submit runs ONE cell, `imaging/slam/hst`: stages 2-5 fitted (stage 1 loaded), plus a
-#   second mass_total[1], and it declares itself `unmeasured` on purpose. No numba_cpu rate
-#   measured on this cell's pixelized stages on a RAL node exists. The September numba rows
-#   (submit_slam_hst_numba_cpu_*) are superseded and are a prior observation only, never a rate.
+#   second mass_total[1]. It still declares `unmeasured`: no rate measured on THIS cell's
+#   pixelized stages on a RAL node with the thread caps exists, and the gate's `source:`
+#   kinds admit only this cell's own measurements. What it now has is a prior EXPECTATION,
+#   not a citation: autolens_profiling single-thread rates for this model (28x28 bilinear
+#   rectangular + 60-gaussian linear MGE lens light, ~0.45-0.6 s/call on a RAL core, laptop
+#   1.06 s) over 8 workers give ~0.06-0.08 s wall per evaluation in the pixelized stages.
+#   The 2026-10-17 uncapped rows (2.6 s/eval) are superseded and are no rate either.
 #   `steps:` is the same FLOOR the base submits use (128 evals per live point x the chain's 725
 #   live points = 92800), not an estimate. No `wall:` is offered. `--time` below is a
-#   CONTAINMENT (it also absorbs up to 8 h of waiting), not a derived budget. The first arm
-#   IS the probe: read `stages[*].wall_s / stages[*].likelihood_evals` from its rows.
+#   CONTAINMENT, not a derived budget. The first arm IS the probe: read `source_pix[1]`'s
+#   `wall_s / likelihood_evals` from its row; far above ~0.1 s/eval means the caps did not
+#   reach the workers.
 #   cell: imaging/slam/hst  device: ral_numba_cpu  precision: fp64
 #   lanes: 1  steps: 92800  source: unmeasured  probe-first: yes
 #
@@ -69,6 +86,16 @@ export NPROC=$SLURM_CPUS_PER_TASK
 # motivates it: the belt to use_jax=False's braces, never a substitute for the flag.
 export PYAUTO_DISABLE_JAX=1
 
+# One BLAS / OpenMP thread per process (autolens_inference#38). Nautilus forks
+# --cores workers; unpinned, each one runs a pool the size of the node and the
+# leg runs ~35x slower than its single-thread rate. Exported here, before
+# python3, because numpy/scipy read them at import.
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+export VECLIB_MAXIMUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+
 # --mem=64gb: the same request as the jax_cpu sparse clean-slate leg (21.6 GB measured at
 # source_pix[1] on jax_cpu sparse, 2026-09-11). The numba legs are lighter (nautilus takes the
 # number_of_cores multiprocessing path, no vmap), so 64 GB is containment, not a measurement.
@@ -79,8 +106,8 @@ echo "=========================================="
 date
 echo "Cell:       imaging/slam/hst"
 echo "Instrument: hst"
-echo "Config:     hpc_a100_numba_cpu_sparse_fp64"
-echo "Light:      both (slam_base + slam_base_lightfixed)"
+echo "Config:     hpc_ral_numba_cpu_sparse_fp64"
+echo "Light:      both (slam_base + slam_base_light_fixed)"
 echo "Shared:     source_lp[1] from hpc_a100_jax_cpu_dense_fp64 ($SHARED_SEED_DIR)"
 echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
 echo "Seed:       $SLURM_ARRAY_TASK_ID"
@@ -95,10 +122,10 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
     --backend numba_cpu \
     --inversion sparse \
     --seed $SLURM_ARRAY_TASK_ID \
-    --config-name hpc_a100_numba_cpu_sparse_fp64 \
+    --config-name hpc_ral_numba_cpu_sparse_fp64 \
     --lens-light both \
     --stages-from hpc_a100_jax_cpu_dense_fp64:source_lp \
-    --export-prepared output/autolens/prepared/hpc_a100_numba_cpu_sparse_fp64/seed_$SLURM_ARRAY_TASK_ID \
+    --export-prepared output/autolens/prepared/hpc_ral_numba_cpu_sparse_fp64/seed_$SLURM_ARRAY_TASK_ID \
     --cores $SLURM_CPUS_PER_TASK
 
 echo "Finished."

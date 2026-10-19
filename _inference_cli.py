@@ -33,19 +33,23 @@ from dataclasses import dataclass
 from pathlib import Path
 
 #: The ``--backend`` vocabulary — the middle field of the config-name grammar
-#: ``{local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}``.
+#: ``{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}``.
 BACKENDS = ("jax_cpu", "numba_cpu", "jax_gpu")
 
 #: The ``--inversion`` vocabulary — the third field of the same grammar.
 INVERSIONS = ("dense", "sparse")
 
 #: The ``--config-name`` grammar, as a regex with one group per field:
-#: ``(where, backend, inversion, precision)``. Drivers match against this and
+#: ``(where, backend, inversion, precision)``. ``where`` names the hardware:
+#: ``local`` (the laptop), ``hpc_a100`` (a RAL A100 GPU node — GPU legs, and the
+#: historical prefix of every RAL leg before 2026-10-19) or ``hpc_ral`` (a RAL
+#: CPU node on the ``ral`` partition — the numba_cpu reruns onward, never an
+#: A100). Drivers match against this and
 #: refuse a name whose fields disagree with the flags actually passed — a config
 #: name that lies about its run turns a parity row into a lie, and nothing
 #: downstream (the result JSON, the README table, a Cortex ruling) can detect it.
 CONFIG_NAME_RE = re.compile(
-    r"^(local|hpc_a100)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse)_(fp64|mp)$"
+    r"^(local|hpc_a100|hpc_ral)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse)_(fp64|mp)$"
 )
 
 #: The ``--mesh`` vocabulary — which source pixelization family the pixelized
@@ -69,6 +73,14 @@ MESH_PIXELS_DEFAULT = {"rect": 28, "delaunay": 1250}
 #: baseline every other variant is measured against — and because the rows
 #: already on disk were written under it.
 BASE_VARIANT = "slam_base"
+
+#: The variant name of the standard SLaM Delaunay run: the Delaunay family at
+#: its default :data:`MESH_PIXELS_DEFAULT` count (1250 Hilbert vertices, the
+#: 30-point zeroed edge ring and a free ``AdaptSplit`` — what
+#: ``autolens_workspace/scripts/group/slam.py`` builds). Named for what it is,
+#: the production SLaM Delaunay pipeline, rather than ``delaunay_1250``; any
+#: other vertex count keeps the derived ``delaunay_<n>`` name.
+DELAUNAY_BASE_VARIANT = "slam_delaunay"
 
 #: The ``--stages`` vocabulary — the SLaM chain in order. ``--stages <name>``
 #: stops the driver after that stage, which is how a per-backend rate is
@@ -103,7 +115,7 @@ def parse_stages_from(value: str) -> tuple[str, tuple[str, ...]]:
     if not CONFIG_NAME_RE.match(config_name):
         raise ValueError(
             f"--stages-from config {config_name!r} does not match the config-name "
-            "grammar {local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
+            "grammar {local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
         )
     stages = []
     for stage in (s.strip() for s in stage_list.split(",")):
@@ -137,7 +149,7 @@ LENS_LIGHT_DEFAULT = "linear"
 #: light mass stage is a different model, and its rows must form their own
 #: parity group. ``linear`` appends nothing, so the rows already written keep
 #: their names.
-LENS_LIGHT_FIXED_SUFFIX = "_lightfixed"
+LENS_LIGHT_FIXED_SUFFIX = "_light_fixed"
 
 #: The grammar of ``--results-tag``: lower-case words joined by underscores, so
 #: the tag can sit in a directory name (``<config_name>__<tag>``) unquoted.
@@ -218,8 +230,9 @@ def parse_inference_cli(
         default=None,
         help=(
             "Output-filename label for the run, from the grammar "
-            "{local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp} "
-            "(e.g. local_jax_cpu_dense_fp64, hpc_a100_jax_gpu_sparse_fp64). "
+            "{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp} "
+            "(e.g. local_jax_cpu_dense_fp64, hpc_a100_jax_gpu_sparse_fp64, "
+            "hpc_ral_numba_cpu_sparse_fp64). "
             "Runs sharing a target and differing only in this label are one "
             "parity row. When omitted, the script keeps its single-config "
             "filename pattern."
@@ -360,7 +373,8 @@ def parse_inference_cli(
             "rect' it is the side of the square mesh (28 -> 28x28 = 784 cells, "
             "the workspace default), under '--mesh delaunay' it is the vertex "
             "count outright (default 1250). Non-default values name their own "
-            "variant folder (rect_40, delaunay_1250), so a mesh-resolution "
+            "variant folder (rect_40, delaunay_1500; the Delaunay default is "
+            "slam_delaunay), so a mesh-resolution "
             "sweep never overwrites the base run."
         ),
     )
@@ -420,7 +434,7 @@ def parse_inference_cli(
             "every inversion. 'fixed' replaces every linear light profile by an "
             "ordinary one carrying the intensity light[1]'s maximum-likelihood "
             "fit solved for, so the mass stage's inversion carries no lens-light "
-            "columns; its rows are the run variant '<variant>_lightfixed'. "
+            "columns; its rows are the run variant '<variant>_light_fixed'. "
             "'both' runs stages 1 to 4 once and mass_total[1] twice (linear then "
             "fixed), writing one result row per variant."
         ),
@@ -443,7 +457,9 @@ def parse_inference_cli(
         default=None,
         help=(
             "<config_name>:<stage>[,<stage>] — load these stages from another "
-            "config's completed chain (same output root, variant and seed) instead "
+            "config's completed chain (same output root and seed, under the "
+            "slam_base variant whatever this run's mesh: the shareable stage has "
+            "no mesh) instead "
             "of fitting them. Only source_lp may be shared. The run refuses (exit 3, "
             "nothing fitted) when that stage is not complete there; its row marks "
             "the stage shared_from_config and excludes its wall from chain_wall_s."
@@ -506,6 +522,8 @@ def base_variant_name(cli: InferenceCLI) -> str:
     """
     if cli.mesh == "rect" and cli.mesh_pixels == MESH_PIXELS_DEFAULT["rect"]:
         return BASE_VARIANT
+    if cli.mesh == "delaunay" and cli.mesh_pixels == MESH_PIXELS_DEFAULT["delaunay"]:
+        return DELAUNAY_BASE_VARIANT
     return f"{cli.mesh}_{cli.mesh_pixels}"
 
 
@@ -526,12 +544,14 @@ def variant_name(cli: InferenceCLI, lens_light_mode: str | None = None) -> str:
 
     ``rect`` at the workspace-default 28x28 shape is :data:`BASE_VARIANT`
     (``"slam_base"``) — the baseline, and the name the result rows already on
-    disk were written under. Anything else names its mesh and its pixel count:
-    ``rect_40``, ``delaunay_1250``.
+    disk were written under. ``delaunay`` at its default 1250 vertices is
+    :data:`DELAUNAY_BASE_VARIANT` (``"slam_delaunay"``), the standard SLaM
+    Delaunay run. Anything else names its mesh and its pixel count:
+    ``rect_40``, ``delaunay_1500``.
 
     The lens-light mode is part of the variant too: ``fixed`` appends
-    :data:`LENS_LIGHT_FIXED_SUFFIX` (``slam_base_lightfixed``,
-    ``delaunay_1250_lightfixed``) and ``linear`` appends nothing.
+    :data:`LENS_LIGHT_FIXED_SUFFIX` (``slam_base_light_fixed``,
+    ``slam_delaunay_light_fixed``) and ``linear`` appends nothing.
     ``lens_light_mode`` names the single mode to resolve; it defaults to the
     run's ``--lens-light``, and ``both`` has no single variant, so a caller
     resolving a ``both`` run must name the mode it means.

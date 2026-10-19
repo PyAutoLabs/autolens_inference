@@ -2,11 +2,11 @@
 #
 # SLaM Delaunay-1250 variant on HST — the A100 leg, sparse inversion, seeds 0-1.
 #
-# This is the `delaunay_1250` run VARIANT, not another backend of the base run: the two
+# This is the `slam_delaunay` run VARIANT (`delaunay_1250` before 2026-10-19), not another backend of the base run: the two
 # pixelized source stages are `al.mesh.Delaunay` at 1250 Hilbert-drawn vertices (plus a
 # 30-point zeroed edge ring) under the `AdaptSplit` class, where `slam_base` runs a 28x28
 # (784-cell) adaptive rectangular mesh under `reg.Adapt`. The variant is a directory level and a field of the target id
-# (`hst/slam5_delaunay_1250/seed<n>`), so these rows never join the base run's parity row —
+# (`hst/slam5_slam_delaunay/seed<n>`), so these rows never join the base run's parity row —
 # a mesh is a different model, and only the backend may be a column of one table.
 # See AGENTS.md, "Config names and parity rows", and scripts/imaging/slam/README.md.
 #
@@ -107,7 +107,7 @@ echo "=========================================="
 date
 echo "Cell:       imaging/slam/hst_delaunay"
 echo "Instrument: hst"
-echo "Variant:    delaunay_1250"
+echo "Variant:    slam_delaunay"
 echo "Config:     hpc_a100_jax_gpu_sparse_fp64"
 echo "Seed:       $SLURM_ARRAY_TASK_ID"
 

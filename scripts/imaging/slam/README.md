@@ -6,7 +6,8 @@ to end, stage by stage.
 The first leaf landed in phase 3: [`rectangular baseline`](../rectangular/baseline_slam.py), the backend-parameterised base-run
 driver, exercised by the phase-4 Cortex task `slam_hst_base`. [`Delaunay baseline`](../delaunay/baseline_slam.py)
 joined it: the same chain and the same runner, with the two pixelized source stages on a
-1250-vertex Delaunay mesh — the `delaunay_1250` **run variant**.
+1250-vertex Delaunay mesh — the `slam_delaunay` **run variant**, the standard SLaM Delaunay
+chain (named `delaunay_1250` before 2026-10-19; the September rows keep that name).
 
 ## Running a leg
 
@@ -93,14 +94,15 @@ fit. Only the backend may be a column of one table.
 | variant | mesh | source stages | regularization | leaf |
 |---|---|---|---|---|
 | `slam_base` | `rect`, 28x28 = 784 cells | `RectangularBilinearAdaptDensity` then `…AdaptImage` | `al.reg.Adapt` (class) | [`rectangular baseline`](../rectangular/baseline_slam.py) |
-| `delaunay_1250` | `delaunay`, 1250 interior vertices (+30 zeroed edge) drawn by `al.image_mesh.Hilbert` | `al.mesh.Delaunay` on both | `al.reg.AdaptSplit` (class) | [`Delaunay baseline`](../delaunay/baseline_slam.py) |
+| `slam_delaunay` | `delaunay`, 1250 interior vertices (+30 zeroed edge) drawn by `al.image_mesh.Hilbert` | `al.mesh.Delaunay` on both | `al.reg.AdaptSplit` (class) | [`Delaunay baseline`](../delaunay/baseline_slam.py) |
 
 `--mesh-pixels` means a different thing per family and the two numbers are not comparable:
 the side of the square mesh under `rect`, the vertex count outright under `delaunay`. The
-workspace default (`rect` at 28) is the one variant not named after its mesh — it is
-`slam_base`, the baseline, and the name the rows already on disk were written under. Every
-other combination names itself: `delaunay_1250`, `rect_40`. Its target id says so too —
-`hst/slam5/seed0` for the base run, `hst/slam5_delaunay_1250/seed0` for the variant.
+workspace default (`rect` at 28) is `slam_base`, the baseline, and the name the rows
+already on disk were written under; the Delaunay default (1250 vertices) is `slam_delaunay`,
+the standard SLaM Delaunay chain. Every other combination names itself: `delaunay_1500`,
+`rect_40`. Its target id says so too — `hst/slam5/seed0` for the base run,
+`hst/slam5_slam_delaunay/seed0` for the Delaunay variant.
 
 ## The lens-light mode: a variant, not a config
 
@@ -109,16 +111,16 @@ other combination names itself: `delaunay_1250`, `rect_40`. Its target id says s
 | `--lens-light` | `mass_total[1]` lens light | variant |
 |---|---|---|
 | `linear` (default) | `light[1]`'s instance: the linear MGE, intensities re-solved by every inversion | `slam_base` (unchanged) |
-| `fixed` | the same profiles as **ordinary** ones carrying the intensities `light[1]`'s maximum-likelihood fit solved for (`FitImaging.model_obj_linear_light_profiles_to_light_profiles`), so the inversion carries no lens-light columns | `slam_base_lightfixed` |
+| `fixed` | the same profiles as **ordinary** ones carrying the intensities `light[1]`'s maximum-likelihood fit solved for (`FitImaging.model_obj_linear_light_profiles_to_light_profiles`), so the inversion carries no lens-light columns | `slam_base_light_fixed` |
 | `both` | stages 1–4 once, then `mass_total[1]` linear, then fixed — two rows from one process | both of the above |
 
 Everything else in the stage — the `PowerLaw` chained from `source_pix[1]`'s `Isothermal`
 with the centre unfixed, the source from `source_pix[2]`, the positions likelihood, the adapt
 images, Nautilus `n_live=150` / `n_batch=20` and the seed — is identical, and the driver
 refuses a `fixed` model that still holds a linear light profile. The rule is the mesh's:
-`<variant>_lightfixed` for any mesh (`delaunay_1250_lightfixed`), and `linear` appends nothing,
+`<variant>_light_fixed` for any mesh (`slam_delaunay_light_fixed`), and `linear` appends nothing,
 so no existing row or output path moves. The target id carries it
-(`hst/slam5_slam_base_lightfixed/seed0`), so the two modes never share a parity group.
+(`hst/slam5_slam_base_light_fixed/seed0`), so the two modes never share a parity group.
 
 Only the mass stage's PyAutoFit `path_prefix` carries the light-mode variant; stages 1–4 keep
 the mesh-only variant's prefix, so a `fixed` run **resumes** a completed `linear` chain's
@@ -155,8 +157,10 @@ likelihood there. Sharing it makes the numba and jax_cpu chains identical throug
 which tightens their parity downstream.
 
 - **What it does.** For each listed stage, the PyAutoFit `path_prefix` names the other config
-  (`slam/<dataset_class>/<instrument>/<variant>/<other config>/seed_<n>`, same output root,
-  variant and seed). The completed fit there is loaded exactly as a PyAutoFit resume loads one,
+  (`<dataset_class>/<instrument>/slam/slam_base/<other config>/seed_<n>`, same output root
+  and seed). The variant level is always `slam_base`: a shareable stage is parametric, with
+  no mesh and no light mode, so it is one fit for every variant, and a `slam_delaunay` leg
+  loads the copy the rectangular chain fitted (autolens_inference#38). The completed fit there is loaded exactly as a PyAutoFit resume loads one,
   and is used only as a result object for prior passing. Stages 2–5 are this leg's own fits,
   and `use_jax=False` stays on every Analysis a numba leg builds.
 - **Only `source_lp` may be shared.** A pixelized stage's inversion is what a backend

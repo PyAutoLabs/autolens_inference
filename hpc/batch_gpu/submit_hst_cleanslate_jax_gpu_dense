@@ -6,7 +6,7 @@
 # the Nautilus SLaM base re-measured from scratch on PyAuto release 2026.10.17.1, seeds 0-1, with
 # mass_total[1] run under BOTH lens-light modes from one chain (`--lens-light both`): stages 1-4
 # once, then mass_total[1] with the linear lens light (variant `slam_base`) and again with the lens
-# light fixed to ordinary profiles at light[1]'s solved intensities (variant `slam_base_lightfixed`).
+# light fixed to ordinary profiles at light[1]'s solved intensities (variant `slam_base_light_fixed`).
 #
 # Pinned, fresh, never resumed:
 #   - PYAUTO_LIB_BASE points PYTHONPATH at the private pin directory (five checkouts at tag
@@ -74,7 +74,7 @@ date
 echo "Cell:       imaging/slam/hst"
 echo "Instrument: hst"
 echo "Config:     hpc_a100_jax_gpu_dense_fp64"
-echo "Light:      both (slam_base + slam_base_lightfixed)"
+echo "Light:      both (slam_base + slam_base_light_fixed)"
 echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
 echo "Seed:       $SLURM_ARRAY_TASK_ID"
 

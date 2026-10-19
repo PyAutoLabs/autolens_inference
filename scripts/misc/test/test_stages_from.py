@@ -140,6 +140,17 @@ def test_the_shared_prefix_names_the_other_config_at_this_variant_and_seed():
     assert _runner.shared_stage_prefixes(_cli(stages_from=None), "imaging", "hst", "x", 1) == {}
 
 
+def test_a_delaunay_run_shares_the_base_runs_parametric_stage():
+    """``source_lp[1]`` has no mesh, so it is one fit for every variant: a
+    ``slam_delaunay`` leg (or ``rect_40``) loads the copy fitted under ``slam_base``,
+    never a ``slam_delaunay/<config>/`` tree nobody fitted it in (autolens_inference#38)."""
+    expected = {"source_lp": Path("autolens/imaging/hst/slam/slam_base") / JAX / "seed_0"}
+    delaunay = _cli(mesh="delaunay", mesh_pixels=1250)
+    assert _inference_cli.base_variant_name(delaunay) == "slam_delaunay"
+    for variant in ("slam_delaunay", "rect_40", "slam_base"):
+        assert _runner.shared_stage_prefixes(delaunay, "imaging", "hst", variant, 0) == expected
+
+
 def _stage_dir(seed_dir: Path, *, completed: bool) -> Path:
     stage = seed_dir / "source_lp[1]" / "0123abcd"
     (stage / "files").mkdir(parents=True)
@@ -333,15 +344,46 @@ def test_summary_carries_the_shared_stage(tmp_path):
 # The two submits
 # ---------------------------------------------------------------------------
 
+#: name -> (inversion, mem, config-name prefix, leaf, thread caps exported). The sparse
+#: legs are the #38 reruns on `hpc_ral` with the BLAS pools pinned; the dense submit is
+#: the superseded 10-17 leg, kept as written.
 NUMBA = {
-    "batch_cpu/submit_hst_cleanslate_numba_cpu_dense": ("dense", "48gb"),
-    "batch_cpu/submit_hst_cleanslate_numba_cpu_sparse": ("sparse", "64gb"),
+    "batch_cpu/submit_hst_cleanslate_numba_cpu_dense": (
+        "dense",
+        "48gb",
+        "hpc_a100",
+        "scripts/imaging/rectangular/baseline_slam.py",
+        False,
+    ),
+    "batch_cpu/submit_hst_cleanslate_numba_cpu_sparse": (
+        "sparse",
+        "64gb",
+        "hpc_ral",
+        "scripts/imaging/rectangular/baseline_slam.py",
+        True,
+    ),
+    "batch_cpu/submit_hst_cleanslate_numba_cpu_sparse_delaunay": (
+        "sparse",
+        "96gb",
+        "hpc_ral",
+        "scripts/imaging/delaunay/baseline_slam.py",
+        True,
+    ),
 }
+
+THREAD_CAPS = (
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OMP_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+)
 
 
 @pytest.mark.parametrize("name", sorted(NUMBA))
 def test_the_numba_submits_pass_the_gate_wait_and_share(name):
-    inversion, mem = NUMBA[name]
+    inversion, mem, where, leaf, capped = NUMBA[name]
+    config = f"{where}_numba_cpu_{inversion}_fp64"
     text = (REPO_ROOT / "hpc" / name).read_text()
     assert check_submits.check_text(text, name) == []
     for line in (
@@ -363,11 +405,10 @@ def test_the_numba_submits_pass_the_gate_wait_and_share(name):
     for flag in (
         "--backend numba_cpu",
         f"--inversion {inversion}",
-        f"--config-name hpc_a100_numba_cpu_{inversion}_fp64",
+        f"--config-name {config}",
         "--lens-light both",
         f"--stages-from {JAX}:source_lp",
-        "--export-prepared output/autolens/prepared/"
-        f"hpc_a100_numba_cpu_{inversion}_fp64/seed_$SLURM_ARRAY_TASK_ID",
+        f"--export-prepared output/autolens/prepared/{config}/seed_$SLURM_ARRAY_TASK_ID",
         "--seed $SLURM_ARRAY_TASK_ID",
     ):
         assert flag in text, flag
@@ -377,4 +418,10 @@ def test_the_numba_submits_pass_the_gate_wait_and_share(name):
     assert shared_dir in text
     wait = 'bash hpc/wait_for_stage.sh "$SHARED_SEED_DIR" source_lp 300 28800'
     assert wait in text
-    assert text.index(wait) < text.index("python3 scripts/imaging/rectangular/baseline_slam.py")
+    assert text.index(wait) < text.index(f"python3 {leaf}")
+    # #38: the reruns pin every BLAS/OpenMP pool to one thread BEFORE python3.
+    for var in THREAD_CAPS:
+        line = f"\nexport {var}=1\n"
+        assert (line in text) == capped, var
+        if capped:
+            assert text.index(line) < text.index(f"python3 {leaf}")

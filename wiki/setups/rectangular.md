@@ -14,7 +14,7 @@ The lens-light mode is a run variant of this setup, never a config:
 `--lens-light linear` (default) is `slam_base`; `--lens-light fixed` fits
 `mass_total[1]` with the lens light fixed to ordinary profiles at the intensities
 `light[1]`'s maximum-likelihood fit solved for, as the variant
-`slam_base_lightfixed`; `--lens-light both` runs stages 1 to 4 once and the mass
+`slam_base_light_fixed`; `--lens-light both` runs stages 1 to 4 once and the mass
 stage twice, writing one row per variant. Both variants bind to this setup id, so
 a prepared mass problem of either mode runs under the rectangular sampler leaves
 (`--export-prepared DIR` writes `DIR/<variant>/` under `both`).

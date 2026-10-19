@@ -75,12 +75,14 @@ leaf when the cost profile changes; never merely because a flag changed.
 
 **The run variant is a path level, `<variant>`, between the instrument and the config name**
 — in `results/`, in the PyAutoFit `output/` tree, and as a field of the `target` id
-(`hst/slam5_delaunay_1250/seed0`). It says *what was fitted*, where the config name says
+(`hst/slam5_slam_delaunay/seed0`). It says *what was fitted*, where the config name says
 *what ran it*. It exists because rows group into a parity row by `target`: without it, a
 mesh experiment would sit in the base run's directory and its parity group and read as just
 another backend of the same fit. `--mesh {rect,delaunay}` / `--mesh-pixels N` resolve it;
-`rect` at 28 is `slam_base`, the baseline, and everything else names itself
-(`delaunay_1250`, `rect_40`).
+`rect` at 28 is `slam_base`, the baseline; `delaunay` at its default 1250 Hilbert vertices
+is `slam_delaunay`, the standard SLaM Delaunay chain; everything else names itself
+(`delaunay_1500`, `rect_40`). Rows written before 2026-10-19 carry the old Delaunay name
+`delaunay_1250`.
 
 **Import model.** Leaves sit several levels below the repo root, so each finds the root by
 walking up to the directory containing `ruff.toml` (a depth-proof sentinel) and puts both
@@ -93,10 +95,13 @@ importable by their top-level names with no per-file path math: `_inference_cli`
 Every run carries a `--config-name` built from a fixed grammar:
 
 ```
-{local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
+{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
 ```
 
-- **where** — `local` (this laptop) or `hpc_a100` (RAL, `gpu` partition).
+- **where** — `local` (this laptop), `hpc_a100` (RAL, `gpu` partition — the A100 legs) or
+  `hpc_ral` (RAL CPU node, `ral` partition — the numba_cpu legs from 2026-10-19 on). Older
+  CPU rows still carry `hpc_a100` because the prefix once meant "on RAL"; never read it as
+  an A100 on a `numba_cpu` / `jax_cpu` row.
 - **backend** — `jax_cpu`, `numba_cpu`, or `jax_gpu`.
 - **inversion** — `dense` (mapping matrix) or `sparse` (w-tilde operator).
 - **precision** — `fp64`, or `mp` for the targeted mixed-precision paths.
@@ -109,7 +114,7 @@ does not carry, that difference is a bug in the run, not a new table: fix the ru
 The first parity row is the 5-stage HST SLaM chain across
 numba-CPU / JAX-CPU / A100 × dense / sparse.
 The lens-light mode (`--lens-light linear|fixed|both`) is a run **variant**, never a
-config: `fixed` names its own variant (`slam_base_lightfixed`) and its own parity rows.
+config: `fixed` names its own variant (`slam_base_light_fixed`) and its own parity rows.
 
 ## Backend facts (get these wrong and the parity row is a lie)
 

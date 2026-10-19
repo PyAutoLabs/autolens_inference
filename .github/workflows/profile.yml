@@ -78,7 +78,7 @@ jobs:
           - backend: jax_cpu
             inversion: dense
             script: scripts/imaging/delaunay/baseline_slam.py
-            variant: delaunay_1250
+            variant: slam_delaunay
             # NOT 2. The Delaunay mesh reaches qhull through a
             # `jax.pure_callback`, so the fit calls back into the host while an
             # XLA computation is in flight, and a CPU thread pool narrower than

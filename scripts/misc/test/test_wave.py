@@ -40,7 +40,7 @@ def test_run_ids_follow_the_grammar_and_are_unique():
     ids = [a.run_id(GPU) for a in wave.arms()]
     assert len(set(ids)) == 24
     assert ids[0] == "cs1017_hpc_a100_jax_gpu_dense_fp64_slam_base_nautilus_s0"
-    assert ids[23] == "cs1017_hpc_a100_jax_gpu_dense_fp64_slam_base_lightfixed_smc_s2"
+    assert ids[23] == "cs1017_hpc_a100_jax_gpu_dense_fp64_slam_base_light_fixed_smc_s2"
     assert all(re.fullmatch(r"[A-Za-z0-9_]+", i) for i in ids)
     assert not set(ids) & {a.run_id(CPU) for a in wave.arms()}
 
@@ -62,14 +62,14 @@ def manifest(root, config, variant, pid):
 
 def test_leaf_args_read_the_problem_id_from_the_manifest(tmp_path):
     manifest(tmp_path, GPU, "slam_base", "prepared-aaa")
-    manifest(tmp_path, GPU, "slam_base_lightfixed", "prepared-bbb")
+    manifest(tmp_path, GPU, "slam_base_light_fixed", "prepared-bbb")
     args = wave.leaf_args(tmp_path, 14, GPU, 0, "ral-a100-1gpu-4cpu", 4)
     a = wave.arm(14)
-    assert (a.variant, a.sampler, a.seed) == ("slam_base_lightfixed", "nuts", 1)
+    assert (a.variant, a.sampler, a.seed) == ("slam_base_light_fixed", "nuts", 1)
     opts = dict(zip(args[::2], args[1::2]))
     assert opts["--prepared"] == (
         "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_0/"
-        "slam_base_lightfixed/manifest.json"
+        "slam_base_light_fixed/manifest.json"
     )
     assert opts["--problem-id"] == "prepared-bbb"
     assert opts["--run-id"] == a.run_id(GPU)
@@ -184,7 +184,7 @@ def row(results, a, config, attempt=1, **kw):
 
 def test_account_reports_row_failed_missing_and_deferred_never_success(tmp_path):
     results = tmp_path / "results"
-    arms = wave.arms()  # 0 nautilus, 1 emcee, 2 nuts, 3 smc; 4-7 lightfixed; 8-15 seed 1
+    arms = wave.arms()  # 0 nautilus, 1 emcee, 2 nuts, 3 smc; 4-7 light_fixed; 8-15 seed 1
     row(results, arms[0], GPU, status="complete", completed=True)
     row(results, arms[1], GPU, status="failed: RuntimeError: boom", completed=False)
     row(results, arms[2], GPU, status="failed: JaxRuntimeError: OOM", completed=False)

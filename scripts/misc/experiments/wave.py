@@ -55,7 +55,7 @@ RUN_PREFIX = "cs1017"
 PREPARED_ROOT = "output/autolens/prepared"
 RESULTS_DIR = "results/searches/experiments"
 
-VARIANTS = ("slam_base", "slam_base_lightfixed")
+VARIANTS = ("slam_base", "slam_base_light_fixed")
 SAMPLERS = ("nautilus", "emcee", "nuts", "smc")
 SEEDS = (0, 1, 2)
 
@@ -84,7 +84,7 @@ DEFERRED = {
 ATTEMPT_SUFFIX = re.compile(r"_a([0-9]+)$")
 
 CONFIG_GRAMMAR = re.compile(
-    r"(local|hpc_a100)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse)_(fp64|mp)"
+    r"(local|hpc_a100|hpc_ral)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse)_(fp64|mp)"
 )
 
 

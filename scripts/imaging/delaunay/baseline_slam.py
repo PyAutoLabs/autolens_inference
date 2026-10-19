@@ -7,9 +7,10 @@ stages on ``al.mesh.Delaunay`` at 1250 vertices instead of the 28x28 (784-cell)
 adaptive rectangular mesh. The vertices are drawn by an ``al.image_mesh.Hilbert``
 image mesh from the S/N-capped source adapt image and given a 30-point circle
 edge ring (which is the mesh's ``zeroed_pixels``), exactly as production group
-SLaM does — see ``scripts/imaging/slam/README.md``, "The Delaunay recipe". — the ``delaunay_1250`` run variant, which lands in
-its own ``results/slam/imaging/hst/delaunay_1250/`` tree and its own
-``hst/slam5_delaunay_1250/seed<n>`` parity group rather than joining the base
+SLaM does — see ``scripts/imaging/slam/README.md``, "The Delaunay recipe". — the ``slam_delaunay`` run variant
+(the standard SLaM Delaunay chain; ``delaunay_1250`` before 2026-10-19), which lands in
+its own ``results/slam/imaging/hst/slam_delaunay/`` tree and its own
+``hst/slam5_slam_delaunay/seed<n>`` parity group rather than joining the base
 run's.
 
     python3 scripts/imaging/delaunay/baseline_slam.py --backend jax_gpu \
