@@ -5,7 +5,7 @@
 #
 # PyAutoInsight campaign `hst-imaging-mass-samplers`, task `hst_mass_samplers_wave1`
 # (autolens_inference#27). Phase 2 (`submit_hst_cleanslate_jax_gpu_dense`) exports the frozen
-# problems to output/prepared/cleanslate_2026_10_17/hpc_a100_jax_gpu_dense_fp64/seed_<n>/<variant>/;
+# problems to output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_<n>/<variant>/;
 # this array runs every sampler `scripts/misc/experiments/run.py` supports, cold, on the base-seed-0
 # problem of `slam_base` and `slam_base_lightfixed`. Submit it ONLY with a dependency on that base
 # array, so no arm starts before its problem exists:

@@ -143,7 +143,7 @@ def build_catalogue(summary, root):
     records = {r["id"]: r for r in doc["records"]}
     known = {s["id"] for s in doc["setups"]}
     seen = {}
-    for directory in (root / "prepared", root / "output/prepared"):
+    for directory in (root / "prepared", root / "output/autolens/prepared"):
         for path in sorted(directory.rglob("manifest.json")):
             try:
                 manifest = json.loads(path.read_text())

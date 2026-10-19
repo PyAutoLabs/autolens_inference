@@ -343,10 +343,10 @@ def test_the_variant_is_a_directory_level_in_the_output_tree():
     each other's fit."""
     assert _runner.output_path_prefix(
         "imaging", "hst", "slam_base", "local_jax_cpu_dense_fp64", 0
-    ) == Path("slam/imaging/hst/slam_base/local_jax_cpu_dense_fp64/seed_0")
+    ) == Path("autolens/imaging/hst/slam/slam_base/local_jax_cpu_dense_fp64/seed_0")
     assert _runner.output_path_prefix(
         "imaging", "hst", "delaunay_1250", "local_jax_cpu_dense_fp64", 0
-    ) == Path("slam/imaging/hst/delaunay_1250/local_jax_cpu_dense_fp64/seed_0")
+    ) == Path("autolens/imaging/hst/slam/delaunay_1250/local_jax_cpu_dense_fp64/seed_0")
 
 
 def test_only_the_base_variant_keeps_the_bare_target_id():

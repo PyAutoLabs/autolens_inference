@@ -563,11 +563,14 @@ def test_the_cleanslate_submits_pass_the_gate_and_say_what_they_claim(name):
         f"--inversion {inversion}",
         f"--config-name hpc_a100_{backend}_{inversion}_fp64",
         "--lens-light both",
-        "--output-dir output/cleanslate_2026_10_17",
-        "--results-tag cleanslate_2026_10_17",
+        f"--export-prepared output/autolens/prepared/hpc_a100_{backend}_{inversion}_fp64/"
+        "seed_$SLURM_ARRAY_TASK_ID",
         "--seed $SLURM_ARRAY_TASK_ID",
     ):
         assert flag in text, flag
+    # #35: the default output root and plain rows; the dated root and tag are gone.
+    command = "\n".join(line for line in text.splitlines() if not line.startswith("#"))
+    assert "--output-dir" not in command and "--results-tag" not in command
     assert "export JAX_ENABLE_X64=True" in text and "export NPROC=$SLURM_CPUS_PER_TASK" in text
     if partition == "gpu":
         assert "#SBATCH --gres=gpu:1\n" in text and "export JAX_PLATFORMS=cuda,cpu" in text

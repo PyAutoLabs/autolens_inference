@@ -142,7 +142,7 @@ def test_portable_export_survives_missing_local_output(tmp_path, monkeypatch):
     )
     local = prepared.export_problem(
         tmp_path,
-        Path("output/prepared/test"),
+        Path("output/autolens/prepared/test"),
         Model(),
         SimpleNamespace(dataset={"data": [1]}),
         setup_id="imaging/rectangular/hst",

@@ -141,7 +141,9 @@ Hazards (inherited from the SLaM runner; see ``slam/_runner.py``)
   is parsed first and the modelling stack is imported inside the driver.
 - ``config_name`` and ``seed_<n>`` live in the PyAutoFit ``path_prefix``:
   ``seed`` is an identifier field and ``config_name`` is not, so two legs that
-  differ only in config would resume each other's fit.
+  differ only in config would resume each other's fit. The full prefix is
+  ``autolens/<dataset_class>/<instrument>/searches/<sampler>/<variant>/<config_name>/seed_<n>``
+  (dataset class, instrument, then pipeline, as the SLaM runner's).
 - ``--inversion`` is meaningless for a point source (there is no inversion); the
   config-name grammar still carries the field, so this leaf accepts only
   ``dense`` and says so in the row (``inversion_applies: false``).
@@ -408,10 +410,11 @@ def output_path_prefix(
     """The PyAutoFit ``path_prefix`` — config name and seed in the PATH (see the
     module docstring)."""
     return (
-        Path("searches")
+        Path("autolens")
         / dataset_class
-        / sampler
         / instrument
+        / "searches"
+        / sampler
         / variant
         / config_name
         / f"seed_{seed}"

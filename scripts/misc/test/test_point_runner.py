@@ -181,7 +181,9 @@ def test_output_path_prefix_carries_config_and_seed():
         "point_source", "nautilus", "simple", "source_plane_solved", "cfg", 2
     )
     assert prefix.parts[-2:] == ("cfg", "seed_2")
-    assert prefix.parts[0] == "searches"
+    assert prefix == Path(
+        "autolens/point_source/simple/searches/nautilus/source_plane_solved/cfg/seed_2"
+    )
 
 
 def test_target_id():

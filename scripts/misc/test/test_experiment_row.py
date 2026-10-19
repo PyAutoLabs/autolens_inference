@@ -73,14 +73,14 @@ def test_write_row_coerces_rather_than_losing_a_completed_row(tmp_path):
     row = dict(
         status="complete",
         completed=True,
-        output_path="output/experiments/x",
+        output_path="output/autolens/experiments/x",
         max_likelihood_parameters={("a.b",): 1.0, ("c", "d"): float("nan")},
     )
     run.write_row(destination, row)
     doc = json.loads(destination.read_text())
     assert doc["max_likelihood_parameters"] == {"a.b": 1.0, "c.d": None}
     assert doc["status"].startswith("complete; diagnostics failed: row serialisation coerced")
-    assert doc["completed"] is True and doc["output_path"] == "output/experiments/x"
+    assert doc["completed"] is True and doc["output_path"] == "output/autolens/experiments/x"
 
 
 def test_write_row_keeps_a_failed_status_and_writes_a_clean_row_unchanged(tmp_path):

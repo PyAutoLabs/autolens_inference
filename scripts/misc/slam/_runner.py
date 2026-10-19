@@ -1409,7 +1409,9 @@ def results_paths(
     already use — so a re-measurement of the same variant, config and seed (the
     2026-10-17 clean slate re-runs the configs the 2026-09-24 rows were written
     under) can never overwrite the earlier row, locally or through
-    ``hpc/sync pull``. The row's ``config_name`` field is unchanged.
+    ``hpc/sync pull``. The row's ``config_name`` field is unchanged. (The clean
+    slate itself no longer tags: #35 archived the 2026-09-24 rows it was kept
+    apart from, so its rows take the plain ``<config_name>`` directory.)
 
     One file per ``(config_name, seed)`` — the seed is in the *filename*, not
     only in the payload, so a reliability sweep over seeds does not overwrite
@@ -1426,7 +1428,12 @@ def results_paths(
 def output_path_prefix(
     dataset_class: str, instrument: str, variant: str, config_name: str, seed: int
 ) -> Path:
-    """The PyAutoFit ``path_prefix`` for one leg.
+    """The PyAutoFit ``path_prefix`` for one leg:
+    ``autolens/<dataset_class>/<instrument>/slam/<variant>/<config_name>/seed_<n>``.
+
+    Under the output root this reads dataset class, instrument, then pipeline,
+    with the pipeline's variant and config as the innermost levels (#35 dropped
+    the dated ``cleanslate_2026_10_17/slam/<dataset_class>/<instrument>`` root).
 
     ``config_name`` and ``seed_<n>`` live in the PATH, not only in the payload:
     ``seed`` is an autofit identifier field but ``config_name`` is not, so two
@@ -1436,7 +1443,15 @@ def output_path_prefix(
     identifier field either, so a Delaunay leg and a rectangular leg of the same
     config and seed would collide in exactly the same way.
     """
-    return Path("slam") / dataset_class / instrument / variant / config_name / f"seed_{seed}"
+    return (
+        Path("autolens")
+        / dataset_class
+        / instrument
+        / "slam"
+        / variant
+        / config_name
+        / f"seed_{seed}"
+    )
 
 
 def target_id(instrument: str, variant: str, seed: int) -> str:

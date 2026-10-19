@@ -68,7 +68,7 @@ def test_leaf_args_read_the_problem_id_from_the_manifest(tmp_path):
     assert (a.variant, a.sampler, a.seed) == ("slam_base_lightfixed", "nuts", 1)
     opts = dict(zip(args[::2], args[1::2]))
     assert opts["--prepared"] == (
-        "output/prepared/cleanslate_2026_10_17/hpc_a100_jax_gpu_dense_fp64/seed_0/"
+        "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_0/"
         "slam_base_lightfixed/manifest.json"
     )
     assert opts["--problem-id"] == "prepared-bbb"
@@ -77,6 +77,12 @@ def test_leaf_args_read_the_problem_id_from_the_manifest(tmp_path):
     assert opts["--start"] == "cold" and opts["--compilation"] == "cold"
     assert opts["--hardware-id"] == "ral-a100-1gpu-4cpu"
     assert (opts["--warmup"], opts["--steps"], opts["--chains"]) == ("500", "1000", "1")
+
+
+def test_prepared_problems_live_under_the_flat_autolens_root():
+    """#35 dropped the dated level from the folder; the wave and run-id names keep it."""
+    assert wave.PREPARED_ROOT == "output/autolens/prepared"
+    assert wave.WAVE_ID == "cleanslate_2026_10_17_wave1" and wave.RUN_PREFIX == "cs1017"
 
 
 def test_leaf_args_refuse_a_missing_manifest_or_bad_config(tmp_path):

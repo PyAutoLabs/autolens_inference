@@ -16,11 +16,11 @@
 #     2026.10.17.1, hpc/README.md "Running against a pinned release"); the shared mirror is
 #     never pulled. PYAUTO_RELEASE_PIN is recorded in each row beside the library_revisions
 #     actually imported, and a reader checks one against the other.
-#   - `--output-dir output/cleanslate_2026_10_17` is a fresh PyAutoFit root, so the 2026-09-24
-#     trees under output/slam/ are never resumed.
-#   - `--results-tag cleanslate_2026_10_17` writes the rows under
-#     results/slam/imaging/hst/<variant>/<config_name>__cleanslate_2026_10_17/, so they can never
-#     overwrite the 2026-09-24 rows of the same config and seed (autolens_inference#23).
+#   - The PyAutoFit run tree is output/autolens/imaging/hst/slam/<variant>/<config_name>/seed_<n>/
+#     and the rows land under results/slam/imaging/hst/<variant>/<config_name>/. The 2026-09-24
+#     trees were moved aside on RAL and their rows archived, so nothing here is ever resumed or
+#     overwritten. (Until #35 flattened it, this campaign wrote under a dated
+#     output/cleanslate_2026_10_17/ root with `--results-tag cleanslate_2026_10_17`.)
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
 #   This submit runs ONE cell, `imaging/slam/hst`, all five stages plus a second mass_total[1],
@@ -80,9 +80,7 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
     --seed $SLURM_ARRAY_TASK_ID \
     --config-name hpc_a100_jax_cpu_sparse_fp64 \
     --lens-light both \
-    --output-dir output/cleanslate_2026_10_17 \
-    --results-tag cleanslate_2026_10_17 \
-    --export-prepared output/prepared/cleanslate_2026_10_17/hpc_a100_jax_cpu_sparse_fp64/seed_$SLURM_ARRAY_TASK_ID \
+    --export-prepared output/autolens/prepared/hpc_a100_jax_cpu_sparse_fp64/seed_$SLURM_ARRAY_TASK_ID \
     --cores $SLURM_CPUS_PER_TASK
 
 echo "Finished."
