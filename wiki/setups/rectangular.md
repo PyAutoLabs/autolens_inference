@@ -22,9 +22,10 @@ a prepared mass problem of either mode runs under the rectangular sampler leaves
 Clean slate (2026-10-17, PyAutoInsight `hst-imaging-mass-samplers` phase 1): the
 four `hpc/batch_*/submit_hst_cleanslate_*` submits re-measure the HST base on the
 pinned release 2026.10.17.1 (`jax_gpu` and `jax_cpu`, dense and sparse, seeds 0
-and 1, both light modes) into `output/cleanslate_2026_10_17/` and result rows
-tagged `cleanslate_2026_10_17`. Schema v3 rows record `library_revisions`,
-`release_pin` and `slurm_job_id`.
+and 1, both light modes) into `output/autolens/imaging/hst/slam/` with plain
+`<config_name>` rows (#35 flattened the dated `output/cleanslate_2026_10_17/` root
+and `cleanslate_2026_10_17` results tag the first arrays used). Schema v3 rows record
+`library_revisions`, `release_pin` and `slurm_job_id`.
 
 Sampler wave 1 (2026-10-17, phase 3, autolens_inference#27): the four sampler leaves
 (`nautilus`, `emcee`, `nuts`, `smc`) run cold at sampler seeds 0 to 2 on the base-seed-0
