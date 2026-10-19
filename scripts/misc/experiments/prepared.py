@@ -65,6 +65,41 @@ def library_revisions(root):
     return result
 
 
+#: The artifact kinds whose digests are part of a problem's scientific identity.
+IDENTITY_KINDS = (
+    "model_definition",
+    "model_snapshot",
+    "priors_definition",
+    "dataset_snapshot",
+    "analysis_snapshot",
+)
+
+
+def problem_id(hashes, *, controls, dependency_revisions, setup_id, stage):
+    """The ``prepared-<sha256>`` id: identity artifacts + controls (minus seed) + pins."""
+    identity = {key: hashes[key] for key in IDENTITY_KINDS}
+    identity.update(
+        controls={k: v for k, v in controls.items() if k != "seed"},
+        dependency_revisions=dependency_revisions,
+        setup_id=setup_id,
+        stage=stage,
+    )
+    return "prepared-" + digest(json_bytes(identity))
+
+
+def manifest_problem_id(doc, hashes=None):
+    """:func:`problem_id` of a manifest, from its own artifact digests unless given."""
+    if hashes is None:
+        hashes = {a["kind"]: a["sha256"] for a in doc["artifacts"]}
+    return problem_id(
+        hashes,
+        controls=doc["controls"],
+        dependency_revisions=doc["dependency_revisions"],
+        setup_id=doc["setup_id"],
+        stage=doc["stage"],
+    )
+
+
 def publish_manifest(root, doc):
     """Keep portable metadata tracked while bulk scientific snapshots stay local."""
     target = contained(root, Path("prepared") / doc["id"] / "manifest.json")
@@ -136,27 +171,17 @@ def export_problem(
         for kind, (filename, data) in contents.items()
     ]
     hashes = {a["kind"]: a["sha256"] for a in artifacts}
-    identity = {
-        key: hashes[key]
-        for key in (
-            "model_definition",
-            "model_snapshot",
-            "priors_definition",
-            "dataset_snapshot",
-            "analysis_snapshot",
-        )
-    }
     resolved_revisions = dependency_revisions or library_revisions(root)
-    identity.update(
-        controls={k: v for k, v in controls.items() if k != "seed"},
-        dependency_revisions=resolved_revisions,
-        setup_id=setup_id,
-        stage="mass_total[1]",
-    )
     manifest = {
         "schema": "prepared-inference-problem",
         "version": 1,
-        "id": "prepared-" + digest(json_bytes(identity)),
+        "id": problem_id(
+            hashes,
+            controls=controls,
+            dependency_revisions=resolved_revisions,
+            setup_id=setup_id,
+            stage="mass_total[1]",
+        ),
         "setup_id": setup_id,
         "dataset_id": "sha256:" + hashes["dataset_snapshot"],
         "model_id": "sha256:" + hashes["model_definition"],
@@ -228,23 +253,7 @@ def verify_manifest(root, manifest_path, *, expected_problem=None, revisions=Non
         if item["kind"] in hashes:
             raise ValueError("Duplicate prepared artifact kind")
         hashes[item["kind"]] = item["sha256"]
-    identity = {
-        key: hashes[key]
-        for key in (
-            "model_definition",
-            "model_snapshot",
-            "priors_definition",
-            "dataset_snapshot",
-            "analysis_snapshot",
-        )
-    }
-    identity.update(
-        controls={k: v for k, v in doc["controls"].items() if k != "seed"},
-        dependency_revisions=doc["dependency_revisions"],
-        setup_id=doc["setup_id"],
-        stage=doc["stage"],
-    )
-    if doc["id"] != "prepared-" + digest(json_bytes(identity)):
+    if doc["id"] != manifest_problem_id(doc, hashes):
         raise ValueError("Prepared scientific identity mismatch")
     for key, kind in [
         ("dataset_id", "dataset_snapshot"),

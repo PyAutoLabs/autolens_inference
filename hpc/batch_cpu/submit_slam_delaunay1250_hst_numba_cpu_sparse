@@ -3,11 +3,14 @@
 # SLaM Delaunay-1250 variant on HST — the numba_cpu leg, sparse inversion, seeds 0-1, on the
 # RAL CPU partition.
 #
-# This is the `delaunay_1250` run VARIANT, not another backend of the base run: the two
+# This is the `slam_delaunay` run VARIANT (`delaunay_1250` before 2026-10-19), not another backend of the base run: the two
 # pixelized source stages are `al.mesh.Delaunay` at 1250 Hilbert-drawn vertices (plus a
 # 30-point zeroed edge ring) under the `AdaptSplit` class, where `slam_base` runs a 28x28
 # (784-cell) adaptive rectangular mesh under `reg.Adapt`. Its rows sit beside the A100
 # Delaunay legs in the variant's own parity row, never in the base run's.
+# SUPERSEDED (2026-10-19, autolens_inference#38) by submit_hst_cleanslate_numba_cpu_sparse_delaunay:
+# this file sets no BLAS/OpenMP thread caps (its rows ran 6.6-9 s/eval, oversubscribed) and
+# uses the old `hpc_a100_` prefix for a CPU leg. Do not resubmit it.
 # There is NO `cpu` partition on RAL — this is `--partition=ral`; a submit that asks for
 # `cpu` is rejected by SLURM.
 #
@@ -65,7 +68,7 @@ echo "=========================================="
 date
 echo "Cell:       imaging/slam/hst_delaunay"
 echo "Instrument: hst"
-echo "Variant:    delaunay_1250"
+echo "Variant:    slam_delaunay"
 echo "Config:     hpc_a100_numba_cpu_sparse_fp64"
 echo "Seed:       $SLURM_ARRAY_TASK_ID"
 

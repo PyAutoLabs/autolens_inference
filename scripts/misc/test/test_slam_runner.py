@@ -19,6 +19,7 @@ modelling stack loads, which is impossible if importing the module loads it.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -317,7 +318,10 @@ def test_the_workspace_default_mesh_is_the_base_variant():
     """
     assert variant_name(_cli()) == "slam_base"
     assert variant_name(_cli(mesh_pixels=40)) == "rect_40"
-    assert variant_name(_cli(mesh="delaunay", mesh_pixels=1250)) == "delaunay_1250"
+    # The standard SLaM Delaunay run (the family default, 1250 Hilbert vertices)
+    # is named for what it is; any other vertex count keeps the derived name.
+    assert variant_name(_cli(mesh="delaunay", mesh_pixels=1250)) == "slam_delaunay"
+    assert variant_name(_cli(mesh="delaunay", mesh_pixels=1500)) == "delaunay_1500"
 
 
 def test_the_variant_is_a_directory_level_in_the_results_path(tmp_path):
@@ -355,6 +359,7 @@ def test_only_the_base_variant_keeps_the_bare_target_id():
     the same run under a different backend."""
     assert _runner.target_id("hst", "slam_base", 0) == "hst/slam5/seed0"
     assert _runner.target_id("hst", "delaunay_1250", 0) == "hst/slam5_delaunay_1250/seed0"
+    assert _runner.target_id("hst", "slam_delaunay", 1) == "hst/slam5_slam_delaunay/seed1"
     assert _runner.target_id("hst", "rect_40", 1) == "hst/slam5_rect_40/seed1"
     assert _runner.target_id("euclid", "delaunay_1250", 2) == "euclid/slam5_delaunay_1250/seed2"
 
@@ -650,20 +655,34 @@ def test_all_five_slam_stage_models_carry_the_expected_flat_field(monkeypatch):
 
 
 def test_backend_env_is_what_each_backend_needs(monkeypatch):
-    for key in ("PYAUTO_DISABLE_JAX", "JAX_PLATFORMS", "NPROC", "JAX_ENABLE_X64"):
+    thread_keys = tuple(_runner.NUMBA_THREAD_ENV)
+    for key in ("PYAUTO_DISABLE_JAX", "JAX_PLATFORMS", "NPROC", "JAX_ENABLE_X64") + thread_keys:
         monkeypatch.delenv(key, raising=False)
 
+    # numba_cpu pins the five BLAS/OpenMP pools to one thread: every forked
+    # Nautilus worker otherwise spawns a pool the size of the node
+    # (autolens_inference#38: 2.6 s/eval against ~0.07 s expected).
     assert _runner.set_backend_env("numba_cpu", 8) == {
         "JAX_ENABLE_X64": "True",
         "PYAUTO_DISABLE_JAX": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
     }
-    monkeypatch.delenv("PYAUTO_DISABLE_JAX", raising=False)
+    for key in thread_keys:
+        assert os.environ[key] == "1"
+    for key in ("PYAUTO_DISABLE_JAX",) + thread_keys:
+        monkeypatch.delenv(key, raising=False)
 
     assert _runner.set_backend_env("jax_cpu", 8) == {
         "JAX_ENABLE_X64": "True",
         "JAX_PLATFORMS": "cpu",
         "NPROC": "8",
     }
+    # The JAX legs leave the BLAS pools alone (one process, XLA sized by NPROC).
+    assert not any(key in os.environ for key in thread_keys)
 
     gpu = _runner.set_backend_env("jax_gpu", 4)
     assert gpu["JAX_PLATFORMS"] == "cuda,cpu"

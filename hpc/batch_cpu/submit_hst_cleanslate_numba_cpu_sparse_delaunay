@@ -1,0 +1,136 @@
+#!/bin/bash -l
+#
+# HST clean slate — `numba_cpu` x sparse on the RAL CPU partition, the STANDARD SLaM DELAUNAY
+# chain, both lens-light modes (`slam_delaunay` + `slam_delaunay_light_fixed`), seeds 0-1,
+# SHARING the jax_cpu dense chain's `source_lp[1]` (autolens_inference#31, #38). Config
+# `hpc_ral_numba_cpu_sparse_fp64`: a RAL CPU node, never an A100.
+#
+# `--partition=ral` ONLY. CPU arrays never go on `gpu` (nor `ral,gpu` / `gpu,ral`): bulk CPU
+# jobs there starve the A100s. There is NO `cpu` partition on RAL.
+#
+# The model is the production SLaM Delaunay pipeline, as autolens_workspace
+# scripts/group/slam.py builds it: the two pixelized source stages on `al.mesh.Delaunay` at
+# 1250 vertices drawn by `al.image_mesh.Hilbert` (1250 = hilbert_pixels_from_pixel_scale(0.05)
+# for HST) with weight_power 3.5 and weight_floor 0.01, a 30-point zeroed edge ring,
+# areas_factor 0.5, and a free `af.Model(al.reg.AdaptSplit)` (never `reg.Adapt`, which the
+# Delaunay family cannot trace under jit). At its default 1250 vertices the runner names this
+# variant `slam_delaunay` (target `hst/slam5_slam_delaunay/seed<n>`); the fixed-light mass stage
+# is `slam_delaunay_light_fixed`. It is the Delaunay sibling of
+# `submit_hst_cleanslate_numba_cpu_sparse` (the rectangular `slam_base` leg), submitted beside it.
+#
+# Thread caps (2026-10-19, autolens_inference#38). The earlier numba Delaunay rows
+# (`submit_slam_delaunay1250_hst_numba_cpu_sparse`, Sept) ran 6.6-9 s wall per evaluation, and
+# the 10-17 rectangular rows 2.6 s against ~0.06-0.08 s expected: no submit set
+# OPENBLAS/MKL/OMP/VECLIB/NUMEXPR_NUM_THREADS, so each of the 8 forked Nautilus workers ran a
+# BLAS pool the size of the node, and PyAutoFit warned about it every stage. The five are
+# exported as 1 below, before `python3`, as the autolens_profiling cells do.
+#
+#   - `--stages-from hpc_a100_jax_cpu_dense_fp64:source_lp`: stage 1 is LOADED from
+#     output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_<n>/ — the
+#     `slam_base` tree, not a `slam_delaunay` one: source_lp[1] is parametric (no mesh, no
+#     inversion), so it is the same model and search identifier for every variant, and the
+#     runner always resolves a shared stage under `slam_base` (#38). The row marks the stage
+#     `shared_from_config` and `chain_wall_s` excludes it. If the stage is not complete when
+#     the runner starts, it exits 3 and fits nothing.
+#   - `hpc/wait_for_stage.sh` polls for that stage every 5 min, capped at 8 h; the stage
+#     completed on 2026-10-18, so the wait returns at once and stays as the guard.
+#   - Stages 2-5 are this leg's own numba fits: `use_jax=False` on every Analysis, and
+#     PYAUTO_DISABLE_JAX=1 below as the process-wide belt.
+#   - Pinned like the rectangular leg and the shared jax_cpu stage: PYAUTO_LIB_BASE /
+#     PYAUTO_RELEASE_PIN = 2026.10.17.1.
+#   - `--export-prepared` lands each mode in `<dir>/<variant>/` (`slam_delaunay`,
+#     `slam_delaunay_light_fixed`), beside the rectangular leg's `slam_base*` folders under
+#     the same `hpc_ral_numba_cpu_sparse_fp64/seed_<n>/`: the variant level keeps them apart.
+#
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This submit runs ONE cell, `imaging/slam/hst_delaunay`: stages 2-5 fitted (stage 1
+#   loaded), plus a second mass_total[1]. It declares `unmeasured`: no rate measured on this
+#   cell's pixelized stages on a RAL node with the thread caps exists (the Sept numba rows ran
+#   uncapped and are superseded — no rate). The prior EXPECTATION, not a citation: the
+#   autolens_profiling Delaunay-1500 HST cell runs 0.93 s/call single-thread on a RAL core
+#   (library joint fnnls), 1250 slightly less, so ~0.12 s wall per evaluation over 8 workers.
+#   `steps:` is the chain's FLOOR (128 evals per live point x 725 live points = 92800), not an
+#   estimate. No `wall:` is offered. `--time` is a CONTAINMENT, not a derived budget. The
+#   first arm IS the probe: read `source_pix[1]`'s `wall_s / likelihood_evals` from its row;
+#   far above ~0.15 s/eval means the caps did not reach the workers.
+#   cell: imaging/slam/hst_delaunay  device: ral_numba_cpu  precision: fp64
+#   lanes: 1  steps: 92800  source: unmeasured  probe-first: yes
+#
+#SBATCH -J hst_cleanslate_numba_cpu_sparse_delaunay
+#SBATCH --partition=ral
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=96gb
+#SBATCH --time=5-00:00:00
+#SBATCH --array=0-1
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=james.w.nightingale@durham.ac.uk
+
+export AP_ROOT=/mnt/ral/jnightin/inference/autolens_inference
+
+# The release pin: exported BEFORE activate.sh, which reads PYAUTO_LIB_BASE.
+export PYAUTO_LIB_BASE=/mnt/ral/jnightin/inference/pins/2026.10.17.1
+export PYAUTO_RELEASE_PIN=2026.10.17.1
+source $AP_ROOT/activate.sh
+
+export JAX_PLATFORMS=cpu
+export JAX_ENABLE_X64=True
+
+# NPROC throttles JAX's CPU thread pool (JAX stays importable on a numba leg). Unset, a job
+# takes the whole node.
+export NPROC=$SLURM_CPUS_PER_TASK
+
+# PYAUTO_DISABLE_JAX is process-wide and belongs next to the --backend numba_cpu flag that
+# motivates it: the belt to use_jax=False's braces, never a substitute for the flag.
+export PYAUTO_DISABLE_JAX=1
+
+# One BLAS / OpenMP thread per process (autolens_inference#38). Nautilus forks
+# --cores workers; unpinned, each one runs a pool the size of the node and the
+# leg runs tens of times slower than its single-thread rate. Exported here,
+# before python3, because numpy/scipy read them at import.
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+export VECLIB_MAXIMUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+
+# --mem=96gb: the request of the earlier Delaunay numba submit and the A100 Delaunay legs. No
+# capped CPU measurement of this cell exists; the Delaunay smoke's peak RSS (9.3 GB dense /
+# 6.5 GB sparse on the smaller euclid cell) and the mesh's 1.6x pixel count over the
+# rectangular leg leave 64gb too thin a margin for a five-day job. Containment, not a
+# measurement.
+
+SHARED_SEED_DIR=$AP_ROOT/output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_$SLURM_ARRAY_TASK_ID
+
+echo "=========================================="
+date
+echo "Cell:       imaging/slam/hst_delaunay"
+echo "Instrument: hst"
+echo "Config:     hpc_ral_numba_cpu_sparse_fp64"
+echo "Light:      both (slam_delaunay + slam_delaunay_light_fixed)"
+echo "Shared:     source_lp[1] from hpc_a100_jax_cpu_dense_fp64 ($SHARED_SEED_DIR)"
+echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
+echo "Seed:       $SLURM_ARRAY_TASK_ID"
+
+cd $AP_ROOT
+
+# In-job wait: 5-minute polls, 8 h cap, exit 4 on timeout.
+bash hpc/wait_for_stage.sh "$SHARED_SEED_DIR" source_lp 300 28800
+
+# --mesh-pixels 1250 is the leaf's own default, passed so this file states what it runs.
+python3 scripts/imaging/delaunay/baseline_slam.py \
+    --instrument hst \
+    --backend numba_cpu \
+    --inversion sparse \
+    --mesh-pixels 1250 \
+    --seed $SLURM_ARRAY_TASK_ID \
+    --config-name hpc_ral_numba_cpu_sparse_fp64 \
+    --lens-light both \
+    --stages-from hpc_a100_jax_cpu_dense_fp64:source_lp \
+    --export-prepared output/autolens/prepared/hpc_ral_numba_cpu_sparse_fp64/seed_$SLURM_ARRAY_TASK_ID \
+    --cores $SLURM_CPUS_PER_TASK
+
+echo "Finished."
+date

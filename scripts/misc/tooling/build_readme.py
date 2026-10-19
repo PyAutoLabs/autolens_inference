@@ -40,16 +40,16 @@ the payload is ignored, and a row missing a key renders an em dash rather than
 failing the build:
 
     target          the thing being fitted — dataset + model + pipeline
-    variant         the run variant (slam_base / delaunay_1250 / ...), schema v2+
+    variant         the run variant (slam_base / slam_delaunay / ...), schema v2+
     lens_light_mode linear / fixed — how the lens light entered mass_total[1],
                     schema v3+ (absent = linear); ``fixed`` is also the
-                    ``_lightfixed`` variant suffix, so the two never share a
+                    ``_light_fixed`` variant suffix, so the two never share a
                     parity group
     results_tag     a re-measurement campaign tag (schema v3+, absent = none):
                     the row sits under ``<config_name>__<tag>/`` and forms
                     its own parity groups, apart from the untagged rows
     status          complete / stopped_early / failed: ... — only complete rows render
-    config_name     {local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
+    config_name     {local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
     instrument      hst / euclid / sma / ...
     sampler         nautilus / prodigy / nuts / ... (searches only)
     stage           pipeline stage name (slam only)

@@ -30,7 +30,7 @@ search that may or may not find the right answer. This repo measures that arrang
 **Configurations covered.** Every run carries a `--config-name` from one grammar:
 
 ```
-{local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
+{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
 ```
 
 A **parity row** is a set of runs sharing one target — same dataset, same model, same
@@ -57,7 +57,7 @@ have not run, so there is still nothing to compare them *to*.
 `scripts/misc/wall/rates.py` still holds only the two `source_lp[1]` rates the submits had
 to be sized against, because a completed wall on one cell is not a step rate for another.
 A **run variant** level now sits between the instrument and the config name
-(`slam_base`, `delaunay_1250`) so that a second mesh is a second experiment rather than a
+(`slam_base`, `slam_delaunay`) so that a second mesh is a second experiment rather than a
 seventh column. The ledger is [`wiki/project/state.md`](wiki/project/state.md).
 
 ## Pipeline runs

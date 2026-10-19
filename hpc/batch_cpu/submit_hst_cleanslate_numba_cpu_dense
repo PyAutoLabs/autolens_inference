@@ -3,6 +3,11 @@
 # HST clean slate — `numba_cpu` x dense on the RAL CPU partition, both lens-light modes, seeds 0-1,
 # SHARING the jax_cpu dense chain's `source_lp[1]` (autolens_inference#31).
 #
+# SUPERSEDED (2026-10-19, autolens_inference#38): this leg sets no BLAS/OpenMP thread caps,
+# so its forked Nautilus workers oversubscribed the node (~35x slow), and it carries the old
+# `hpc_a100_` prefix for a CPU leg. Kept as the record of what ran; the #38 reruns are the
+# sparse `hpc_ral_` submits. Do not resubmit it unchanged.
+#
 # `--partition=ral` ONLY. CPU arrays never go on `gpu` (nor `ral,gpu` / `gpu,ral`): bulk CPU
 # jobs there starve the A100s. There is NO `cpu` partition on RAL.
 #
@@ -80,7 +85,7 @@ date
 echo "Cell:       imaging/slam/hst"
 echo "Instrument: hst"
 echo "Config:     hpc_a100_numba_cpu_dense_fp64"
-echo "Light:      both (slam_base + slam_base_lightfixed)"
+echo "Light:      both (slam_base + slam_base_light_fixed)"
 echo "Shared:     source_lp[1] from hpc_a100_jax_cpu_dense_fp64 ($SHARED_SEED_DIR)"
 echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
 echo "Seed:       $SLURM_ARRAY_TASK_ID"

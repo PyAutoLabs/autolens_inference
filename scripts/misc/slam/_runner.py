@@ -61,7 +61,9 @@ Deliberate departures from ``slam_start_here.py``
 
 6. **``--stages-from`` loads a stage from another config's chain instead of
    fitting it** (autolens_inference#31). The stage's PyAutoFit ``path_prefix``
-   names the other config (same output root, variant and seed), so its
+   names the other config (same output root and seed; the variant level is
+   always ``slam_base``, because the parametric stage has no mesh — a
+   ``slam_delaunay`` leg loads the base run's copy), so its
    completed fit is loaded exactly as a PyAutoFit resume loads one, and the
    result is used only as a result object (prior passing). Only the parametric
    ``source_lp[1]`` may be shared (no inversion, so both CPU backends fit the
@@ -136,7 +138,7 @@ from _inference_cli import (  # noqa: E402
 #: the base variant when the field is absent, which is what those rows are.
 #:
 #: v3 added the lens-light mode and the row's provenance: ``lens_light_mode``
-#: (``linear`` / ``fixed``; the ``fixed`` mode is also the ``_lightfixed``
+#: (``linear`` / ``fixed``; the ``fixed`` mode is also the ``_light_fixed``
 #: variant suffix), ``library_revisions`` (the five import-selected PyAuto*
 #: checkouts' HEAD commits, or ``null`` with ``library_revisions_note`` when
 #: they cannot be pinned), ``release_pin`` (``PYAUTO_RELEASE_PIN``, exported by
@@ -270,14 +272,14 @@ def validate_config_name(cli: InferenceCLI) -> str | None:
     if cli.config_name is None:
         return (
             "--config-name is required. Grammar: "
-            "{local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
+            "{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
         )
 
     match = CONFIG_NAME_RE.match(cli.config_name)
     if match is None:
         return (
             f"--config-name {cli.config_name!r} does not match the grammar "
-            "{local,hpc_a100}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
+            "{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
         )
 
     _where, backend, inversion, precision = match.groups()
@@ -313,6 +315,18 @@ def config_name_precision(config_name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+#: The thread-pool variables a ``numba_cpu`` leg pins to ``"1"`` — see
+#: :func:`set_backend_env`. The same five autolens_profiling's
+#: ``_production_config.pin_thread_env`` sets.
+NUMBA_THREAD_ENV = {
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+}
+
+
 def set_backend_env(backend: str, cores: int) -> dict:
     """Export the environment the backend needs, returning what was set.
 
@@ -320,12 +334,26 @@ def set_backend_env(backend: str, cores: int) -> dict:
     are read by JAX at import, and ``PYAUTO_DISABLE_JAX`` by the library's
     ``jax_wrapper``. ``NPROC`` sizes XLA's CPU thread pool (an unset one lets a
     job take the whole node; ``NPROC=1`` costs ~3x on JAX-CPU).
+
+    ``numba_cpu`` also pins the five BLAS / OpenMP pools
+    (:data:`NUMBA_THREAD_ENV`) to one thread. A numba leg parallelises by
+    forking ``cores`` Nautilus workers, and each worker that inherits an
+    unpinned OpenBLAS / MKL pool spawns one thread per core of the node: the
+    2026-10-17 RAL sparse rows ran 2.6 s wall per evaluation against the
+    ~0.06-0.08 s the autolens_profiling single-thread rates predict for eight
+    workers, and PyAutoFit warned about it every stage (autolens_inference#38).
+    The profiling cells pin the same five (``_production_config.pin_thread_env``).
     """
     env = {"JAX_ENABLE_X64": "True"}
 
     if backend == "numba_cpu":
         # Belt (process-wide) to `use_jax=False`'s braces (per Analysis).
         env["PYAUTO_DISABLE_JAX"] = "1"
+        # One BLAS/OpenMP thread per forked worker. This only reaches libraries
+        # imported AFTER this call (numpy/scipy read these at import, and the
+        # runner may already have imported numpy), which is why the numba
+        # submits export the same five before `python3` as well.
+        env.update(NUMBA_THREAD_ENV)
     elif backend == "jax_cpu":
         env["JAX_PLATFORMS"] = "cpu"
         env["NPROC"] = str(cores)
@@ -484,12 +512,22 @@ def shared_stage_prefixes(
 ) -> dict[str, Path]:
     """``{stage_key: path_prefix}`` for the shared stages: the OTHER config's prefix.
 
-    The same output root, variant (stages 1 to 4 are the mesh-only variant
-    whatever the light mode) and seed as this run; only the config level names
-    the chain the stage is loaded from.
+    The same output root and seed as this run, the config level naming the chain
+    the stage is loaded from — and the variant level always
+    :data:`BASE_VARIANT`, whatever this run's ``variant``. Every shareable stage
+    (:data:`SHAREABLE_STAGES`, today only ``source_lp[1]``) is parametric: it
+    has no mesh and no light mode, so its model, search and identifier are the
+    same for ``slam_base``, ``rect_40`` and ``slam_delaunay``, and the one
+    completed copy lives in the base run's tree. Keying it by this run's
+    variant sent a ``slam_delaunay`` leg looking under
+    ``slam_delaunay/<shared_config>/`` for a stage only ever fitted under
+    ``slam_base/<shared_config>/`` (autolens_inference#38). ``variant`` is kept
+    in the signature so the call site does not change if a mesh-dependent
+    stage ever becomes shareable.
     """
+    del variant  # every shareable stage is mesh-free: see the docstring
     return {
-        stage: output_path_prefix(dataset_class, instrument, variant, shared_config, seed)
+        stage: output_path_prefix(dataset_class, instrument, BASE_VARIANT, shared_config, seed)
         for stage, shared_config in shared_stage_names(cli).items()
     }
 
@@ -1462,7 +1500,7 @@ def target_id(instrument: str, variant: str, seed: int) -> str:
     backends. A different experiment must never land in the base run's parity
     group: only :data:`BASE_VARIANT` keeps the bare ``<instrument>/slam5/seed<n>``
     id (the rows already on disk were written with it), and every other variant
-    says so in the id — ``hst/slam5_delaunay_1250/seed0``.
+    says so in the id — ``hst/slam5_slam_delaunay/seed0``.
     """
     if variant == BASE_VARIANT:
         return f"{instrument}/slam5/seed{seed}"

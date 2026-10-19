@@ -6,7 +6,7 @@ intensities its maximum-likelihood fit solved for. These tests hold the seams
 where getting that wrong would produce a row that *looks* fine:
 
 - the variant names (``slam_base`` stays the linear name, so no existing row or
-  output path moves; ``fixed`` is ``<variant>_lightfixed``);
+  output path moves; ``fixed`` is ``<variant>_light_fixed``);
 - the fixed-light mass model really holds no linear light profile, and differs
   from the linear one in the lens light only;
 - schema v3 rows carry the light mode and the provenance, and v1/v2 rows still
@@ -88,16 +88,20 @@ def _cli(**overrides) -> InferenceCLI:
 # ---------------------------------------------------------------------------
 
 
-def test_linear_keeps_todays_names_and_fixed_appends_lightfixed():
+def test_linear_keeps_todays_names_and_fixed_appends_light_fixed():
     assert variant_name(_cli()) == "slam_base"
     assert variant_name(_cli(lens_light="linear")) == "slam_base"
-    assert variant_name(_cli(lens_light="fixed")) == "slam_base_lightfixed"
-    assert variant_name(_cli(mesh="delaunay", mesh_pixels=1250)) == "delaunay_1250"
+    assert variant_name(_cli(lens_light="fixed")) == "slam_base_light_fixed"
+    assert variant_name(_cli(mesh="delaunay", mesh_pixels=1250)) == "slam_delaunay"
     assert (
         variant_name(_cli(mesh="delaunay", mesh_pixels=1250, lens_light="fixed"))
-        == "delaunay_1250_lightfixed"
+        == "slam_delaunay_light_fixed"
     )
-    assert variant_name(_cli(mesh_pixels=40, lens_light="fixed")) == "rect_40_lightfixed"
+    assert (
+        variant_name(_cli(mesh="delaunay", mesh_pixels=1500, lens_light="fixed"))
+        == "delaunay_1500_light_fixed"
+    )
+    assert variant_name(_cli(mesh_pixels=40, lens_light="fixed")) == "rect_40_light_fixed"
 
 
 def test_both_has_one_variant_per_mode_and_no_single_variant():
@@ -105,7 +109,7 @@ def test_both_has_one_variant_per_mode_and_no_single_variant():
     assert lens_light_modes(cli) == ("linear", "fixed")
     assert [variant_name(cli, mode) for mode in lens_light_modes(cli)] == [
         "slam_base",
-        "slam_base_lightfixed",
+        "slam_base_light_fixed",
     ]
     with pytest.raises(ValueError, match="pass lens_light_mode explicitly"):
         variant_name(cli)
@@ -121,7 +125,7 @@ def test_only_the_mass_stage_prefix_carries_the_light_mode():
         "imaging", "euclid", base_variant_name(_cli(lens_light="fixed")), "c", 0
     )
     linear_mass = _runner.output_path_prefix("imaging", "euclid", "slam_base", "c", 0)
-    fixed_mass = _runner.output_path_prefix("imaging", "euclid", "slam_base_lightfixed", "c", 0)
+    fixed_mass = _runner.output_path_prefix("imaging", "euclid", "slam_base_light_fixed", "c", 0)
     assert stages_1_to_4 == linear_mass, "fixed must resume the linear chain's stages 1-4"
     assert fixed_mass != linear_mass, "the two mass fits must never resume each other"
 
@@ -129,8 +133,8 @@ def test_only_the_mass_stage_prefix_carries_the_light_mode():
 def test_the_target_id_carries_the_light_variant():
     assert _runner.target_id("hst", "slam_base", 0) == "hst/slam5/seed0"
     assert (
-        _runner.target_id("hst", "slam_base_lightfixed", 0)
-        == "hst/slam5_slam_base_lightfixed/seed0"
+        _runner.target_id("hst", "slam_base_light_fixed", 0)
+        == "hst/slam5_slam_base_light_fixed/seed0"
     )
 
 
@@ -265,7 +269,7 @@ def _put(root, payload, tag=None):
 
 def test_summary_reads_v3_and_v2_rows(tmp_path):
     _put(tmp_path, _row("slam_base", schema=2))
-    _put(tmp_path, _row("slam_base_lightfixed", "fixed"))
+    _put(tmp_path, _row("slam_base_light_fixed", "fixed"))
     doc = summary.build(tmp_path, "a" * 40, "2026-10-17T00:00:00+00:00")
     assert doc["coverage"]["excluded"] == []
     parents = {r["configuration"]["variant"]: r for r in doc["records"] if r["stage"] is None}
@@ -273,7 +277,7 @@ def test_summary_reads_v3_and_v2_rows(tmp_path):
     assert "release_pin" not in parents["slam_base"]["configuration"]
     assert "dependency_revisions" in parents["slam_base"]["unknown_reasons"]
 
-    fixed = parents["slam_base_lightfixed"]
+    fixed = parents["slam_base_light_fixed"]
     assert fixed["configuration"]["lens_light_mode"] == "fixed"
     assert fixed["configuration"]["release_pin"] == "2026.10.17.1"
     assert fixed["dependency_revisions"] == {"PyAutoFit": "f" * 40}
@@ -284,7 +288,7 @@ def test_summary_reads_v3_and_v2_rows(tmp_path):
 def test_readme_keeps_light_modes_and_tags_in_separate_parity_groups(monkeypatch, tmp_path):
     _put(tmp_path, _row("slam_base", "linear"))
     _put(tmp_path, _row("slam_base", "linear", config="local_numba_cpu_dense_fp64"))
-    _put(tmp_path, _row("slam_base_lightfixed", "fixed"))
+    _put(tmp_path, _row("slam_base_light_fixed", "fixed"))
     tagged = _row("slam_base", "linear", tag="cleanslate_2026_10_17")
     _put(tmp_path, tagged, tag="cleanslate_2026_10_17")
     _put(tmp_path, _row("slam_base", schema=2, config="local_jax_cpu_sparse_fp64"))
@@ -296,7 +300,7 @@ def test_readme_keeps_light_modes_and_tags_in_separate_parity_groups(monkeypatch
 
     assert "| Target | Variant | Light |" in rendered
     assert "**Parity — `euclid/slam5/seed0` (seed 0), `mass_total[1]`**" in rendered
-    assert "**Parity — `euclid/slam5_slam_base_lightfixed/seed0` (seed 0)" in rendered
+    assert "**Parity — `euclid/slam5_slam_base_light_fixed/seed0` (seed 0)" in rendered
     assert "**Parity — `euclid/slam5/seed0` (seed 0, tag `cleanslate_2026_10_17`)" in rendered
     assert "`local_jax_cpu_dense_fp64__cleanslate_2026_10_17`" in rendered
     lights = {line.split("|")[3].strip() for line in rendered.splitlines() if "| `euclid/" in line}
@@ -354,7 +358,7 @@ def test_both_modes_export_two_verifiable_manifests(tmp_path, monkeypatch):
     for doc in docs.values():
         run.validate_setup_binding(doc, ("imaging", "rectangular"))
     # A single-mode run keeps exporting to the directory it was given.
-    assert _runner.prepared_export_dir(export_root, ("fixed",), "slam_base_lightfixed") == (
+    assert _runner.prepared_export_dir(export_root, ("fixed",), "slam_base_light_fixed") == (
         export_root
     )
 
