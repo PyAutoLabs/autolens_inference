@@ -136,3 +136,15 @@ def test_pipeline_clock_definitions_are_explicit(tmp_path):
         "aggregate not measured" in value for value in row["timings"]["definitions"].values()
     )
     assert "pipeline-wide" in row["unknown_reasons"]["execution.completed"]
+
+
+def test_installed_release_null_revisions_dropped_with_reason(tmp_path):
+    revisions = {"autofit": None, "autolens": None}
+    put(
+        tmp_path,
+        {"schema_version": 3, "target": "lens", "library_revisions": revisions},
+        "searches/seed0.json",
+    )
+    (row,) = feed(tmp_path)["records"]
+    assert row["dependency_revisions"] == {}
+    assert "installed release" in row["unknown_reasons"]["dependency_revisions"]

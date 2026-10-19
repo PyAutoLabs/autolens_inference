@@ -170,7 +170,10 @@ def record(payload, path, *, stage=None, parent=None, archived=False):
         },
         "precision": row.get("precision"),
         "seed": row.get("seed"),
-        "dependency_revisions": row.get("library_revisions") or {},
+        # A run from an installed release has no checkouts: its revisions read None.
+        "dependency_revisions": {
+            k: v for k, v in (row.get("library_revisions") or {}).items() if v is not None
+        },
         "library_version": row.get("version"),
         "execution": {
             "status": status,
@@ -230,7 +233,11 @@ def record(payload, path, *, stage=None, parent=None, archived=False):
     if result["dataset"]["id"] is None:
         result["unknown_reasons"]["dataset.id"] = "Dataset content identity not recorded"
     if not result["dependency_revisions"]:
-        result["unknown_reasons"]["dependency_revisions"] = "Dependency revisions not recorded"
+        result["unknown_reasons"]["dependency_revisions"] = (
+            "Run from an installed release (no git checkouts); see library_version"
+            if row.get("library_revisions")
+            else "Dependency revisions not recorded"
+        )
     if result["execution"]["completed"] is None:
         result["unknown_reasons"]["execution.completed"] = (
             "No pipeline-wide completion marker is recorded"
