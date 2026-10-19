@@ -21,7 +21,7 @@
   },
   "evidence_updated_at": null,
   "evidence_updated_at_reason": "Legacy result rows do not record measurement timestamps",
-  "generated_at": "2026-10-19T08:03:11Z",
+  "generated_at": "2026-10-19T08:06:43Z",
   "generation_basis": "Source commit timestamp; not a measurement or check-in time",
   "limitations": [
     "No scientific acceptance or convergence inferred from process completion",
@@ -30,7 +30,7 @@
     "Archived rows belong to this project's September 2026 runs and are historical, not current baselines"
   ],
   "prepared_problems": [],
-  "producer_revision": "bbf0cb9820dcc88694c1e654ae9fa65432a42d8b",
+  "producer_revision": "38ff932bbf82434677fc00257bb08abf25daadf8",
   "project": "autolens_inference",
   "records": [
     {
@@ -30782,7 +30782,7 @@
       "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
     }
   ],
-  "source_commit": "bbf0cb9820dcc88694c1e654ae9fa65432a42d8b",
+  "source_commit": "38ff932bbf82434677fc00257bb08abf25daadf8",
   "valid_until": null,
   "version": 2
 }
