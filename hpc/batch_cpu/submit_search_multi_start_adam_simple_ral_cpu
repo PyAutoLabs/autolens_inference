@@ -69,7 +69,7 @@ print(\"autolens\", autolens.__version__, autolens.__file__)
 print(\"jax\", jax.__version__, jax.devices(), jax.default_backend())
 "
 
-python3 scripts/point_source/simple/${CELL}.py \
+python3 scripts/point_source_source/source_plane/samplers/${CELL}.py \
     --instrument simple \
     --backend jax_cpu \
     --inversion dense \

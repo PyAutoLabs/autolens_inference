@@ -54,12 +54,12 @@ jobs:
         include:
           - backend: numba_cpu
             inversion: dense
-            script: scripts/imaging/rectangular/baseline_slam.py
+            script: scripts/imaging/rectangular/validation/baseline_slam.py
             variant: slam_base
             cores: 2
           - backend: numba_cpu
             inversion: sparse
-            script: scripts/imaging/rectangular/baseline_slam.py
+            script: scripts/imaging/rectangular/validation/baseline_slam.py
             variant: slam_base
             cores: 2
           # jax_cpu x sparse is deliberately absent: it is the 21.6 GB leg on
@@ -67,7 +67,7 @@ jobs:
           # to spare. It is witnessed locally and on RAL instead.
           - backend: jax_cpu
             inversion: dense
-            script: scripts/imaging/rectangular/baseline_slam.py
+            script: scripts/imaging/rectangular/validation/baseline_slam.py
             variant: slam_base
             cores: 2
           # The Delaunay route, and the only CI check holding its regularization
@@ -77,7 +77,7 @@ jobs:
           # family. jax_cpu because there is nothing to trace on a numba leg.
           - backend: jax_cpu
             inversion: dense
-            script: scripts/imaging/delaunay/baseline_slam.py
+            script: scripts/imaging/delaunay/validation/baseline_slam.py
             variant: slam_delaunay
             # NOT 2. The Delaunay mesh reaches qhull through a
             # `jax.pure_callback`, so the fit calls back into the host while an
@@ -171,7 +171,15 @@ jobs:
 
           config = "local_${{ matrix.backend }}_${{ matrix.inversion }}_fp64"
           variant = "${{ matrix.variant }}"
-          row = Path("results/slam/imaging/euclid") / variant / config / "stages_seed0.json"
+          sys.path.insert(0, ".")
+          from _inference_cli import row_stem, split_config_name, validation_layout
+
+          setup_id, host_class = split_config_name(config)
+          family, model_variant = validation_layout(variant)
+          row = (
+              Path("results/imaging") / family / "euclid" / "validation" / model_variant
+              / setup_id / "seed_0" / f"{row_stem('stages', host_class)}.json"
+          )
           if not row.exists():
               sys.exit(f"no result row at {row}")
           data = json.loads(row.read_text())
@@ -190,5 +198,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: slam-witness-${{ matrix.variant }}-${{ matrix.backend }}-${{ matrix.inversion }}
-          path: autolens_inference/results/slam/**
+          path: autolens_inference/results/imaging/**
           if-no-files-found: warn

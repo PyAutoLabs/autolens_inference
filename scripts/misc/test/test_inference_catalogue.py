@@ -170,7 +170,7 @@ def test_portable_export_survives_missing_local_output(tmp_path, monkeypatch):
 
 
 def test_wave_1_experiment_rows_are_catalogued_under_their_problem_without_ranking(tmp_path):
-    """Wave-1 rows (results/searches/experiments/<run id>.json) keep their problem identity."""
+    """Wave-1 rows (results/misc/experiments/<run id>.json) keep their problem identity."""
     import sys
 
     sys.path.insert(0, str(ROOT / "scripts/misc"))
@@ -195,7 +195,7 @@ def test_wave_1_experiment_rows_are_catalogued_under_their_problem_without_ranki
                 "completed": status == "complete",
                 "total_wall_s": 3.0,
             },
-            f"searches/experiments/{a.run_id('hpc_a100_jax_gpu_dense_fp64')}.json",
+            f"misc/experiments/{a.run_id('hpc_a100_jax_gpu_dense_fp64')}.json",
         )
     new = summary.build_catalogue(feed(tmp_path), tmp_path)
     assert not new["coverage"]["excluded"]

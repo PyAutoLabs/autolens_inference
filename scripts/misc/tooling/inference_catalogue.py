@@ -42,6 +42,23 @@ def setup_id(row):
     return None
 
 
+MIGRATION_MAP = "catalogue/migration_2026_10.json"
+
+
+def _migrated_ids(root, records):
+    """``{old record id: new record id}`` through the committed path migration map."""
+    path = root / MIGRATION_MAP
+    if not path.exists():
+        return {}
+    old_of = {new: old for old, new in json.loads(path.read_text())["moves"].items()}
+    result = {}
+    for record_id in records:
+        new_path, sep, fragment = record_id.partition("#")
+        if new_path in old_of:
+            result[old_of[new_path] + sep + fragment] = record_id
+    return result
+
+
 def build_catalogue(summary, root):
     doc = copy.deepcopy(summary)
     doc["version"] = 2
@@ -141,6 +158,10 @@ def build_catalogue(summary, root):
         if source.get("timing_definitions"):
             row["timings"]["definitions"].update(source["timing_definitions"])
     records = {r["id"]: r for r in doc["records"]}
+    # Manifests written before the 2026-10 layout move name the old row paths;
+    # the committed migration map resolves them without editing the manifests.
+    for old_id, new_id in _migrated_ids(root, records).items():
+        records.setdefault(old_id, records[new_id])
     known = {s["id"] for s in doc["setups"]}
     seen = {}
     for directory in (root / "prepared", root / "output/autolens/prepared"):

@@ -21,10 +21,12 @@ Regions covered today
 ---------------------
 
 ``slam``
-    Pipeline runs, scanned from ``results/slam/**/*.json``.
+    Pipeline runs: rows with a ``stages`` list, scanned from
+    ``results/<dataset_type>/<variant>/<instrument>/validation/**/*.json``.
 
 ``searches``
-    Single-search runs, scanned from ``results/searches/**/*.json``, with the
+    Single-search runs: every other row under ``results/`` (the
+    ``.../samplers/**`` trees and ``results/misc/experiments/``), with the
     admission-bar columns ``per_call_s`` and ``likelihood_share``.
 
 Both render a one-line empty state when nothing has been run yet, which is the
@@ -97,8 +99,11 @@ from pathlib import Path
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
 
 RESULTS_ROOT = REPO_ROOT / "results"
-SLAM_ROOT = RESULTS_ROOT / "slam"
-SEARCHES_ROOT = RESULTS_ROOT / "searches"
+# The mirrored layout (autolens_inference#41) keeps pipeline and search rows side
+# by side under results/<dataset_type>/<variant>/<instrument>/; the renderers tell
+# them apart by payload (a ``stages`` list) rather than by a top-level folder.
+SLAM_ROOT = RESULTS_ROOT
+SEARCHES_ROOT = RESULTS_ROOT
 
 # Sentinel block: keeps surrounding hand-written prose intact, only the
 # content between BEGIN and END is rewritten.
@@ -160,8 +165,23 @@ def _flatten_stages(payload: dict) -> list[dict]:
     return rows
 
 
-def _scan_rows(root: Path) -> list[dict]:
+def _skipped(path: Path) -> bool:
+    """``results/misc/`` (simulator summaries, logs) is not a result row, except
+    ``results/misc/experiments/``; a legacy ``results/archive/`` is never live."""
+    try:
+        parts = path.relative_to(RESULTS_ROOT).parts
+    except ValueError:
+        return False
+    if parts[0] == "misc":
+        return parts[1:2] != ("experiments",)
+    return parts[0] == "archive"
+
+
+def _scan_rows(root: Path, pipelines: bool | None = None) -> list[dict]:
     """Every result row under ``root``, sorted for a stable render.
+
+    ``pipelines=True`` keeps only payloads with a ``stages`` list, ``False``
+    only the others, ``None`` both.
 
     A payload carrying a ``stages`` list is flattened into one row per stage
     (see :func:`_flatten_stages`); anything else is one row as it stands.
@@ -174,6 +194,8 @@ def _scan_rows(root: Path) -> list[dict]:
     if not root.is_dir():
         return rows
     for path in sorted(root.rglob("*.json")):
+        if _skipped(path):
+            continue
         try:
             payload = json.loads(path.read_text())
         except (OSError, json.JSONDecodeError) as exc:
@@ -187,7 +209,10 @@ def _scan_rows(root: Path) -> list[dict]:
             continue
         payload = dict(payload)
         relative = str(path.relative_to(RESULTS_ROOT))
-        if isinstance(payload.get("stages"), list):
+        is_pipeline = isinstance(payload.get("stages"), list)
+        if pipelines is not None and is_pipeline != pipelines:
+            continue
+        if is_pipeline:
             for row in _flatten_stages(payload):
                 row.setdefault("_path", relative)
                 rows.append(row)
@@ -516,11 +541,11 @@ def _render_chain_walls(rows: list[dict]) -> str:
 
 def render_slam() -> str:
     """Pipeline runs — one line per (target, stage, config), plus the parity view."""
-    rows = [row for row in _scan_rows(SLAM_ROOT) if _is_complete(row)]
+    rows = [row for row in _scan_rows(SLAM_ROOT, pipelines=True) if _is_complete(row)]
     if not rows:
         return _empty(
-            "No pipeline runs yet — the first is the HST SLaM base run "
-            "(`results/slam/`, phase 4 of the autolens-inference epic)."
+            "No pipeline runs yet — rows land under "
+            "`results/<dataset_type>/<variant>/<instrument>/validation/`."
         )
     body = [
         [
@@ -599,9 +624,12 @@ def render_searches() -> str:
     ``scripts/misc/searches/_point_runner.py``). A row that predates them
     renders an em dash.
     """
-    rows = [row for row in _scan_rows(SEARCHES_ROOT) if _is_complete(row)]
+    rows = [row for row in _scan_rows(SEARCHES_ROOT, pipelines=False) if _is_complete(row)]
     if not rows:
-        return _empty("No search runs yet — results land under `results/searches/`.")
+        return _empty(
+            "No search runs yet — results land under "
+            "`results/<dataset_type>/<variant>/<instrument>/samplers/`."
+        )
     body = [
         [
             f"`{_cell(row.get('target'))}`",
@@ -677,8 +705,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    n_slam = len(_scan_rows(SLAM_ROOT))
-    n_searches = len(_scan_rows(SEARCHES_ROOT))
+    n_slam = len(_scan_rows(SLAM_ROOT, pipelines=True))
+    n_searches = len(_scan_rows(SEARCHES_ROOT, pipelines=False))
     print(f"Scanned {n_slam} pipeline row(s) and {n_searches} search row(s) under {RESULTS_ROOT}")
 
     any_changed = False

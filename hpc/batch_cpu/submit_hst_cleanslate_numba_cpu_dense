@@ -95,7 +95,7 @@ cd $AP_ROOT
 # In-job wait: 5-minute polls, 8 h cap, exit 4 on timeout.
 bash hpc/wait_for_stage.sh "$SHARED_SEED_DIR" source_lp 300 28800
 
-python3 scripts/imaging/rectangular/baseline_slam.py \
+python3 scripts/imaging/rectangular/validation/baseline_slam.py \
     --instrument hst \
     --backend numba_cpu \
     --inversion dense \

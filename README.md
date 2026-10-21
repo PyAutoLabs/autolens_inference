@@ -49,7 +49,7 @@ HST SLaM chain under numba-CPU, JAX-CPU and A100, dense and sparse — which is 
 everything later is improvement *against*.
 
 The driver that runs it landed **2026-09-11** (phase 3):
-[`scripts/imaging/rectangular/baseline_slam.py`](scripts/imaging/slam/README.md), one leaf over one chain,
+[`scripts/imaging/rectangular/validation/baseline_slam.py`](scripts/imaging/slam/README.md), one leaf over one chain,
 switched by `--backend` and `--inversion`, with six SLURM submits behind it. The first four
 legs came back on **2026-09-14** — A100, dense and sparse, seeds 0 and 1, all five stages —
 and are the rows in the table below. They are one backend of the parity row: the CPU legs
@@ -316,9 +316,9 @@ No historical initialization, frozen priors or scientific acceptance is inferred
 
 Runnable baselines now live at:
 
-- [`scripts/imaging/rectangular/baseline_slam.py`](scripts/imaging/rectangular/baseline_slam.py)
-- [`scripts/imaging/delaunay/baseline_slam.py`](scripts/imaging/delaunay/baseline_slam.py)
-- [`scripts/point_source/simple/baseline.py`](scripts/point_source/simple/baseline.py)
+- [`scripts/imaging/rectangular/validation/baseline_slam.py`](scripts/imaging/rectangular/validation/baseline_slam.py)
+- [`scripts/imaging/delaunay/validation/baseline_slam.py`](scripts/imaging/delaunay/validation/baseline_slam.py)
+- [`scripts/point_source_source/source_plane/samplers/baseline.py`](scripts/point_source_source/source_plane/samplers/baseline.py)
 
 The wall gate maps these leaves to their existing measured cell identities;
 this migration creates no measurements or new timing justification.
@@ -342,7 +342,7 @@ setup family and sampler and refuse a mismatched prepared problem. For example,
 a prepared JAX Delaunay baseline can be investigated with:
 
 ```bash
-python scripts/imaging/delaunay/smc.py --prepared output/autolens/prepared/hst-delaunay/manifest.json --problem-id <manifest-id> --run-id hst-delaunay-smc-cold-seed0 --start cold --hardware-id laptop-cpu-8cores-single-process
+python scripts/imaging/delaunay/samplers/smc.py --prepared output/autolens/prepared/hst-delaunay/manifest.json --problem-id <manifest-id> --run-id hst-delaunay-smc-cold-seed0 --start cold --hardware-id laptop-cpu-8cores-single-process
 ```
 
 Use `python scripts/misc/experiments/run.py --help` for supported start modes

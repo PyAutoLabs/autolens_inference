@@ -114,7 +114,7 @@ echo "Config:     $CONFIG (problem base seed $BASE_SEED)"
 echo "Pin:        $PYAUTO_RELEASE_PIN ($PYAUTO_LIB_BASE)"
 echo "Leaf args:  $LEAF_ARGS"
 
-python3 scripts/imaging/rectangular/${SAMPLER}.py $LEAF_ARGS
+python3 scripts/imaging/rectangular/samplers/${SAMPLER}.py $LEAF_ARGS
 
 echo "Finished."
 date

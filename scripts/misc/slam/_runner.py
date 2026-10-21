@@ -42,7 +42,7 @@ Deliberate departures from ``slam_start_here.py``
    means by it for the single-JSON leaves). A SLaM leg's bulk state is the run
    tree, and that is the thing a RAL job needs to redirect; the small result row
    always lands under
-   ``results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/``.
+   ``results/<dataset_class>/<variant>/<instrument>/validation/<model_variant>/<setup_id>/``.
 
 4. **The JAX compile probe is skipped under ``PYAUTO_TEST_MODE``.** In
    production ``compile_s`` is one timed ``analysis.log_likelihood_function``
@@ -126,6 +126,9 @@ from _inference_cli import (  # noqa: E402
     lens_light_modes,
     parse_inference_cli,
     rect_mesh_classes,
+    row_stem,
+    split_config_name,
+    validation_layout,
     variant_name,
 )
 
@@ -1440,27 +1443,40 @@ def results_paths(
 ):
     """``(json_path, png_path)`` for one ``(variant, config_name, seed)``.
 
-    ``results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/stages_seed<n>.json``.
+    ``results/<dataset_class>/<rectangular|delaunay>/<instrument>/validation/
+    <model_variant>/<setup_id>/seed_<n>/stages.json`` — the mirrored layout of
+    autolens_inference#41: the run variant splits into the likelihood variant and
+    the model variant (``_inference_cli.validation_layout``), the config name into
+    the ``setup_id`` folder and a ``host_class`` that is provenance only
+    (``_inference_cli.split_config_name``; a ``local_*`` row's file is
+    ``stages_local_laptop.json``).
 
-    A ``results_tag`` (``--results-tag``) suffixes the config directory as
-    ``<config_name>__<tag>`` — the convention the archived rate-probe rows
-    already use — so a re-measurement of the same variant, config and seed (the
-    2026-10-17 clean slate re-runs the configs the 2026-09-24 rows were written
-    under) can never overwrite the earlier row, locally or through
-    ``hpc/sync pull``. The row's ``config_name`` field is unchanged. (The clean
-    slate itself no longer tags: #35 archived the 2026-09-24 rows it was kept
-    apart from, so its rows take the plain ``<config_name>`` directory.)
+    A ``results_tag`` (``--results-tag``) suffixes the setup directory as
+    ``<setup_id>__<tag>`` so a re-measurement of the same variant, config and
+    seed can never overwrite the earlier row, locally or through
+    ``hpc/sync pull``. The row's ``config_name`` field is unchanged.
 
-    One file per ``(config_name, seed)`` — the seed is in the *filename*, not
-    only in the payload, so a reliability sweep over seeds does not overwrite
-    itself. The ``<variant>`` level above it separates *experiments*: the legs
-    of one variant are a parity row, and two variants sharing a directory would
-    read as backends of one run rather than as two different models.
+    One directory per seed, so a reliability sweep over seeds does not
+    overwrite itself, and one model variant per directory, so two models never
+    read as backends of one run.
     """
-    config_dir = f"{config_name}__{results_tag}" if results_tag else config_name
-    directory = root / "results" / "slam" / dataset_class / instrument / variant / config_dir
+    setup_id, host_class = split_config_name(config_name)
+    family, model_variant = validation_layout(variant)
+    setup_dir = f"{setup_id}__{results_tag}" if results_tag else setup_id
+    directory = (
+        root
+        / "results"
+        / dataset_class
+        / family
+        / instrument
+        / "validation"
+        / model_variant
+        / setup_dir
+        / f"seed_{seed}"
+    )
     directory.mkdir(parents=True, exist_ok=True)
-    return directory / f"stages_seed{seed}.json", directory / f"stages_seed{seed}.png"
+    stem = row_stem("stages", host_class)
+    return directory / f"{stem}.json", directory / f"{stem}.png"
 
 
 def output_path_prefix(

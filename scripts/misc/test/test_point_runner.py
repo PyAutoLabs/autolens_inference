@@ -166,13 +166,19 @@ def test_truth_vector_is_none_when_a_parameter_has_no_truth():
 
 def test_results_paths_put_the_seed_in_the_filename(tmp_path):
     json_path, png_path = runner.results_paths(
-        tmp_path, "point_source", "nautilus", "simple", "source_plane_solved", "cfg", 3
+        tmp_path,
+        "point_source",
+        "nautilus",
+        "simple",
+        "source_plane_solved",
+        "hpc_a100_jax_gpu_dense_fp64",
+        3,
     )
     assert json_path == (
-        tmp_path
-        / "results/searches/point_source/nautilus/simple/source_plane_solved/cfg/search_seed3.json"
+        tmp_path / "results/point_source_source/source_plane/simple/samplers/default/nautilus/"
+        "explicit/jax_gpu_dense_fp64/seed_3/search.json"
     )
-    assert png_path.name == "search_seed3.png"
+    assert png_path.name == "search.png"
     assert json_path.parent.is_dir()
 
 
@@ -294,10 +300,10 @@ def test_map_delta_sigma_in_reference_units():
 
 
 def test_load_reference_rows_reads_only_the_reference_sampler(tmp_path):
-    base = tmp_path / "results" / "searches" / "point_source"
+    base = tmp_path / "results/point_source_source/source_plane/simple/samplers/default"
     for sampler in ("nautilus", "multi_start_adam"):
-        directory = base / sampler / "simple" / "source_plane_solved" / "cfg"
+        directory = base / sampler / "explicit" / "jax_cpu_dense_fp64" / "seed_0"
         directory.mkdir(parents=True)
-        (directory / "search_seed0.json").write_text(json.dumps({"sampler": sampler}))
+        (directory / "search.json").write_text(json.dumps({"sampler": sampler}))
     rows = runner.load_reference_rows(tmp_path, "point_source", "simple", "source_plane_solved")
     assert [row["sampler"] for row in rows] == ["nautilus"]

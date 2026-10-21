@@ -312,7 +312,7 @@ def test_setup_leaf_binding_rejects_other_family(family):
 def test_setup_sampler_leaf_cli_import_and_binding(family, sampler):
     import subprocess
 
-    leaf = ROOT / "scripts/imaging" / family / f"{sampler}.py"
+    leaf = ROOT / "scripts/imaging" / family / "samplers" / f"{sampler}.py"
     help_result = subprocess.run(
         [sys.executable, str(leaf), "--help"], capture_output=True, text=True
     )

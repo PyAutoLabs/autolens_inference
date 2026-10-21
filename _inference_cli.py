@@ -82,6 +82,48 @@ BASE_VARIANT = "slam_base"
 #: other vertex count keeps the derived ``delaunay_<n>`` name.
 DELAUNAY_BASE_VARIANT = "slam_delaunay"
 
+#: The mirrored results layout (autolens_inference#41). A config name splits into
+#: a ``setup_id`` (``<backend>_<device>_<operator>_<precision>``, the folder) and a
+#: ``host_class`` (provenance, never a folder level). Rows land under
+#: ``results/<dataset_type>/<variant>/<instrument>/validation/<model_variant>/
+#: <setup_id>/seed_<n>/stages.json`` (SLaM) and ``.../samplers/<model_variant>/
+#: <sampler>/explicit/<setup_id>/seed_<n>/search.json`` (searches). A ``local_*``
+#: row keeps its host class in the file name so it never shares a file with the
+#: HPC row of the same setup.
+HOST_CLASSES = {"local": "local_laptop", "hpc_a100": "hpc_a100", "hpc_ral": "hpc_ral_cpu"}
+
+#: ``(dataset_class, run variant)`` -> ``(dataset_type, likelihood variant)`` for
+#: the search leaves; anything absent keeps its own names.
+SEARCH_LAYOUT = {("point_source", "source_plane_solved"): ("point_source_source", "source_plane")}
+
+
+def split_config_name(config_name: str) -> tuple[str, str]:
+    """``(setup_id, host_class)`` for a config name of the grammar above."""
+    match = CONFIG_NAME_RE.match(config_name)
+    if not match:
+        raise ValueError(f"config name {config_name!r} does not match the grammar")
+    where = match.group(1)
+    return config_name[len(where) + 1 :], HOST_CLASSES[where]
+
+
+def validation_layout(variant: str) -> tuple[str, str]:
+    """``(likelihood variant, model_variant)`` for a SLaM run variant:
+    ``slam_base`` -> ``(rectangular, default)``, ``slam_base_light_fixed`` ->
+    ``(rectangular, light_fixed)``, ``slam_delaunay`` -> ``(delaunay, default)``."""
+    family = "delaunay" if "delaunay" in variant else "rectangular"
+    for base in (BASE_VARIANT, DELAUNAY_BASE_VARIANT):
+        if variant == base:
+            return family, "default"
+        if variant.startswith(base + "_"):
+            return family, variant[len(base) + 1 :]
+    return family, variant
+
+
+def row_stem(stem: str, host_class: str) -> str:
+    """The result file stem: ``stages``/``search``, suffixed for a local row."""
+    return f"{stem}_{host_class}" if host_class.startswith("local") else stem
+
+
 #: The ``--stages`` vocabulary — the SLaM chain in order. ``--stages <name>``
 #: stops the driver after that stage, which is how a per-backend rate is
 #: measured from a ``source_lp``-only leg without paying for the whole chain.
@@ -357,8 +399,8 @@ def parse_inference_cli(
             "al.reg.Adapt cannot be traced on this mesh family under jit. The "
             "mesh is NOT part of the config-name grammar: it names the model "
             "under test, while the config name names the backend that ran it. "
-            "It is instead a run-VARIANT folder under "
-            "results/slam/<dataset_class>/<instrument>/ and a field of the "
+            "It is instead a run variant (results/<dataset_class>/<rectangular|"
+            "delaunay>/<instrument>/validation/<model_variant>/) and a field of the "
             "target id, so a mesh experiment never joins the base run's parity "
             "row. Omitted = the leaf script's own default (usually 'rect')."
         ),
@@ -445,8 +487,8 @@ def parse_inference_cli(
         help=(
             "Optional campaign tag that keeps a re-measurement's result rows "
             "apart from earlier rows of the same variant, config and seed: the "
-            "row lands under results/slam/<dataset_class>/<instrument>/<variant>/"
-            "<config_name>__<tag>/ and records results_tag. Lower-case words "
+            "row lands under .../validation/<model_variant>/<setup_id>__<tag>/ "
+            "and records results_tag. Lower-case words "
             "joined by underscores (e.g. cleanslate_2026_10_17). Omitted = the "
             "untagged path, unchanged."
         ),

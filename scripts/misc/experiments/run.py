@@ -296,7 +296,7 @@ def main(argv=None, *, setup_family=None, sampler=None):
     if args.validate_only or os.environ.get("AUTOLENS_INFERENCE_SMOKE") == "1":
         print(f"Validated {manifest['id']} / {args.sampler} / {args.start}; no fit executed")
         return 0
-    destination = ROOT / "results" / "searches" / "experiments" / f"{args.run_id}.json"
+    destination = ROOT / "results" / "misc" / "experiments" / f"{args.run_id}.json"
     output = with_test_mode_segment(ROOT / "output") / "autolens" / "experiments" / args.run_id
     if destination.exists() or output.exists():
         raise ValueError("Run identity already exists; choose a new run-id")

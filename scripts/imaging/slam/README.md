@@ -3,8 +3,8 @@
 Full **SLaM pipeline** runs on imaging data — the science chains as they are actually run, end
 to end, stage by stage.
 
-The first leaf landed in phase 3: [`rectangular baseline`](../rectangular/baseline_slam.py), the backend-parameterised base-run
-driver, exercised by the phase-4 Cortex task `slam_hst_base`. [`Delaunay baseline`](../delaunay/baseline_slam.py)
+The first leaf landed in phase 3: [`rectangular baseline`](../rectangular/validation/baseline_slam.py), the backend-parameterised base-run
+driver, exercised by the phase-4 Cortex task `slam_hst_base`. [`Delaunay baseline`](../delaunay/validation/baseline_slam.py)
 joined it: the same chain and the same runner, with the two pixelized source stages on a
 1250-vertex Delaunay mesh — the `slam_delaunay` **run variant**, the standard SLaM Delaunay
 chain (named `delaunay_1250` before 2026-10-19; the September rows keep that name).
@@ -12,7 +12,7 @@ chain (named `delaunay_1250` before 2026-10-19; the September rows keep that nam
 ## Running a leg
 
 ```bash
-python3 scripts/imaging/rectangular/baseline_slam.py \
+python3 scripts/imaging/rectangular/validation/baseline_slam.py \
     --backend {jax_cpu,numba_cpu,jax_gpu} --inversion {dense,sparse} \
     --config-name <config> [--seed 0] [--cores N] [--stages source_lp] [--output-dir DIR] \
     [--mesh {rect,delaunay}] [--mesh-pixels N] [--lens-light {linear,fixed,both}] \
@@ -52,7 +52,7 @@ python3 scripts/imaging/rectangular/baseline_slam.py \
 ## What a leg writes
 
 - One result row per `(variant, config_name, seed)`:
-  `results/slam/imaging/hst/<variant>/<config_name>/stages_seed<n>.json`, schema version 3,
+  `results/imaging/<rectangular|delaunay>/hst/validation/<model_variant>/<setup_id>/seed_<n>/stages.json`, schema version 3,
   with a `stages` list of five rows (`source_lp[1]`, `source_pix[1]`, `source_pix[2]`, `light[1]`,
   `mass_total[1]`) carrying wall clock, reject-inclusive likelihood evals, log evidence,
   posterior (median + 1σ), `truth_delta_sigma` against `dataset/imaging/hst/tracer.json`,
@@ -81,7 +81,7 @@ each cell the difference from the alphabetically-first config in units of that r
 ## Run variants: the mesh is not a config
 
 ```
-results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/stages_seed<n>.json
+results/<dataset_class>/<rectangular|delaunay>/<instrument>/validation/<model_variant>/<setup_id>/seed_<n>/stages.json
 output/autolens/<dataset_class>/<instrument>/slam/<variant>/<config_name>/seed_<n>/
 ```
 
@@ -93,8 +93,8 @@ fit. Only the backend may be a column of one table.
 
 | variant | mesh | source stages | regularization | leaf |
 |---|---|---|---|---|
-| `slam_base` | `rect`, 28x28 = 784 cells | `RectangularBilinearAdaptDensity` then `…AdaptImage` | `al.reg.Adapt` (class) | [`rectangular baseline`](../rectangular/baseline_slam.py) |
-| `slam_delaunay` | `delaunay`, 1250 interior vertices (+30 zeroed edge) drawn by `al.image_mesh.Hilbert` | `al.mesh.Delaunay` on both | `al.reg.AdaptSplit` (class) | [`Delaunay baseline`](../delaunay/baseline_slam.py) |
+| `slam_base` | `rect`, 28x28 = 784 cells | `RectangularBilinearAdaptDensity` then `…AdaptImage` | `al.reg.Adapt` (class) | [`rectangular baseline`](../rectangular/validation/baseline_slam.py) |
+| `slam_delaunay` | `delaunay`, 1250 interior vertices (+30 zeroed edge) drawn by `al.image_mesh.Hilbert` | `al.mesh.Delaunay` on both | `al.reg.AdaptSplit` (class) | [`Delaunay baseline`](../delaunay/validation/baseline_slam.py) |
 
 `--mesh-pixels` means a different thing per family and the two numbers are not comparable:
 the side of the square mesh under `rect`, the vertex count outright under `delaunay`. The
@@ -357,7 +357,7 @@ because the workspace script never faced them:
 4. **`--output-dir` moves the PyAutoFit run-output root, not the results directory.** A
    leg's bulk state is the run tree (~150 MB per 5-stage lens), and that is what a RAL job
    or a scratch disk needs to redirect. The small result row always lands under
-   `results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/`, so a pulled run and
+   `results/<dataset_class>/<rectangular|delaunay>/<instrument>/validation/<model_variant>/<setup_id>/`, so a pulled run and
    a local one are read from the same place.
 
 Everything else — flags, the config-name grammar and the backend facts that make a leg honest —

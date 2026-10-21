@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'results/**'
+      - 'archive/**'
+      - 'catalogue/**'
       - 'scripts/misc/tooling/export_inference_summary.py'
       - 'scripts/misc/tooling/inference_catalogue.py'
       - 'prepared/**'

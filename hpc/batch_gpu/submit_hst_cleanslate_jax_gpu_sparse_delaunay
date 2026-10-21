@@ -86,7 +86,7 @@ cd $AP_ROOT
 
 bash hpc/wait_for_stage.sh "$SHARED_SEED_DIR" source_lp 300 28800
 
-python3 scripts/imaging/delaunay/baseline_slam.py \
+python3 scripts/imaging/delaunay/validation/baseline_slam.py \
     --instrument hst \
     --backend jax_gpu \
     --inversion sparse \

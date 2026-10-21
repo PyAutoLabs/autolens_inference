@@ -18,7 +18,7 @@ samplers follow once the base run exists to compare them against.
 - **The instrument is a flag** (`--instrument`), never a directory.
 - **A reliability claim needs seeds.** One run tells you a search *can* find the answer;
   it takes a spread of `--seed` values to say how often it does.
-- **Result rows go to `results/searches/`**, one per run, carrying `target`,
+- **Result rows go to `results/<dataset_type>/<variant>/<instrument>/samplers/`**, one per run, carrying `target`,
   `sampler`, `config_name`, `instrument`, `wall_s` and the evidence — the columns the
   README auto-table renders.
 - **No submit without a wall-clock basis.** See
@@ -28,7 +28,7 @@ samplers follow once the base run exists to compare them against.
 ## Clean-slate wave 1: four samplers on one frozen mass problem (2026-10-17)
 
 The HST sampler comparison of PyAutoInsight campaign `hst-imaging-mass-samplers` does not
-add leaves here: it runs the sampler leaves of `scripts/imaging/rectangular/` (`nautilus`,
+add leaves here: it runs the sampler leaves of `scripts/imaging/rectangular/samplers/` (`nautilus`,
 `emcee`, `nuts`, `smc`, one runner, `scripts/misc/experiments/run.py`) on the frozen
 `mass_total[1]` problems the clean-slate base exports. Wave 1
 (`cleanslate_2026_10_17_wave1`, autolens_inference#27) is:
@@ -44,7 +44,7 @@ add leaves here: it runs the sampler leaves of `scripts/imaging/rectangular/` (`
   `nuts --chains 1 --warmup 500 --steps 1000`, `smc --particles 256 --steps 1000`.
 - **Seeds:** sampler seeds 0, 1, 2 per arm: 4 x 3 x 2 = 24 arms per config.
 - **Run ids:** `cs1017_<config>_<variant>_<sampler>_s<seed>`; rows land in
-  `results/searches/experiments/<run id>.json`, catalogued under their `problem_id` with
+  `results/misc/experiments/<run id>.json`, catalogued under their `problem_id` with
   no cross-problem or cross-sampler ranking.
 - **Where:** `hpc_a100_jax_gpu_dense_fp64` on the A100 (submitted with
   `--dependency afterok:` on the GPU dense base array) and `hpc_a100_jax_cpu_dense_fp64`

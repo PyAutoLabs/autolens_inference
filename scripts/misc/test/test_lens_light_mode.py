@@ -171,11 +171,11 @@ def test_a_results_tag_suffixes_the_config_directory_only(tmp_path):
         "cleanslate_2026_10_17",
     )
     assert untagged.relative_to(tmp_path) == Path(
-        "results/slam/imaging/hst/slam_base/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json"
+        "results/imaging/rectangular/hst/validation/default/jax_gpu_dense_fp64/seed_0/stages.json"
     )
     assert tagged.relative_to(tmp_path) == Path(
-        "results/slam/imaging/hst/slam_base/"
-        "hpc_a100_jax_gpu_dense_fp64__cleanslate_2026_10_17/stages_seed0.json"
+        "results/imaging/rectangular/hst/validation/default/"
+        "jax_gpu_dense_fp64__cleanslate_2026_10_17/seed_0/stages.json"
     )
 
 

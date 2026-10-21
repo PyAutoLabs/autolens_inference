@@ -278,13 +278,13 @@ are in [`../scripts/misc/wall/README.md`](../scripts/misc/wall/README.md).
 
 ## The submits that exist today
 
-Thirteen run the SLaM chain, over **two cells**. Eleven run `imaging/slam/hst` (`scripts/imaging/rectangular/baseline_slam.py`, the
+Thirteen run the SLaM chain, over **two cells**. Eleven run `imaging/slam/hst` (`scripts/imaging/rectangular/validation/baseline_slam.py`, the
 backend-parameterised SLaM driver): six are the six legs of the first parity row, the
 seventh is the rate probe that had to run before any of them could be sized, and four are
 the 2026-10-17 **clean slate** (below). Two run
-`imaging/slam/hst_delaunay` (`scripts/imaging/delaunay/baseline_slam.py`) — the same five-stage
+`imaging/slam/hst_delaunay` (`scripts/imaging/delaunay/validation/baseline_slam.py`) — the same five-stage
 chain on the Delaunay run variant (`delaunay_1250` then; `slam_delaunay` from 2026-10-19). Two more, the clean-slate wave-1 arrays (below),
-run the four sampler leaves of `scripts/imaging/rectangular/` on frozen mass problems.
+run the four sampler leaves of `scripts/imaging/rectangular/samplers/` on frozen mass problems.
 
 | submit | cell | partition | array | what it runs |
 |---|---|---|---|---|
@@ -320,14 +320,14 @@ this repo's runs, so it writes the plain layout (autolens_inference#35):
 
 - run tree `output/autolens/imaging/hst/slam/<variant>/<config_name>/seed_<n>/` (dataset
   class, instrument, then pipeline);
-- rows `results/slam/imaging/hst/<variant>/<config_name>/stages_seed<n>.json`;
+- rows `results/imaging/<rectangular|delaunay>/hst/validation/<model_variant>/<setup_id>/seed_<n>/stages.json`;
 - frozen `mass_total[1]` problems (`--export-prepared`)
   `output/autolens/prepared/<config_name>/seed_<n>/<variant>/`, and the wave's experiment
   runs and source snapshots under `output/autolens/experiments/` and
   `output/autolens/experiment_sources/`.
 
 The 2026-09-24 trees were moved aside on RAL and their rows archived under
-`results/archive/2026-09-24_superseded_by_cleanslate/`, so nothing older is resumed or
+`archive/2026/09/2026-09-24_superseded_by_cleanslate/`, so nothing older is resumed or
 overwritten. The campaign's first arrays wrote a dated `output/cleanslate_2026_10_17/` root
 with `--results-tag cleanslate_2026_10_17`; `scripts/misc/flatten_cleanslate.py` moves those
 trees and rows onto the plain layout once their arrays complete (its docstring has the order:
@@ -353,7 +353,7 @@ ran a BLAS pool the size of the node. Every numba submit now exports the five as
 stays on the GPU legs and on the rows already written). The superseded
 `hpc_a100_numba_cpu_*` trees and rows are set aside, not deleted, by
 `scripts/misc/rename_light_fixed.py --aside` (rows to
-`results/archive/2026-10-19_numba_thread_oversubscription/`). The same script renames the
+`archive/2026/10/2026-10-19_numba_thread_oversubscription/`). The same script renames the
 old `_lightfixed` variant folders, rows and prepared problems to `_light_fixed`. The
 Delaunay rerun shares the `slam_base` tree's `source_lp[1]`: the runner resolves a shared
 parametric stage under `slam_base` whatever the mesh.
@@ -368,7 +368,7 @@ for base seed 0: every sampler the experiment runner supports (`nautilus`, `emce
 it for each array index's sampler and leaf arguments, so the mapping lives (and is tested) in
 one place. `python3 scripts/misc/experiments/wave.py --list --config <config>` prints the arms
 and run ids; `--account --config <config>` reports each as `row`, `failed` or `missing` from
-`results/searches/experiments/`.
+`results/misc/experiments/`.
 
 Each submit runs four cells (one per sampler leaf), all `unmeasured` with `probe-first: yes`:
 the `%4` / `%6` throttles start one arm of every sampler first. The GPU array is submitted
@@ -404,7 +404,7 @@ it its own cell id and forces it to be measured on its own terms.
 
 The mesh is a **run variant**, not a config: `--mesh` / `--mesh-pixels` name a directory
 level between the instrument and the config name
-(`results/slam/imaging/hst/<variant>/<config_name>/`) and a field of the target id, so
+(`results/imaging/<rectangular|delaunay>/hst/validation/<model_variant>/<setup_id>/`) and a field of the target id, so
 these two submits' rows never join the base run's parity row. The config name still says
 only which backend ran. See
 [`../scripts/imaging/slam/README.md`](../scripts/imaging/slam/README.md).

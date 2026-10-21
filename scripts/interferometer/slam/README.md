@@ -18,7 +18,7 @@ scripts/interferometer/slam/<target>.py --instrument <inst> --config-name <confi
 - The **instrument is a flag**, never a directory.
 - The **backend is a column**: the same leaf runs every leg of a parity row, and the legs
   differ only in the flags above and the resulting `--config-name`.
-- Each stage writes one result row under `results/slam/`, and the full PyAutoFit output
+- Each stage writes one result row under `results/<dataset_type>/<variant>/<instrument>/validation/`, and the full PyAutoFit output
   tree is kept under `output/` (gitignored — see `AGENTS.md`, "Outputs are KEPT").
 
 Flags, the config-name grammar and the backend facts that make a leg honest are in

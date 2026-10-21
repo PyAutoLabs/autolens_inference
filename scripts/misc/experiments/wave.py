@@ -53,7 +53,7 @@ ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exi
 WAVE_ID = "cleanslate_2026_10_17_wave1"
 RUN_PREFIX = "cs1017"
 PREPARED_ROOT = "output/autolens/prepared"
-RESULTS_DIR = "results/searches/experiments"
+RESULTS_DIR = "results/misc/experiments"
 
 VARIANTS = ("slam_base", "slam_base_light_fixed")
 SAMPLERS = ("nautilus", "emcee", "nuts", "smc")
@@ -105,7 +105,7 @@ class Arm:
 
     @property
     def leaf(self) -> str:
-        return f"scripts/imaging/rectangular/{self.sampler}.py"
+        return f"scripts/imaging/rectangular/samplers/{self.sampler}.py"
 
 
 def arms() -> list[Arm]:

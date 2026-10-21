@@ -251,6 +251,24 @@ def record(payload, path, *, stage=None, parent=None, archived=False):
     return result
 
 
+def _result_files(root):
+    """Every result row: ``results/**`` except ``results/misc/`` (simulator
+    summaries, logs) but including ``results/misc/experiments/``, plus the dated
+    ``archive/YYYY/MM/<slug>/`` rows (autolens_inference#41 layout). Rows under a
+    legacy ``results/archive/`` are still read as archived."""
+    for path in sorted((root / "results").rglob("*.json")):
+        parts = path.relative_to(root / "results").parts
+        if parts[0] == "misc" and parts[1:2] != ("experiments",):
+            continue
+        if parts[0] == "archive" and not ("slam" in parts or "searches" in parts):
+            continue
+        yield path
+    for path in sorted((root / "archive").rglob("*.json")):
+        parts = path.relative_to(root / "archive").parts
+        if "slam" in parts or "searches" in parts:
+            yield path
+
+
 def build(root, revision, generated_at):
     timestamp = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
     if timestamp.tzinfo is None:
@@ -258,14 +276,9 @@ def build(root, revision, generated_at):
     generated_at = timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
     records, excluded = [], []
     runs = 0
-    for path in sorted((root / "results").rglob("*.json")):
+    for path in _result_files(root):
         rel = path.relative_to(root).as_posix()
-        parts = path.relative_to(root / "results").parts
-        if not (
-            parts[0] in ("slam", "searches")
-            or (parts[0] == "archive" and ("slam" in parts or "searches" in parts))
-        ):
-            continue
+        parts = path.relative_to(root).parts[1:]
         try:
             if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
                 raise ValueError("unsafe result path")
@@ -281,7 +294,7 @@ def build(root, revision, generated_at):
             names = [s.get("name") for s in stages]
             if len(names) != len(set(names)) or any(not isinstance(n, str) or not n for n in names):
                 raise ValueError("duplicate or missing stage identity")
-            kwargs = {"archived": parts[0] == "archive"}
+            kwargs = {"archived": rel.startswith("archive/") or parts[0] == "archive"}
             rows = [record(payload, rel, **kwargs)]
             rows.extend(record(payload, rel, stage=s, parent=rel, **kwargs) for s in stages)
             for row in rows:
@@ -351,6 +364,8 @@ def main():
             "--format=%H",
             "--",
             "results",
+            "archive",
+            "catalogue",
             "scripts/misc/tooling/export_inference_summary.py",
             "scripts/misc/tooling/inference_catalogue.py",
             "prepared",
