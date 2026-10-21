@@ -19,27 +19,30 @@ WORK = (
 )
 
 
+#: ``(dataset_type, likelihood variant)`` -> the stable family id prefix. The
+#: point-source family keeps the id it was published under.
+FAMILIES = {
+    ("imaging", "rectangular"): "imaging/rectangular",
+    ("imaging", "delaunay"): "imaging/delaunay",
+    ("point_source_source", "source_plane"): "point_source/simple",
+}
+IMAGING_INSTRUMENTS = ("hst", "euclid", "jwst", "jwst_lw", "ao")
+
+
 def setup_id(row):
-    dataset = row["dataset"]
-    config = row["configuration"]
-    if (
-        dataset["class"] == "imaging"
-        and dataset["instrument"] in ("hst", "euclid", "jwst", "jwst_lw", "ao")
-        and row["pipeline"] == "slam"
-    ):
-        variant = config.get("variant")
-        mesh = config.get("mesh")
-        if mesh == "delaunay" or (isinstance(variant, str) and variant.startswith("delaunay_")):
-            return f"imaging/delaunay/{dataset['instrument']}"
-        if mesh == "rect" or variant == "slam_base" or "/hst/slam_base/" in row["id"]:
-            return f"imaging/rectangular/{dataset['instrument']}"
-    if (
-        dataset["class"] == "point_source"
-        and dataset["instrument"] == "simple"
-        and config.get("variant") == "source_plane_solved"
-    ):
-        return "point_source/simple/simple"
-    return None
+    """The stable family id, from the record's resolved ``likelihood`` and
+    instrument (the exporter derives both from the config table and the run
+    variant; no path or id heuristic)."""
+    likelihood = row.get("likelihood") or {}
+    instrument = row["dataset"]["instrument"]
+    family = FAMILIES.get((likelihood.get("dataset_type"), likelihood.get("variant")))
+    if family is None:
+        return None
+    if family.startswith("imaging/"):
+        if row["pipeline"] != "slam" or instrument not in IMAGING_INSTRUMENTS:
+            return None
+        return f"{family}/{instrument}"
+    return f"{family}/{instrument}" if instrument == "simple" else None
 
 
 MIGRATION_MAP = "catalogue/migration_2026_10.json"
