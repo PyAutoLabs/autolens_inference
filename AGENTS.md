@@ -39,8 +39,8 @@ Scripts are laid out **dataset-class first, task second**, mirroring the
 scripts/
   <dataset_class>/          imaging/ interferometer/ point_source/ — one folder per
                             PyAutoLens dataset family. Imaging is the priority.
-    slam/                   Full SLaM pipeline runs (the base-run tier)
-    searches/<sampler>/     Single-search runs, one folder per sampler
+    <variant>/validation/   Full SLaM pipeline runs (the base-run tier)
+    <variant>/samplers/     Single-search and sampler leaves
   misc/                     Dataset-agnostic material + each task's shared framework:
                             misc/simulators/ (dataset simulators), misc/tooling/
                             (build_readme.py), misc/wall/ (SLURM --time budget gate),
@@ -49,9 +49,14 @@ _inference_cli.py           Shared CLI / JSON / auto-simulate helper imported by
 instruments/                Instrument definitions (pixel scale, shape) used to frame results
 config/                     PyAutoConf overrides for runs launched from this repo
 hpc/                        hpc/sync (laptop-side RAL driver) + SLURM submit scripts
-results/                    Committed result rows:
-                            results/slam/<dataset_class>/<instrument>/<variant>/
-                              <config_name>/stages_seed<n>.json  (+ results/searches/)
+results/                    Committed result rows, mirroring scripts/<dataset_type>/<variant>/:
+                            results/<dataset_type>/<variant>/<instrument>/validation/
+                              <model_variant>/<setup_id>/seed_<n>/stages.json
+                            results/<dataset_type>/<variant>/<instrument>/samplers/
+                              <model_variant>/<sampler>/explicit/<setup_id>/seed_<n>/search.json
+                            (+ results/misc/ for simulator summaries, logs, experiments)
+archive/YYYY/MM/<slug>/     Superseded rows kept for the record (read as archived)
+catalogue/                  migration_2026_10.json: old path -> new path for the 2026-10 move
 output/                     PyAutoFit run output — KEPT here (see below), gitignored;
                             dataset class, instrument, then pipeline:
                             output/autolens/<dataset_class>/<instrument>/slam/
@@ -158,8 +163,8 @@ output:
 
 Budget roughly **150 MB per 5-stage lens per leg**. `output/` is gitignored: it is bulk
 run state, kept on disk and pulled from RAL, never committed. What *is* committed is the
-small result row under `results/slam/<dataset_class>/<instrument>/<variant>/<config_name>/`
-or `results/searches/`.
+small result row under `results/<dataset_class>/<rectangular|delaunay>/<instrument>/validation/<model_variant>/<setup_id>/`
+or `results/<dataset_type>/<variant>/<instrument>/samplers/`.
 
 ## RAL, and getting runs back
 

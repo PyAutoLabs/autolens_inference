@@ -11,7 +11,8 @@ it is **not** measurement freshness. Legacy results have no measurement date, so
 `evidence_updated_at` stays null. Publication dispatch separately identifies the
 commit containing the published summary, allowing a reader to pin its receipt.
 
-All current `results/searches` and `results/slam` JSONs are scanned, including
+All current result JSONs under `results/` (except `results/misc/`, apart from
+`results/misc/experiments/`) and the dated `archive/YYYY/MM/<slug>/` rows are scanned, including
 failed/stopped/partial rows and every seed. This project's own archived results
 are included with `archived: true`; they are not current baselines. Simulator
 summaries and the retired inference programme are excluded from the source scope.

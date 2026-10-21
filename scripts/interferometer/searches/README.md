@@ -18,7 +18,7 @@ samplers follow once the base run exists to compare them against.
 - **The instrument is a flag** (`--instrument`), never a directory.
 - **A reliability claim needs seeds.** One run tells you a search *can* find the answer;
   it takes a spread of `--seed` values to say how often it does.
-- **Result rows go to `results/searches/`**, one per run, carrying `target`,
+- **Result rows go to `results/<dataset_type>/<variant>/<instrument>/samplers/`**, one per run, carrying `target`,
   `sampler`, `config_name`, `instrument`, `wall_s` and the evidence — the columns the
   README auto-table renders.
 - **No submit without a wall-clock basis.** See

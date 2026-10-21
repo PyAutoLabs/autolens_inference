@@ -1,7 +1,7 @@
 # HST Delaunay imaging
 
 Stable setup: `imaging/delaunay/hst`.
-Run `python scripts/imaging/delaunay/baseline_slam.py --instrument hst
+Run `python scripts/imaging/delaunay/validation/baseline_slam.py --instrument hst
 --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64 --seed 0`
 (as one shell command). Scientific builders remain shared in `scripts/misc/slam/`.
 

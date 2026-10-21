@@ -4,6 +4,13 @@ The Cortex ledger for this repository (`PyAutoCortex/projects.yaml`, row
 `autolens_inference`, `ledger: wiki/project/state.md`). Commentary, not the register:
 where the ledger and a Cortex ruling disagree, the ruling counts.
 
+> **Paths moved 2026-10-21 (autolens_inference#41).** The entries below keep the paths
+> they were written with. Rows now live under
+> `results/<dataset_type>/<variant>/<instrument>/{validation,samplers}/…`, the dated
+> archives under `archive/YYYY/MM/<slug>/`, and logs and simulator summaries under
+> `results/misc/`. Every old path resolves through
+> [`catalogue/migration_2026_10.json`](../../catalogue/migration_2026_10.json).
+
 ## Science goal
 
 **The base run.** Does the 5-stage HST SLaM chain give the same answer under every backend

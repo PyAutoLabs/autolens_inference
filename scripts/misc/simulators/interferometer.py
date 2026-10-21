@@ -14,7 +14,7 @@ Single dual-purpose module:
    generation, simulator construction, eager + JIT ``image_2d_from``,
    ``via_tracer_from``, ``PointSolver.solve``, fits output) using a
    per-section timer and writes
-   ``results/simulators/interferometer_<instrument>_summary_v<ver>.{json,png}``.
+   ``results/misc/simulators/interferometer_<instrument>_summary_v<ver>.{json,png}``.
 
 ``INSTRUMENTS`` is the single source of truth for all interferometer
 likelihood scripts — they import it directly::
@@ -303,7 +303,7 @@ def simulate(instrument: str = "sma", output_root: Path | None = None) -> Path:
     # === Summary ===
 
     al_version = al.__version__
-    results_dir = root / "results" / "simulators"
+    results_dir = root / "results" / "misc" / "simulators"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     phases = dict(timer.records)

@@ -10,7 +10,7 @@ this repo fits. Three dataset classes are covered, matching `scripts/`:
 | [`point_source.py`](./point_source.py) | Point-source datasets: lens + source tracer, eager and JIT `solver.solve`, `tracer.time_delays_from`. |
 
 Each is dual-purpose: it **writes the dataset** under `dataset/<class>/<instrument>/`, and
-**times each phase** of doing so into `results/simulators/<script>_<instrument>_summary_v<version>.{json,png}`.
+**times each phase** of doing so into `results/misc/simulators/<script>_<instrument>_summary_v<version>.{json,png}`.
 The timings are a by-product — this repo's subject is inference, not simulation — but they
 are cheap and they catch the case where a dataset that used to take seconds starts taking
 minutes.

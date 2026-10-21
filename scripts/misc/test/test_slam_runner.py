@@ -329,15 +329,22 @@ def test_the_variant_is_a_directory_level_in_the_results_path(tmp_path):
         tmp_path, "imaging", "hst", "slam_base", "hpc_a100_jax_gpu_dense_fp64", 0
     )
     assert json_path.relative_to(tmp_path) == Path(
-        "results/slam/imaging/hst/slam_base/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json"
+        "results/imaging/rectangular/hst/validation/default/jax_gpu_dense_fp64/seed_0/stages.json"
     )
-    assert png_path.name == "stages_seed0.png"
+    assert png_path.name == "stages.png"
 
     delaunay, _ = _runner.results_paths(
         tmp_path, "imaging", "hst", "delaunay_1250", "hpc_a100_jax_gpu_dense_fp64", 1
     )
     assert delaunay.relative_to(tmp_path) == Path(
-        "results/slam/imaging/hst/delaunay_1250/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json"
+        "results/imaging/delaunay/hst/validation/delaunay_1250/jax_gpu_dense_fp64/seed_1/stages.json"
+    )
+    light_fixed, _ = _runner.results_paths(
+        tmp_path, "imaging", "hst", "slam_delaunay_light_fixed", "local_numba_cpu_sparse_fp64", 0
+    )
+    assert light_fixed.relative_to(tmp_path) == Path(
+        "results/imaging/delaunay/hst/validation/light_fixed/numba_cpu_sparse_fp64/seed_0/"
+        "stages_local_laptop.json"
     )
 
 

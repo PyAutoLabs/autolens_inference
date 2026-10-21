@@ -178,7 +178,13 @@ from slam._runner import (  # noqa: E402
     validate_config_name,
 )
 
-from _inference_cli import auto_simulate_if_missing, parse_inference_cli  # noqa: E402
+from _inference_cli import (  # noqa: E402
+    SEARCH_LAYOUT,
+    auto_simulate_if_missing,
+    parse_inference_cli,
+    row_stem,
+    split_config_name,
+)
 
 #: Version of the ``search_seed<n>.json`` schema written by :func:`run_point_search`.
 SCHEMA_VERSION = 1
@@ -298,12 +304,13 @@ def map_delta_sigma(map_params: dict, truths: dict, reference_sigma: dict) -> di
 
 
 def load_reference_rows(root: Path, dataset_class: str, instrument: str, variant: str) -> list:
-    """Every committed ``search_seed*.json`` of :data:`REFERENCE_SAMPLER` for this target."""
+    """Every committed ``search*.json`` of :data:`REFERENCE_SAMPLER` for this target."""
+    dataset_type, likelihood = SEARCH_LAYOUT.get((dataset_class, variant), (dataset_class, variant))
     directory = (
-        root / "results" / "searches" / dataset_class / REFERENCE_SAMPLER / instrument / variant
-    )
+        root / "results" / dataset_type / likelihood / instrument / "samplers" / "default"
+    ) / REFERENCE_SAMPLER
     rows = []
-    for path in sorted(directory.glob("*/search_seed*.json")):
+    for path in sorted(directory.glob("explicit/*/seed_*/search*.json")):
         try:
             rows.append(json.loads(path.read_text()))
         except (OSError, ValueError):
@@ -392,16 +399,25 @@ def results_paths(
 ) -> tuple[Path, Path]:
     """``(json_path, png_path)`` for one ``(sampler, variant, config_name, seed)``.
 
-    ``results/searches/<dataset_class>/<sampler>/<instrument>/<variant>/<config_name>/
-    search_seed<n>.json`` — the seed in the filename so a seed spread never
-    overwrites itself; the variant a level above the config so two models never
-    read as two backends of one fit.
+    ``results/<dataset_type>/<variant>/<instrument>/samplers/default/<sampler>/
+    explicit/<setup_id>/seed_<n>/search.json`` — the mirrored layout of
+    autolens_inference#41 (``_inference_cli.SEARCH_LAYOUT`` maps the run variant to
+    the likelihood; ``split_config_name`` the config name to the ``setup_id``
+    folder; a ``local_*`` row's file is ``search_local_laptop.json``). One
+    directory per seed, so a seed spread never overwrites itself.
     """
+    dataset_type, likelihood = SEARCH_LAYOUT.get((dataset_class, variant), (dataset_class, variant))
+    setup_id, host_class = split_config_name(config_name)
     directory = (
-        root / "results" / "searches" / dataset_class / sampler / instrument / variant / config_name
+        (root / "results" / dataset_type / likelihood / instrument / "samplers" / "default")
+        / sampler
+        / "explicit"
+        / setup_id
+        / f"seed_{seed}"
     )
     directory.mkdir(parents=True, exist_ok=True)
-    return directory / f"search_seed{seed}.json", directory / f"search_seed{seed}.png"
+    stem = row_stem("search", host_class)
+    return directory / f"{stem}.json", directory / f"{stem}.png"
 
 
 def output_path_prefix(

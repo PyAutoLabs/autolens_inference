@@ -172,5 +172,5 @@ def wall_estimate(rate_s_per_step: float, n_steps: int, compile_s: float = 0.0) 
 
 # Current runnable alias for the historical imaging/slam/hst cell.
 CURRENT_SCRIPT_ALIASES = {
-    "scripts/imaging/slam/hst.py": "scripts/imaging/rectangular/baseline_slam.py"
+    "scripts/imaging/slam/hst.py": "scripts/imaging/rectangular/validation/baseline_slam.py"
 }

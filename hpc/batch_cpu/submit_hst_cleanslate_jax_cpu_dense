@@ -17,7 +17,7 @@
 #     never pulled. PYAUTO_RELEASE_PIN is recorded in each row beside the library_revisions
 #     actually imported, and a reader checks one against the other.
 #   - The PyAutoFit run tree is output/autolens/imaging/hst/slam/<variant>/<config_name>/seed_<n>/
-#     and the rows land under results/slam/imaging/hst/<variant>/<config_name>/. The 2026-09-24
+#     and the rows land under results/imaging/<rectangular|delaunay>/hst/validation/<model_variant>/<setup_id>/. The 2026-09-24
 #     trees were moved aside on RAL and their rows archived, so nothing here is ever resumed or
 #     overwritten. (Until #35 flattened it, this campaign wrote under a dated
 #     output/cleanslate_2026_10_17/ root with `--results-tag cleanslate_2026_10_17`.)
@@ -73,7 +73,7 @@ echo "Seed:       $SLURM_ARRAY_TASK_ID"
 
 cd $AP_ROOT
 
-python3 scripts/imaging/rectangular/baseline_slam.py \
+python3 scripts/imaging/rectangular/validation/baseline_slam.py \
     --instrument hst \
     --backend jax_cpu \
     --inversion dense \

@@ -14,7 +14,7 @@ Single dual-purpose module:
 2. **Profiles** each phase (grid + solver setup, eager + JIT
    ``solver.solve``, ``time_delays_from``, imaging-side
    ``via_tracer_from``, output) and writes
-   ``results/simulators/point_source_<instrument>_summary_v<ver>.{json,png}``.
+   ``results/misc/simulators/point_source_<instrument>_summary_v<ver>.{json,png}``.
 
 ``INSTRUMENTS`` is the single source of truth for the point-source
 likelihood scripts — they import it directly::
@@ -396,7 +396,7 @@ def simulate(instrument: str = "simple", output_root: Path | None = None) -> Pat
     # === Summary ===
 
     al_version = al.__version__
-    results_dir = root / "results" / "simulators"
+    results_dir = root / "results" / "misc" / "simulators"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     phases = dict(timer.records)

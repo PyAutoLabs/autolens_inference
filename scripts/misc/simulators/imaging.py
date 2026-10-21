@@ -13,7 +13,7 @@ Single dual-purpose module:
 2. **Profiles** each phase (grid + over-sampling setup, PSF + simulator
    construction, eager + JIT ``image_2d_from``, ``via_tracer_from``,
    ``PointSolver.solve``, fits output) and writes
-   ``results/simulators/imaging_<instrument>_summary_v<ver>.{json,png}``.
+   ``results/misc/simulators/imaging_<instrument>_summary_v<ver>.{json,png}``.
 
 ``INSTRUMENTS`` is the single source of truth for all imaging likelihood
 scripts — they import it directly::
@@ -283,7 +283,7 @@ def simulate(instrument: str = "hst", output_root: Path | None = None) -> Path:
     # === Summary ===
 
     al_version = al.__version__
-    results_dir = root / "results" / "simulators"
+    results_dir = root / "results" / "misc" / "simulators"
     results_dir.mkdir(parents=True, exist_ok=True)
 
     phases = dict(timer.records)
