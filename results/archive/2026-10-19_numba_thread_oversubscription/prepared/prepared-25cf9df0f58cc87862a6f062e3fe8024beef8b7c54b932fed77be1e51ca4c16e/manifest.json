@@ -1,0 +1,69 @@
+{
+  "artifacts": [
+    {
+      "kind": "model_definition",
+      "path": "output/autolens/prepared/hpc_a100_numba_cpu_sparse_fp64/seed_1/slam_base_light_fixed/model.json",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_numba_cpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "eea67470f7834b4bd44aa38912097be991217232b20dcf95b9ba763125e73de5"
+    },
+    {
+      "kind": "priors_definition",
+      "path": "output/autolens/prepared/hpc_a100_numba_cpu_sparse_fp64/seed_1/slam_base_light_fixed/priors.json",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_numba_cpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "007b61e7d018e1bfdca699db83a872c3ed1943fe17b802af4204f085731c42c9"
+    },
+    {
+      "kind": "model_snapshot",
+      "path": "output/autolens/prepared/hpc_a100_numba_cpu_sparse_fp64/seed_1/slam_base_light_fixed/model.dill",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_numba_cpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "9efb74c5bf1e35a3cb5bfb732435d33e51ac3ceab478c424138e1d84b3f6fba7"
+    },
+    {
+      "kind": "dataset_snapshot",
+      "path": "output/autolens/prepared/hpc_a100_numba_cpu_sparse_fp64/seed_1/slam_base_light_fixed/dataset.dill",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_numba_cpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "261ce0f2edd5e540cd23b42ab9ee834d39567da16d08fa5ef90133b354b8ebfe"
+    },
+    {
+      "kind": "analysis_snapshot",
+      "path": "output/autolens/prepared/hpc_a100_numba_cpu_sparse_fp64/seed_1/slam_base_light_fixed/analysis.dill",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_numba_cpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "6e90cf4127a2f5196a5ee4580c2656201d7f8df15ae905fdfc8c9991913238b5"
+    }
+  ],
+  "baseline_evidence": null,
+  "baseline_evidence_reason": "Baseline fit not completed",
+  "baseline_record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_numba_cpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+  "controls": {
+    "backend": "numba_cpu",
+    "config_name": "hpc_a100_numba_cpu_sparse_fp64",
+    "dataset_class": "imaging",
+    "instrument": "hst",
+    "lens_light_mode": "fixed",
+    "precision": "fp64",
+    "seed": 1,
+    "use_jax": false,
+    "variant": "slam_base_light_fixed"
+  },
+  "dataset_id": "sha256:261ce0f2edd5e540cd23b42ab9ee834d39567da16d08fa5ef90133b354b8ebfe",
+  "dependency_revisions": {
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+  },
+  "id": "prepared-25cf9df0f58cc87862a6f062e3fe8024beef8b7c54b932fed77be1e51ca4c16e",
+  "model_id": "sha256:eea67470f7834b4bd44aa38912097be991217232b20dcf95b9ba763125e73de5",
+  "preparation_s": 110670.39056915813,
+  "priors_id": "sha256:007b61e7d018e1bfdca699db83a872c3ed1943fe17b802af4204f085731c42c9",
+  "schema": "prepared-inference-problem",
+  "setup_id": "imaging/rectangular/hst",
+  "stage": "mass_total[1]",
+  "version": 1
+}

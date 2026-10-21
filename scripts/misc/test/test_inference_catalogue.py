@@ -15,8 +15,15 @@ def test_real_migration_preserves_records_and_archive():
         "imaging/delaunay/hst",
         "point_source/simple/simple",
     }
-    assert not new["prepared_problems"]
-    assert all(r["initialization"]["mode"] == "unknown" for r in new["records"])
+    # The committed prepared/ manifests either resolve to a known setup or are
+    # listed as excluded; none is silently dropped.
+    known = {s["id"] for s in new["setups"]}
+    assert all(m["setup_id"] in known for m in new["prepared_problems"])
+    excluded = {e["path"] for e in new["coverage"]["excluded"]}
+    manifests = {m.relative_to(ROOT).as_posix() for m in (ROOT / "prepared").rglob("manifest.json")}
+    assert len(new["prepared_problems"]) + len(manifests & excluded) == len(manifests)
+    # Initialization is "unknown" unless the row itself declares it.
+    assert all(r["initialization"]["mode"] in ("unknown", "cold") for r in new["records"])
     assert all(s["reference_record_id"] is None for s in new["setups"])
 
 
