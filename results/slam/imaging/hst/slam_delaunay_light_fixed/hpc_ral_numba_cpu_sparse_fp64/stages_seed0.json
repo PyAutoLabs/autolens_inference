@@ -1,0 +1,59 @@
+{
+  "schema_version": 3,
+  "target": "hst/slam5_slam_delaunay_light_fixed/seed0",
+  "variant": "slam_delaunay_light_fixed",
+  "lens_light_mode": "fixed",
+  "results_tag": null,
+  "library_revisions": {
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+  },
+  "release_pin": "2026.10.17.1",
+  "slurm_job_id": "412624_0",
+  "config_name": "hpc_ral_numba_cpu_sparse_fp64",
+  "backend": "numba_cpu",
+  "inversion": "sparse",
+  "precision": "fp64",
+  "instrument": "hst",
+  "dataset_class": "imaging",
+  "seed": 0,
+  "sampler": "nautilus",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236
+  },
+  "cores": 8,
+  "use_jax": false,
+  "rect_mesh": "bilinear",
+  "memo": "off",
+  "mesh": "delaunay",
+  "mesh_pixels": 1250,
+  "mesh_areas_factor": 0.5,
+  "mesh_zeroed_pixels": 30,
+  "image_mesh": "hilbert",
+  "image_mesh_weight_power": 3.5,
+  "image_mesh_weight_floor": 0.01,
+  "image_mesh_edge_points": 30,
+  "regularization": "adapt_split",
+  "mesh_shape": null,
+  "stages_requested": null,
+  "stages_from": {
+    "config_name": "hpc_a100_jax_cpu_dense_fp64",
+    "stages": [
+      "source_lp"
+    ]
+  },
+  "chain_wall_s": null,
+  "chain_wall_excludes": [],
+  "chain_wall_note": "chain_wall_s is the sum of the sampler walls (wall_s) of the stages this row's process fitted; a stage loaded from another config (shared_from_config) is excluded and listed in chain_wall_excludes",
+  "test_mode": false,
+  "status": "failed: FileNotFoundError: [Errno 2] No such file or directory: PosixPath('/mnt/ral/jnightin/inference/autolens_inference/output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_0/source_lp[1]/97c9fde39db31280a495381d06812ef3/files/search_internal')",
+  "stages": []
+}

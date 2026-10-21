@@ -1,0 +1,206 @@
+{
+  "schema_version": 3,
+  "target": "hst/slam5/seed1",
+  "variant": "slam_base",
+  "lens_light_mode": "linear",
+  "results_tag": null,
+  "library_revisions": {
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+  },
+  "release_pin": "2026.10.17.1",
+  "slurm_job_id": "412563_1",
+  "config_name": "hpc_a100_numba_cpu_dense_fp64",
+  "backend": "numba_cpu",
+  "inversion": "dense",
+  "precision": "fp64",
+  "instrument": "hst",
+  "dataset_class": "imaging",
+  "seed": 1,
+  "sampler": "nautilus",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 236
+  },
+  "cores": 8,
+  "use_jax": false,
+  "rect_mesh": "bilinear",
+  "memo": "off",
+  "mesh": "rect",
+  "mesh_pixels": 28,
+  "mesh_areas_factor": null,
+  "mesh_zeroed_pixels": null,
+  "image_mesh": null,
+  "image_mesh_weight_power": null,
+  "image_mesh_weight_floor": null,
+  "image_mesh_edge_points": null,
+  "regularization": "adapt",
+  "mesh_shape": [
+    28,
+    28
+  ],
+  "stages_requested": null,
+  "stages_from": {
+    "config_name": "hpc_a100_jax_cpu_dense_fp64",
+    "stages": [
+      "source_lp"
+    ]
+  },
+  "chain_wall_s": null,
+  "chain_wall_excludes": [
+    "source_lp[1]"
+  ],
+  "chain_wall_note": "chain_wall_s is the sum of the sampler walls (wall_s) of the stages this row's process fitted; a stage loaded from another config (shared_from_config) is excluded and listed in chain_wall_excludes",
+  "test_mode": false,
+  "status": "failed: SearchException: A Nautilus likelihood worker died mid-fit: pid 1815461 (exit code -11, killed by signal 11), pid 1815463 (exit code -11, killed by signal 11), pid 1815473 (exit code -11, killed by signal 11), pid 1815475 (exit code -11, killed by signal 11).\n\nA negative exit code is the signal that killed the worker (-11 SIGSEGV, -9 SIGKILL \u2014 typically an out-of-memory kill on a cluster).\n\n`multiprocessing.Pool` has already replaced the worker, but it never re-issues the task that worker was running, so the `Pool.map` driving this fit would otherwise block forever and the fit would hang to the wall clock rather than fail (RAL job 342351_0 hung 27 hours this way). Failing now instead.\n\nFix, either of:\n  - run the search with number_of_cores=1, which builds no pool at all;\n  - get parallelism from a vectorised JAX likelihood instead, `Analysis(use_jax=True)` \u2014 Nautilus then takes `fit_x1_cpu` with vectorized=True and no pool.",
+  "stages": [
+    {
+      "name": "source_lp[1]",
+      "free_parameters": 17,
+      "n_live": 200,
+      "n_batch": 50,
+      "wall_s": 3410.500566005707,
+      "total_wall_s": null,
+      "compile_s": null,
+      "likelihood_evals": 91250,
+      "log_evidence": 31968.22936478904,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": 32068.525190350945,
+      "posterior": {
+        "galaxies.lens.bulge.profile_list.0.centre_0": {
+          "median": 0.00013620018100884144,
+          "sigma": 0.00022442396201657395,
+          "lower_1": -8.638949334492346e-05,
+          "upper_1": 0.0003624584306882244
+        },
+        "galaxies.lens.bulge.profile_list.0.centre_1": {
+          "median": -3.9028393246434514e-05,
+          "sigma": 0.00021814985057744382,
+          "lower_1": -0.0002536867661807576,
+          "upper_1": 0.00018261293497413007
+        },
+        "galaxies.lens.bulge.profile_list.0.ell_comps_0": {
+          "median": 0.05191973467269559,
+          "sigma": 0.002407910786095875,
+          "lower_1": 0.0494011934747671,
+          "upper_1": 0.05421701504695885
+        },
+        "galaxies.lens.bulge.profile_list.0.ell_comps_1": {
+          "median": -0.0001802336514145159,
+          "sigma": 0.004979530421404147,
+          "lower_1": -0.0041521977909430765,
+          "upper_1": 0.005806863051865218
+        },
+        "galaxies.lens.bulge.profile_list.20.ell_comps_0": {
+          "median": 0.05737156829456968,
+          "sigma": 0.09344493469067039,
+          "lower_1": -0.05190740575882275,
+          "upper_1": 0.13498246362251803
+        },
+        "galaxies.lens.bulge.profile_list.20.ell_comps_1": {
+          "median": 0.04773226087368435,
+          "sigma": 0.18084561457027798,
+          "lower_1": -0.1451771990071176,
+          "upper_1": 0.2165140301334384
+        },
+        "galaxies.source.bulge.profile_list.0.centre_0": {
+          "median": -0.0003052668820792758,
+          "sigma": 0.00022872009841005898,
+          "lower_1": -0.0005323618582297979,
+          "upper_1": -7.492166140967987e-05
+        },
+        "galaxies.source.bulge.profile_list.0.centre_1": {
+          "median": -0.00026020831225551165,
+          "sigma": 0.0002035466436959078,
+          "lower_1": -0.00046176443479056356,
+          "upper_1": -5.467114739874793e-05
+        },
+        "galaxies.source.bulge.profile_list.0.ell_comps_0": {
+          "median": 0.09760392345750464,
+          "sigma": 0.0021496318169359416,
+          "lower_1": 0.0954834289433965,
+          "upper_1": 0.09978269257726838
+        },
+        "galaxies.source.bulge.profile_list.0.ell_comps_1": {
+          "median": -0.05597644681732685,
+          "sigma": 0.0019195186853617173,
+          "lower_1": -0.05793227393476075,
+          "upper_1": -0.05409323656403731
+        },
+        "gamma_1": {
+          "median": 0.050026364953074026,
+          "sigma": 0.00037463705923135304,
+          "lower_1": 0.04965860818390089,
+          "upper_1": 0.050407882302363594
+        },
+        "gamma_2": {
+          "median": 0.050116314659016434,
+          "sigma": 0.0003463792556181733,
+          "lower_1": 0.049779994403549625,
+          "upper_1": 0.05047275291478597
+        },
+        "galaxies.lens.mass.centre_0": {
+          "median": -7.341773594071706e-05,
+          "sigma": 0.00029601311696420565,
+          "lower_1": -0.00036659786804511254,
+          "upper_1": 0.00022542836588329874
+        },
+        "galaxies.lens.mass.centre_1": {
+          "median": -0.00020399018332730096,
+          "sigma": 0.00027003468314953835,
+          "lower_1": -0.000467970566944119,
+          "upper_1": 7.209879935495766e-05
+        },
+        "galaxies.lens.mass.ell_comps_0": {
+          "median": 0.052778603074524096,
+          "sigma": 0.0006225891222828885,
+          "lower_1": 0.05217462957377445,
+          "upper_1": 0.05341980781834023
+        },
+        "galaxies.lens.mass.ell_comps_1": {
+          "median": 0.000424456778866401,
+          "sigma": 0.0009406944917466202,
+          "lower_1": -0.0005038244709082812,
+          "upper_1": 0.001377564512584959
+        },
+        "einstein_radius": {
+          "median": 1.6004216676413492,
+          "sigma": 0.00019246763293245817,
+          "lower_1": 1.600224137290684,
+          "upper_1": 1.600609072556549
+        },
+        "shear_magnitude": {
+          "median": 0.07081385777593246,
+          "sigma": 0.00034712045610007375,
+          "lower_1": 0.07047414103891637,
+          "upper_1": 0.07116838195111652
+        }
+      },
+      "truth_delta_sigma": {
+        "einstein_radius": 2.190849624555176,
+        "gamma_1": 0.07037465307921402,
+        "gamma_2": 0.3358014578813258,
+        "shear_magnitude": 0.297244531298821
+      },
+      "inversion_applies": false,
+      "positions_info_present": false,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_cpu_dense_fp64/seed_1/source_lp[1]/ef3b397b5af00c54a3cb359c5e4090d4",
+      "compile_s_note": "no compile probe: stage loaded from another config, not fitted",
+      "shared_from_config": "hpc_a100_jax_cpu_dense_fp64",
+      "shared_stage_note": "loaded from another config's completed fit (--stages-from), not fitted by this run: wall_s and likelihood_evals are that fit's, kept for the record and excluded from chain_wall_s",
+      "fitted_backend": "jax_cpu",
+      "use_jax": true,
+      "shared_load_s": 7.515006616944447
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "artifacts": [
+    {
+      "kind": "model_definition",
+      "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/model.json",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "f159bb3aa1cbf6a6d8b67bf64143ff7b091aa99eff9bb51c17b3a931d730ecb0"
+    },
+    {
+      "kind": "priors_definition",
+      "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/priors.json",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "57983acc13af00ecb4551c6f820ff6e973c8c7f61adf18963f07fe4baadfb5bc"
+    },
+    {
+      "kind": "model_snapshot",
+      "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/model.dill",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "abd51509ea13f39d375498b30b18f2e143dd86db3e41e996f89bf77aef58c2d5"
+    },
+    {
+      "kind": "dataset_snapshot",
+      "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/dataset.dill",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "12b394d731fe1fc69ef21e938597c23a5f5d2fd35242203826202ee00d029d87"
+    },
+    {
+      "kind": "analysis_snapshot",
+      "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/analysis.dill",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "a1e4e4ed4c0275f2c518c522af035d2cf1905d38ef472a5608e62e973f742c39"
+    },
+    {
+      "kind": "posterior_samples",
+      "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/baseline_samples.dill",
+      "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
+      "sha256": "71b1a090e75cce64c84f6ef7a68a046de0e475606eea3979aa5fdd6be4467122"
+    }
+  ],
+  "baseline_evidence": {
+    "max_likelihood_parameters": {
+      "('fields.shear.gamma_1',)": 0.054596294870755124,
+      "('fields.shear.gamma_2',)": 0.05044169965859696,
+      "('galaxies.lens.mass.centre_0',)": -0.0008714415087811647,
+      "('galaxies.lens.mass.centre_1',)": -0.00042922642344503836,
+      "('galaxies.lens.mass.einstein_radius',)": 1.6035467021780856,
+      "('galaxies.lens.mass.ell_comps_0',)": 0.05426288210608967,
+      "('galaxies.lens.mass.ell_comps_1',)": 0.008003379498446685,
+      "('galaxies.lens.mass.slope',)": 2.0359871464757777
+    },
+    "max_log_likelihood": 31651.351049607736,
+    "posterior": {
+      "centre_0": {
+        "lower_1": -0.0009848811346270545,
+        "median": -0.0005265547028201727,
+        "sigma": 0.00048784815865123525,
+        "upper_1": -9.184817324583942e-06
+      },
+      "centre_1": {
+        "lower_1": -0.0008482984506133323,
+        "median": -0.00046548034715377285,
+        "sigma": 0.00038720080915611476,
+        "upper_1": -7.389683230110274e-05
+      },
+      "einstein_radius": {
+        "lower_1": 1.5998423035896852,
+        "median": 1.6027918222263833,
+        "sigma": 0.0032513666304124778,
+        "upper_1": 1.60634503685051
+      },
+      "ell_comps_0": {
+        "lower_1": 0.0520726920461757,
+        "median": 0.05393884670212543,
+        "sigma": 0.0019413859576917318,
+        "upper_1": 0.05595546396155916
+      },
+      "ell_comps_1": {
+        "lower_1": 2.4012319732590325e-05,
+        "median": 0.004149510946843912,
+        "sigma": 0.004077565557267744,
+        "upper_1": 0.008179143434268078
+      },
+      "gamma_1": {
+        "lower_1": 0.04970582936136984,
+        "median": 0.05339521637695975,
+        "sigma": 0.002867383190640286,
+        "upper_1": 0.05544059574265041
+      },
+      "gamma_2": {
+        "lower_1": 0.04966113240541915,
+        "median": 0.05039283598538383,
+        "sigma": 0.0007950717370855051,
+        "upper_1": 0.051251275879590164
+      },
+      "shear_magnitude": {
+        "lower_1": 0.07035663633843058,
+        "median": 0.07349381655829791,
+        "sigma": 0.0024874322672484087,
+        "upper_1": 0.07533150087292739
+      },
+      "slope": {
+        "lower_1": 1.9885185746331342,
+        "median": 2.0265891537194096,
+        "sigma": 0.041897882280180876,
+        "upper_1": 2.072314339193496
+      }
+    },
+    "scientific_acceptance": "not_assessed"
+  },
+  "baseline_record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+  "controls": {
+    "backend": "jax_cpu",
+    "config_name": "hpc_a100_jax_cpu_dense_fp64",
+    "dataset_class": "imaging",
+    "instrument": "hst",
+    "lens_light_mode": "fixed",
+    "precision": "fp64",
+    "seed": 0,
+    "use_jax": true,
+    "variant": "slam_base_light_fixed"
+  },
+  "dataset_id": "sha256:12b394d731fe1fc69ef21e938597c23a5f5d2fd35242203826202ee00d029d87",
+  "dependency_revisions": {
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+  },
+  "id": "prepared-4677f0827b60836a1d8abc9ac4d983a7e2b509bba1348a407cc72a03d3d4410c",
+  "model_id": "sha256:f159bb3aa1cbf6a6d8b67bf64143ff7b091aa99eff9bb51c17b3a931d730ecb0",
+  "preparation_s": 53486.83517306484,
+  "priors_id": "sha256:57983acc13af00ecb4551c6f820ff6e973c8c7f61adf18963f07fe4baadfb5bc",
+  "schema": "prepared-inference-problem",
+  "setup_id": "imaging/rectangular/hst",
+  "stage": "mass_total[1]",
+  "version": 1
+}
