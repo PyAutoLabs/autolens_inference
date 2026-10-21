@@ -28,7 +28,7 @@
   },
   "evidence_updated_at": null,
   "evidence_updated_at_reason": "Legacy result rows do not record measurement timestamps",
-  "generated_at": "2026-10-19T19:04:21Z",
+  "generated_at": "2026-10-21T18:32:33Z",
   "generation_basis": "Source commit timestamp; not a measurement or check-in time",
   "limitations": [
     "No scientific acceptance or convergence inferred from process completion",
@@ -356,7 +356,7 @@
       "stage": "mass_total[1]"
     }
   ],
-  "producer_revision": "03b1f280e72ddbe309995d4cb0d4b7c23e7b730b",
+  "producer_revision": "d7eda59fc30290e5a313ab7540ec51ef2d0593ba",
   "project": "autolens_inference",
   "records": [
     {
@@ -60938,7 +60938,7 @@
       "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
     }
   ],
-  "source_commit": "03b1f280e72ddbe309995d4cb0d4b7c23e7b730b",
+  "source_commit": "d7eda59fc30290e5a313ab7540ec51ef2d0593ba",
   "valid_until": null,
   "version": 2
 }
