@@ -1,0 +1,244 @@
+{
+  "commit": "173ab272904f98e378d9d298bf0e6243dffd1d1a",
+  "fetched_at": "2026-10-19T09:24:42Z",
+  "instance": "lens",
+  "records": [
+    {
+      "configuration": {
+        "delaunay_vertices": 1500,
+        "source_pixels": 1500
+      },
+      "dataset": "interferometer",
+      "id": "measurement/07d39632cb9e060387dd",
+      "identity": {
+        "backend": "gpu",
+        "device": "a100",
+        "precision": "float64"
+      },
+      "instrument": "alma",
+      "measurement": {
+        "single_jit_block": 0.049513059499440716
+      },
+      "metric": "single_jit_block",
+      "model": "delaunay",
+      "setup_id": "interferometer/delaunay/alma/c00199cd0663a6f29c96"
+    },
+    {
+      "configuration": {
+        "source_pixels": 1521
+      },
+      "dataset": "interferometer",
+      "id": "measurement/5ad8678aaa5a1fc47227",
+      "identity": {
+        "backend": "gpu",
+        "device": "a100",
+        "precision": "float64"
+      },
+      "instrument": "sdp81",
+      "measurement": {
+        "single_jit_block": 0.04523600130341947
+      },
+      "metric": "single_jit_block",
+      "model": "rectangular",
+      "setup_id": "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580"
+    },
+    {
+      "configuration": {
+        "delaunay_vertices": 1500,
+        "source_pixels": 1500
+      },
+      "dataset": "interferometer",
+      "id": "measurement/5cf324f959cbd96df392",
+      "identity": {
+        "backend": "gpu",
+        "device": "a100",
+        "precision": "float64"
+      },
+      "instrument": "sdp81",
+      "measurement": {
+        "single_jit_block": 0.0537076534004882
+      },
+      "metric": "single_jit_block",
+      "model": "delaunay",
+      "setup_id": "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c"
+    },
+    {
+      "configuration": {
+        "delaunay_vertices": 1500,
+        "source_pixels": 1500
+      },
+      "dataset": "imaging",
+      "id": "measurement/65c55677d7db7d3e755e",
+      "identity": {
+        "backend": "gpu",
+        "device": "a100",
+        "precision": "float64"
+      },
+      "instrument": "hst",
+      "measurement": {
+        "single_jit_block": 0.06495481780730188
+      },
+      "metric": "single_jit_block",
+      "model": "delaunay",
+      "setup_id": "imaging/delaunay/hst/9b00259c44eff5943b23"
+    },
+    {
+      "configuration": {
+        "delaunay_vertices": 1500,
+        "source_pixels": 1500
+      },
+      "dataset": "interferometer",
+      "id": "measurement/78267b21742073b7bb03",
+      "identity": {
+        "backend": "cpu",
+        "device": "cpu",
+        "precision": "float64"
+      },
+      "instrument": "sdp81",
+      "measurement": {
+        "full_call.mean_s": 1.5030150013626553
+      },
+      "metric": "full_call.mean_s",
+      "model": "delaunay",
+      "setup_id": "interferometer/delaunay/sdp81/5eb412356335dad23303"
+    },
+    {
+      "configuration": {
+        "delaunay_vertices": 1500,
+        "source_pixels": 1500
+      },
+      "dataset": "interferometer",
+      "id": "measurement/b280b41456ac0659bccc",
+      "identity": {
+        "backend": "cpu",
+        "device": "cpu",
+        "precision": "float64"
+      },
+      "instrument": "alma",
+      "measurement": {
+        "full_call.mean_s": 1.2619635818409733
+      },
+      "metric": "full_call.mean_s",
+      "model": "delaunay",
+      "setup_id": "interferometer/delaunay/alma/00e86a7de323cb7098eb"
+    },
+    {
+      "configuration": {
+        "source_pixels": 1521
+      },
+      "dataset": "interferometer",
+      "id": "measurement/b568267428fbab523465",
+      "identity": {
+        "backend": "gpu",
+        "device": "a100",
+        "precision": "float64"
+      },
+      "instrument": "alma",
+      "measurement": {
+        "single_jit_block": 0.044458239999949
+      },
+      "metric": "single_jit_block",
+      "model": "rectangular",
+      "setup_id": "interferometer/rectangular/alma/5e3423306e47ff2283ff"
+    },
+    {
+      "configuration": {
+        "delaunay_vertices": 1500,
+        "source_pixels": 1500
+      },
+      "dataset": "imaging",
+      "id": "measurement/c7d86c7b4ddc20d7d86e",
+      "identity": {
+        "backend": "gpu",
+        "device": "a100",
+        "precision": "float64"
+      },
+      "instrument": "hst",
+      "measurement": {
+        "vmap.per_call": 0.04253356978151714
+      },
+      "metric": "vmap.per_call",
+      "model": "delaunay",
+      "setup_id": "imaging/delaunay/hst/9b00259c44eff5943b23"
+    },
+    {
+      "configuration": {
+        "source_pixels": 1521
+      },
+      "dataset": "interferometer",
+      "id": "measurement/cb842f1c629a33b90314",
+      "identity": {
+        "backend": "cpu",
+        "device": "cpu",
+        "precision": "float64"
+      },
+      "instrument": "alma",
+      "measurement": {
+        "full_call.mean_s": 1.8301946158370763
+      },
+      "metric": "full_call.mean_s",
+      "model": "rectangular",
+      "setup_id": "interferometer/rectangular/alma/c6ff0b2db1b9b636c14c"
+    },
+    {
+      "configuration": {
+        "source_pixels": null
+      },
+      "dataset": "interferometer",
+      "id": "measurement/d399e1ba20dcdf9665e0",
+      "identity": {
+        "backend": "gpu",
+        "device": "a100",
+        "precision": "float64"
+      },
+      "instrument": "sdp81",
+      "measurement": {
+        "single_jit_block": 0.02829210730269551
+      },
+      "metric": "single_jit_block",
+      "model": "mge",
+      "setup_id": "interferometer/mge/sdp81/61c6dccf97c81d66fc1e"
+    },
+    {
+      "configuration": {
+        "source_pixels": 1521
+      },
+      "dataset": "interferometer",
+      "id": "measurement/ee5b21bd78ba2a34a850",
+      "identity": {
+        "backend": "cpu",
+        "device": "cpu",
+        "precision": "float64"
+      },
+      "instrument": "sdp81",
+      "measurement": {
+        "full_call.mean_s": 1.8505233152046505
+      },
+      "metric": "full_call.mean_s",
+      "model": "rectangular",
+      "setup_id": "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+    },
+    {
+      "configuration": {
+        "delaunay_vertices": 1500,
+        "source_pixels": 1500
+      },
+      "dataset": "imaging",
+      "id": "measurement/fca0c4db1aea639cbfe3",
+      "identity": {
+        "backend": "gpu",
+        "device": "a100",
+        "precision": "float64"
+      },
+      "instrument": "hst",
+      "measurement": {
+        "vmap.batch_time": 0.6805371165042743
+      },
+      "metric": "vmap.batch_time",
+      "model": "delaunay",
+      "setup_id": "imaging/delaunay/hst/9b00259c44eff5943b23"
+    }
+  ],
+  "schema": "profiling-summary@2",
+  "source": "PyAutoPulse snapshots/lens.json"
+}

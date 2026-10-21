@@ -148,3 +148,81 @@ def test_installed_release_null_revisions_dropped_with_reason(tmp_path):
     (row,) = feed(tmp_path)["records"]
     assert row["dependency_revisions"] == {}
     assert "installed release" in row["unknown_reasons"]["dependency_revisions"]
+
+
+def _slam_row(config, variant="slam_base", host=None, seed=0, stages=None, **extra):
+    row = {
+        "schema_version": 3,
+        "target": "hst/slam5/seed0",
+        "dataset_class": "imaging",
+        "instrument": "hst",
+        "variant": variant,
+        "mesh": "delaunay" if "delaunay" in variant else "rect",
+        "config_name": config,
+        "sampler": "nautilus",
+        "seed": seed,
+        "cores": 8,
+        "host": host,
+        "device": {"omp_num_threads": "1"},
+        "stages": stages or [{"name": "mass_total[1]", "completed": True, "wall_s": 10.0}],
+        **extra,
+    }
+    return row
+
+
+def test_setup_fields_from_the_config_table(tmp_path):
+    put(tmp_path, _slam_row("hpc_a100_jax_gpu_sparse_fp64"), "a/gpu.json")
+    put(
+        tmp_path,
+        _slam_row("hpc_ral_numba_cpu_sparse_fp64", "slam_delaunay_light_fixed"),
+        "a/n.json",
+    )
+    put(tmp_path, _slam_row("local_jax_cpu_dense_mp"), "a/local.json")
+    rows = {r["id"]: r for r in feed(tmp_path)["records"] if r["parent_run_id"] is None}
+    gpu = rows["results/a/gpu.json"]
+    assert gpu["setup_mode"] == "explicit"
+    assert gpu["setup_id"] == "jax_gpu_sparse_fp64" and gpu["host_class"] == "hpc_a100"
+    assert gpu["setup_resolved"] == {
+        "backend": "jax",
+        "device": "gpu",
+        "operator": "sparse",
+        "precision": "fp64",
+        "transformer": "na",
+        "threads": 1,
+    }
+    assert gpu["likelihood"] == {"dataset_type": "imaging", "variant": "rectangular"}
+    assert gpu["model_variant"] == "default"
+    numba = rows["results/a/n.json"]
+    assert numba["host_class"] == "hpc_ral_cpu" and numba["model_variant"] == "light_fixed"
+    assert numba["likelihood"]["variant"] == "delaunay"
+    local = rows["results/a/local.json"]
+    assert local["setup_id"] == "jax_cpu_dense_mixed" and local["host_class"] == "local_laptop"
+
+
+def test_cpu_rows_under_the_a100_prefix_relabel_only_on_host_proof(tmp_path):
+    proven = _slam_row("hpc_a100_jax_cpu_dense_fp64", host="euclid-ral-compute-10-2")
+    put(tmp_path, proven, "a/proven.json")
+    put(tmp_path, _slam_row("hpc_a100_jax_cpu_dense_fp64", host="euclid-ral-gpu-2"), "a/gpu.json")
+    put(tmp_path, _slam_row("hpc_a100_jax_cpu_dense_fp64"), "a/none.json")
+    rows = {r["id"]: r for r in feed(tmp_path)["records"] if r["parent_run_id"] is None}
+    assert rows["results/a/proven.json"]["host_class"] == "hpc_ral_cpu"
+    assert "host_class" not in rows["results/a/proven.json"]["unknown_reasons"]
+    for name in ("gpu", "none"):
+        row = rows[f"results/a/{name}.json"]
+        assert row["host_class"] == "hpc_a100" and "host_class" in row["unknown_reasons"]
+
+
+def test_rows_without_a_config_name_say_why(tmp_path):
+    put(tmp_path, {"schema_version": 1, "target": "lens"})
+    (row,) = feed(tmp_path)["records"]
+    assert row["setup_id"] is None and row["host_class"] is None
+    assert row["setup_mode"] == "explicit"
+    assert {"setup_id", "host_class", "likelihood"} <= set(row["unknown_reasons"])
+
+
+def test_every_current_record_carries_the_setup_fields():
+    for row in feed(ROOT)["records"]:
+        assert row["setup_mode"] == "explicit"
+        assert row["model_variant"] in ("default", "light_fixed", "delaunay_1250")
+        if not row["archived"]:
+            assert row["setup_id"] and row["host_class"] and row["likelihood"]
