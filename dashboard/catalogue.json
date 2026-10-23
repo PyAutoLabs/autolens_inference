@@ -28,7 +28,7 @@
   },
   "evidence_updated_at": null,
   "evidence_updated_at_reason": "Legacy result rows do not record measurement timestamps",
-  "generated_at": "2026-10-21T18:47:10Z",
+  "generated_at": "2026-10-23T14:10:37Z",
   "generation_basis": "Source commit timestamp; not a measurement or check-in time",
   "limitations": [
     "No scientific acceptance or convergence inferred from process completion",
@@ -42,47 +42,47 @@
         {
           "kind": "model_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_1/slam_base_light_fixed/model.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "8c78eadd26da2eb7dee2ef7b00e506e156996b7ce091b8987cb48d4286b64ded"
         },
         {
           "kind": "priors_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_1/slam_base_light_fixed/priors.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "57983acc13af00ecb4551c6f820ff6e973c8c7f61adf18963f07fe4baadfb5bc"
         },
         {
           "kind": "model_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_1/slam_base_light_fixed/model.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "8d597e2d0c701241484a7ead9e9613d1fa74b57f456909c041a11aaf806dbe7b"
         },
         {
           "kind": "dataset_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_1/slam_base_light_fixed/dataset.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "b2eea135d217f1ddc7148d49422067c607e3e84f023e12d182304beaa921641e"
         },
         {
           "kind": "analysis_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_1/slam_base_light_fixed/analysis.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "beeb0e469d7bdd0ea1cabce5d34247751255b1a333c5c9054d51d8cfefa76d68"
         },
         {
           "kind": "posterior_samples",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_1/slam_base_light_fixed/baseline_samples.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "73cab2088509527ab460217b4a9548cc4954ac7077c807e170109c648a5501b2"
         }
       ],
-      "baseline_record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+      "baseline_record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
       "dataset_id": "sha256:b2eea135d217f1ddc7148d49422067c607e3e84f023e12d182304beaa921641e",
       "id": "prepared-220cf1733b869232eca7067acf8835f825f330c2169c127e7c2ff215ca3225d1",
       "model_id": "sha256:8c78eadd26da2eb7dee2ef7b00e506e156996b7ce091b8987cb48d4286b64ded",
@@ -95,47 +95,47 @@
         {
           "kind": "model_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_0/slam_base_light_fixed/model.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "af7a9dd560a2f362a9ae4ed0a7d1e85e0fce1c4e5d2f4a1f9b7727f965fd53cb"
         },
         {
           "kind": "priors_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_0/slam_base_light_fixed/priors.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "57983acc13af00ecb4551c6f820ff6e973c8c7f61adf18963f07fe4baadfb5bc"
         },
         {
           "kind": "model_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_0/slam_base_light_fixed/model.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "b8999b79cd4dc5f7160305ba99e904e7a3b4b0aecf43484ef8d30cac594fe320"
         },
         {
           "kind": "dataset_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_0/slam_base_light_fixed/dataset.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "fc3fc10e67485fb7a43fc3bfef531a3ae083f12e0ef5012fcd4cc5a3f6ef2325"
         },
         {
           "kind": "analysis_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_0/slam_base_light_fixed/analysis.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "51b0360f80a7198714a2ecb0fe12e280858b85b9ff6642c673deddd28208c904"
         },
         {
           "kind": "posterior_samples",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_0/slam_base_light_fixed/baseline_samples.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "97778fab733714eab05240a4b08befd90a2ab4c1e8739745001c5f595312681e"
         }
       ],
-      "baseline_record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "baseline_record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_0/stages.json#stage-03dd03936a025726",
       "dataset_id": "sha256:fc3fc10e67485fb7a43fc3bfef531a3ae083f12e0ef5012fcd4cc5a3f6ef2325",
       "id": "prepared-380a72d19ae6e7d875436b78600eb74aa16db3bf17c18084acd8255adc5f07f6",
       "model_id": "sha256:af7a9dd560a2f362a9ae4ed0a7d1e85e0fce1c4e5d2f4a1f9b7727f965fd53cb",
@@ -148,47 +148,47 @@
         {
           "kind": "model_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/model.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "f159bb3aa1cbf6a6d8b67bf64143ff7b091aa99eff9bb51c17b3a931d730ecb0"
         },
         {
           "kind": "priors_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/priors.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "57983acc13af00ecb4551c6f820ff6e973c8c7f61adf18963f07fe4baadfb5bc"
         },
         {
           "kind": "model_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/model.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "abd51509ea13f39d375498b30b18f2e143dd86db3e41e996f89bf77aef58c2d5"
         },
         {
           "kind": "dataset_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/dataset.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "12b394d731fe1fc69ef21e938597c23a5f5d2fd35242203826202ee00d029d87"
         },
         {
           "kind": "analysis_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/analysis.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "a1e4e4ed4c0275f2c518c522af035d2cf1905d38ef472a5608e62e973f742c39"
         },
         {
           "kind": "posterior_samples",
           "path": "output/autolens/prepared/hpc_a100_jax_cpu_dense_fp64/seed_0/slam_base_light_fixed/baseline_samples.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "b91ce9cda4ba8f91fcf33eb4207a5a26911baac6",
           "sha256": "71b1a090e75cce64c84f6ef7a68a046de0e475606eea3979aa5fdd6be4467122"
         }
       ],
-      "baseline_record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_cpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "baseline_record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
       "dataset_id": "sha256:12b394d731fe1fc69ef21e938597c23a5f5d2fd35242203826202ee00d029d87",
       "id": "prepared-4677f0827b60836a1d8abc9ac4d983a7e2b509bba1348a407cc72a03d3d4410c",
       "model_id": "sha256:f159bb3aa1cbf6a6d8b67bf64143ff7b091aa99eff9bb51c17b3a931d730ecb0",
@@ -201,47 +201,47 @@
         {
           "kind": "model_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_1/slam_base_light_fixed/model.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "31b15f003d19a8bde26086d589eb8523dd71b651735b2e53045653ccad49f14e"
         },
         {
           "kind": "priors_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_1/slam_base_light_fixed/priors.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "57983acc13af00ecb4551c6f820ff6e973c8c7f61adf18963f07fe4baadfb5bc"
         },
         {
           "kind": "model_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_1/slam_base_light_fixed/model.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "338b3dbb5d9a20ea4236fddfcffa92a52b112e8ac87966f03a35e029d4ed8058"
         },
         {
           "kind": "dataset_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_1/slam_base_light_fixed/dataset.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "813099d950dd4bb5ce4cca58c71fea32042f233801c9e4982f914b7786f678ce"
         },
         {
           "kind": "analysis_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_1/slam_base_light_fixed/analysis.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "3199bd2b517027b55fede4ce603f5b7a88f948f85036b48de6d779311a6dfd38"
         },
         {
           "kind": "posterior_samples",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_sparse_fp64/seed_1/slam_base_light_fixed/baseline_samples.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "62d0e96e25fcc44215e98bdac6e64118096fe177fadc959a5d9406bd9658ff30"
         }
       ],
-      "baseline_record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/stages_seed1.json#stage-03dd03936a025726",
+      "baseline_record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_sparse_fp64/seed_1/stages.json#stage-03dd03936a025726",
       "dataset_id": "sha256:813099d950dd4bb5ce4cca58c71fea32042f233801c9e4982f914b7786f678ce",
       "id": "prepared-b844493131720724d41739442300e7ef8d95ccb4fd3401ce61f6bbe322b4868c",
       "model_id": "sha256:31b15f003d19a8bde26086d589eb8523dd71b651735b2e53045653ccad49f14e",
@@ -254,47 +254,47 @@
         {
           "kind": "model_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_1/slam_base_light_fixed/model.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "a40d570d3448b18974226bd18be52f3825d0fef2d55a111895af01594c69a0a6"
         },
         {
           "kind": "priors_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_1/slam_base_light_fixed/priors.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "57983acc13af00ecb4551c6f820ff6e973c8c7f61adf18963f07fe4baadfb5bc"
         },
         {
           "kind": "model_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_1/slam_base_light_fixed/model.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "b3e5ed0e010ccd9460374ff660d52eb46f0ceec1505ae7e33519362367b506e6"
         },
         {
           "kind": "dataset_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_1/slam_base_light_fixed/dataset.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "857c8c36b23be62961c2617afee22c54cc515ca4838187cab50dd054140a0a71"
         },
         {
           "kind": "analysis_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_1/slam_base_light_fixed/analysis.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "21939897df5c1a71aaa7002044f8f0330e9a44634bf0de3a559e618206b17e5f"
         },
         {
           "kind": "posterior_samples",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_1/slam_base_light_fixed/baseline_samples.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "2db42ab7f1120f3c699e4989967817d3f0df3ae3a3376f9df603dea9885bd404"
         }
       ],
-      "baseline_record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed1.json#stage-03dd03936a025726",
+      "baseline_record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_1/stages.json#stage-03dd03936a025726",
       "dataset_id": "sha256:857c8c36b23be62961c2617afee22c54cc515ca4838187cab50dd054140a0a71",
       "id": "prepared-cb66d102cc82b91f083d03a57edd9239ef22517df93c7776c45be21242df9206",
       "model_id": "sha256:a40d570d3448b18974226bd18be52f3825d0fef2d55a111895af01594c69a0a6",
@@ -307,47 +307,47 @@
         {
           "kind": "model_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_0/slam_base_light_fixed/model.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "167e0b754983015f06b43eb7609ee418d8a858350f850901c948dd578016fed4"
         },
         {
           "kind": "priors_definition",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_0/slam_base_light_fixed/priors.json",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "57983acc13af00ecb4551c6f820ff6e973c8c7f61adf18963f07fe4baadfb5bc"
         },
         {
           "kind": "model_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_0/slam_base_light_fixed/model.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "bfe7a7006ea96b3fc2fa598872d3240d9b569b801ee1d4e7464ca3f9bcae2c09"
         },
         {
           "kind": "dataset_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_0/slam_base_light_fixed/dataset.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "e6558145d769730dc3c145a89fc21989e45376834e8472bf53d78d2eabf7b52a"
         },
         {
           "kind": "analysis_snapshot",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_0/slam_base_light_fixed/analysis.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "9374756b7bab1b2dc02519480f63ba75db2ebad57afea38c5c75c191a3945e17"
         },
         {
           "kind": "posterior_samples",
           "path": "output/autolens/prepared/hpc_a100_jax_gpu_dense_fp64/seed_0/slam_base_light_fixed/baseline_samples.dill",
-          "record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+          "record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
           "revision": "dabb652f0665a8dc8b62915aa3257eb04a93d565",
           "sha256": "35e37d370233b5b2dc365ee12b8d5644bb5eff5f62bfdeed554ec47663e3b1bb"
         }
       ],
-      "baseline_record_id": "results/slam/imaging/hst/slam_base_light_fixed/hpc_a100_jax_gpu_dense_fp64/stages_seed0.json#stage-03dd03936a025726",
+      "baseline_record_id": "results/imaging/rectangular/hst/validation/light_fixed/jax_gpu_dense_fp64/seed_0/stages.json#stage-03dd03936a025726",
       "dataset_id": "sha256:e6558145d769730dc3c145a89fc21989e45376834e8472bf53d78d2eabf7b52a",
       "id": "prepared-ee74b3ebf1f06e4d9ad478499711523081a25f653a5da89dac6f16dc057e8882",
       "model_id": "sha256:167e0b754983015f06b43eb7609ee418d8a858350f850901c948dd578016fed4",
@@ -356,7 +356,7 @@
       "stage": "mass_total[1]"
     }
   ],
-  "producer_revision": "8f9bd55bc01db8c3e4924b5be2c09fbdb8d3a492",
+  "producer_revision": "c356209a0b803581751c0ad7e4005ffe2aecf3c5",
   "project": "autolens_inference",
   "records": [
     {
@@ -1875,7 +1875,8 @@
       "parent_run_id": "results/imaging/delaunay/hst/validation/default/numba_cpu_sparse_fp64/seed_1/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-4cb72448a5d9866f508eaf49a5f56e8d8313792bfbeacf4854e080cc7d2cc65e",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-4cb72448a5d9866f508eaf49a5f56e8d8313792bfbeacf4854e080cc7d2cc65e, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -3457,7 +3458,8 @@
       "parent_run_id": "results/imaging/delaunay/hst/validation/light_fixed/numba_cpu_sparse_fp64/seed_1/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-f0a77819134984f463e61f84439e19c1cf46e8ecf0beeef2f346be89d69d7ef6",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-f0a77819134984f463e61f84439e19c1cf46e8ecf0beeef2f346be89d69d7ef6, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -4862,7 +4864,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/jax_cpu_dense_fp64/seed_0/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-9591f806730b454edbb54e98d7c583d276910010e382bcdcb43ccb1801d90a8d",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-9591f806730b454edbb54e98d7c583d276910010e382bcdcb43ccb1801d90a8d, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -6268,7 +6271,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/jax_cpu_dense_fp64/seed_1/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-dce236c209344c1ca83189e06efb93d63818b04653b695bcdfe9929c7c7c0124",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-dce236c209344c1ca83189e06efb93d63818b04653b695bcdfe9929c7c7c0124, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -7674,7 +7678,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/jax_cpu_sparse_fp64/seed_0/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-c257e37282c0649bd5eb88a0d92291ba0fe38cb6884aa5b336add71359b8cb1b",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-c257e37282c0649bd5eb88a0d92291ba0fe38cb6884aa5b336add71359b8cb1b, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -9081,7 +9086,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/jax_gpu_dense_fp64/seed_0/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-e92cf5ac442fd10ce3e88c5a92ab358af7072c5cae19490d104c29afc4d4f9d5",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-e92cf5ac442fd10ce3e88c5a92ab358af7072c5cae19490d104c29afc4d4f9d5, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -10487,7 +10493,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/jax_gpu_dense_fp64/seed_1/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-d24225aa1b6a5f41d6ff4b46203123f38852b0625d397e9685810d652f4116fe",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-d24225aa1b6a5f41d6ff4b46203123f38852b0625d397e9685810d652f4116fe, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -11893,7 +11900,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/jax_gpu_sparse_fp64/seed_0/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-a9d812e92c327420b3816da7764c09326a3dca15fc0a118d4ffd7498ff944fc7",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-a9d812e92c327420b3816da7764c09326a3dca15fc0a118d4ffd7498ff944fc7, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -13299,7 +13307,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/jax_gpu_sparse_fp64/seed_1/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-fb85990979235185f0e3de17a6255c25c2b729fc9bcb39e91dc11e0c574943a9",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-fb85990979235185f0e3de17a6255c25c2b729fc9bcb39e91dc11e0c574943a9, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -14737,7 +14746,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/numba_cpu_sparse_fp64/seed_0/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-ca43228401d4ef985759a6b01087d8b5107721cad99300d5088ca33a9af2cd96",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-ca43228401d4ef985759a6b01087d8b5107721cad99300d5088ca33a9af2cd96, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -16175,7 +16185,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/default/numba_cpu_sparse_fp64/seed_1/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-68db997364bfd76c05b1ff17edceadfa1611a4cae3eb6a69190c294dbccefa5c",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-68db997364bfd76c05b1ff17edceadfa1611a4cae3eb6a69190c294dbccefa5c, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -26055,7 +26066,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/light_fixed/numba_cpu_sparse_fp64/seed_0/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-cab2afcbc80724cf60369ed8f585917be17ffd706d876dea12502784f020265f",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-cab2afcbc80724cf60369ed8f585917be17ffd706d876dea12502784f020265f, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -27493,7 +27505,8 @@
       "parent_run_id": "results/imaging/rectangular/hst/validation/light_fixed/numba_cpu_sparse_fp64/seed_1/stages.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-3c1815bbfea8709aa68ee12bb934288ac2759008c5556855232f9eef0bd5018f",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-3c1815bbfea8709aa68ee12bb934288ac2759008c5556855232f9eef0bd5018f, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -62696,7 +62709,8 @@
       "parent_run_id": "archive/2026/10/2026-10-19_numba_thread_oversubscription/slam/imaging/hst/slam_base/hpc_a100_numba_cpu_sparse_fp64/stages_seed0.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-59af3a7d2de167585833c6d278926d00190c1036f24cf9794a7624bf18a3dd96",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-59af3a7d2de167585833c6d278926d00190c1036f24cf9794a7624bf18a3dd96, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -64140,7 +64154,8 @@
       "parent_run_id": "archive/2026/10/2026-10-19_numba_thread_oversubscription/slam/imaging/hst/slam_base/hpc_a100_numba_cpu_sparse_fp64/stages_seed1.json",
       "pipeline": "slam",
       "precision": "fp64",
-      "problem_id": "prepared-f573c93ccf819c49d3c50b0c48807c4d532bf72f7d72e0e2d1e015aa6077882f",
+      "problem_id": null,
+      "problem_id_reason": "Source names prepared problem prepared-f573c93ccf819c49d3c50b0c48807c4d532bf72f7d72e0e2d1e015aa6077882f, whose manifest is not published (or not valid) under prepared/; reference withheld",
       "sampler": "nautilus",
       "samples": {
         "access": "project-storage-not-published",
@@ -65277,7 +65292,7 @@
       "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
     }
   ],
-  "source_commit": "8f9bd55bc01db8c3e4924b5be2c09fbdb8d3a492",
+  "source_commit": "c356209a0b803581751c0ad7e4005ffe2aecf3c5",
   "valid_until": null,
   "version": 2
 }
