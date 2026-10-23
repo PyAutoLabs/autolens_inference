@@ -225,6 +225,14 @@ def build_catalogue(summary, root):
                         "artifacts",
                     )
                 }
+                # Publish the current record ids: a manifest written before the
+                # 2026-10 layout move names the old paths, which consumers cannot
+                # resolve. The manifest itself stays as committed evidence.
+                problem["baseline_record_id"] = baseline["id"]
+                problem["artifacts"] = [
+                    {**artifact, "record_id": records[artifact["record_id"]]["id"]}
+                    for artifact in problem["artifacts"]
+                ]
                 if not problem["artifacts"]:
                     problem["artifacts_reason"] = "Manifest declares no retained artifacts"
                 seen[problem["id"]] = manifest
@@ -238,4 +246,16 @@ def build_catalogue(summary, root):
                 doc["coverage"]["excluded"].append(
                     dict(path=path.relative_to(root).as_posix(), reason=str(exc), status="invalid")
                 )
+    # Every published reference resolves: a row whose source names a prepared
+    # problem without a valid published manifest keeps the name in its reason,
+    # never as a dangling ``problem_id``.
+    emitted = {problem["id"] for problem in doc["prepared_problems"]}
+    for row in doc["records"]:
+        named = row.get("problem_id")
+        if named is not None and named not in emitted:
+            row["problem_id"] = None
+            row["problem_id_reason"] = (
+                f"Source names prepared problem {named}, whose manifest is not "
+                "published (or not valid) under prepared/; reference withheld"
+            )
     return doc

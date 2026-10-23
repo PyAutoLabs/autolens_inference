@@ -202,7 +202,10 @@ def test_wave_1_experiment_rows_are_catalogued_under_their_problem_without_ranki
     rows = {r["sampler"]: r for r in new["records"]}
     assert set(rows) == {"nautilus", "emcee"}
     for r in rows.values():
-        assert r["problem_id"] == "prepared-" + "c" * 64
+        # No published manifest for the named problem: the reference is
+        # withheld with a reason, never left dangling.
+        assert r["problem_id"] is None
+        assert "prepared-" + "c" * 64 in r["problem_id_reason"]
         assert r["setup_id"] == "imaging/rectangular/hst"
         assert r["comparison"]["group"] is None
     assert rows["emcee"]["execution"]["status"].startswith("failed")
