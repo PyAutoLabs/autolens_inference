@@ -464,9 +464,6 @@ def build(root, revision, generated_at):
 #: depends on a sibling checkout.
 PULSE_REFERENCE = "catalogue/pulse_lens_runtime_reference.json"
 
-#: Per-likelihood runtime metrics, in the order a prediction prefers them.
-REFERENCE_METRICS = ("vmap.per_call", "single_jit_block")
-
 #: The parity stage of the backend-parity view (build_readme.PARITY_STAGE).
 PARITY_STAGE = "mass_total[1]"
 
@@ -484,42 +481,79 @@ PARITY_RULINGS = {
 }
 
 
+#: The fields an inference wall-time record and a profiling runtime record must
+#: share exactly to be paired. ``regime`` (the profiling size bin) is not a key:
+#: the size is compared separately and reported as ``size_match``.
+PROFILING_MATCH_KEYS = ("likelihood", "instrument", "setup_id", "host_class", "model_variant")
+
+#: The ``status`` a matching profiling record is preferred by: current first, then
+#: the newest of any other status (``measured_at``, then ``id`` for determinism).
+PROFILING_STATUS_ORDER = ("current",)
+
+_SOURCE_PIXELS_REGIME = re.compile(r"^source_pixels_(\d+)$")
+
+
+def _source_pixels_of_regime(regime, variant, standard):
+    """A profiling record's source pixel count from its named size bin."""
+    if regime == "standard":
+        value = (standard or {}).get(variant)
+        return value if isinstance(value, int) and not isinstance(value, bool) else None
+    match = _SOURCE_PIXELS_REGIME.match(regime) if isinstance(regime, str) else None
+    return int(match.group(1)) if match else None
+
+
 def refresh_pulse_reference(snapshot_path, root=ROOT):
-    """Write the runtime records of a Pulse ``lens`` snapshot to PULSE_REFERENCE."""
+    """Write the runtime records of a Pulse ``lens`` snapshot to PULSE_REFERENCE.
+
+    The snapshot must be ``profiling-summary@3``. Only the fields the wall-time
+    pairing reads are kept: the match key, ``status``, ``measured_at``, the size
+    bin and its source pixel count, and Pulse's own per-call time
+    (``projected_node_throughput.per_call_s`` and its source, else the headline
+    ``values[metric]``).
+    """
     snapshot = json.loads(Path(snapshot_path).read_text())
     doc = snapshot.get("summary", snapshot)
-    setups = {s["id"]: s for s in doc.get("setups", [])}
+    schema = f"{doc.get('schema')}@{doc.get('version')}"
+    if schema != "profiling-summary@3":
+        raise SystemExit(f"{snapshot_path} is {schema}, not profiling-summary@3")
+    standard = doc.get("standard_source_pixels") or {}
     records = []
     for record in doc.get("records", []):
-        if record.get("axis") != "runtime" or record.get("setup_id") not in setups:
+        if record.get("measurement") != "runtime":
             continue
-        setup = setups[record["setup_id"]]
-        config = {
-            k: (v.get("value") if isinstance(v, dict) else v)
-            for k, v in (setup.get("configuration") or {}).items()
-            if k in ("operator", "inversion", "backend", "source_pixels", "delaunay_vertices")
-        }
+        throughput = record.get("projected_node_throughput") or {}
+        per_call, source = throughput.get("per_call_s"), throughput.get("per_call_source")
+        if not isinstance(per_call, (int, float)) or isinstance(per_call, bool):
+            per_call = (record.get("values") or {}).get(record.get("metric"))
+            source = record.get("metric")
+        likelihood = record.get("likelihood") or {}
         records.append(
             dict(
                 id=record["id"],
-                setup_id=record["setup_id"],
-                dataset=setup.get("dataset"),
-                model=setup.get("model"),
-                instrument=setup.get("instrument"),
-                configuration=config,
-                identity={
-                    k: record.get("identity", {}).get(k) for k in ("backend", "device", "precision")
-                },
+                likelihood=likelihood,
+                instrument=record.get("instrument"),
+                setup_id=record.get("setup_id"),
+                host_class=record.get("host_class"),
+                model_variant=record.get("model_variant"),
+                status=record.get("status"),
+                superseded_by=record.get("superseded_by"),
+                measured_at=record.get("measured_at"),
                 metric=record.get("metric"),
-                measurement=record.get("measurement"),
+                regime=record.get("regime"),
+                source_pixels=_source_pixels_of_regime(
+                    record.get("regime"), likelihood.get("variant"), standard
+                ),
+                per_call_s=per_call if isinstance(per_call, (int, float)) else None,
+                per_call_source=source,
             )
         )
     out = {
         "source": "PyAutoPulse snapshots/lens.json",
         "instance": snapshot.get("instance"),
-        "schema": f"{doc.get('schema')}@{doc.get('version')}",
+        "schema": schema,
         "commit": snapshot.get("commit"),
         "fetched_at": snapshot.get("fetched_at"),
+        "standard_source_pixels": standard,
         "records": sorted(records, key=lambda r: r["id"]),
     }
     target = root / PULSE_REFERENCE
@@ -528,42 +562,61 @@ def refresh_pulse_reference(snapshot_path, root=ROOT):
     return out
 
 
-def _reference_setup(ref):
-    """The R1 compute tuple a Pulse runtime record determines, or None.
+#: Why a stage that solves no inversion is never paired: every profiling runtime
+#: record of a pixelized likelihood times the inversion it would not run.
+NO_INVERSION_REASON = "stage has no inversion (parametric); no matching profiling likelihood"
 
-    A legacy (v2) record names its device and precision but not the operator, so
-    it determines no setup_id; matching never fills a field the record omits.
+
+def match_profiling(walltime, references, source_pixels=None):
+    """``(record, reason)``: the profiling runtime record whose
+    :data:`PROFILING_MATCH_KEYS` equal the wall-time record's; current first, then
+    the one whose size bin equals ``source_pixels``, then the newest.
+    ``(None, reason)`` names the first key no record shares."""
+    candidates = list(references)
+    for field in PROFILING_MATCH_KEYS:
+        candidates = [ref for ref in candidates if ref.get(field) == walltime[field]]
+        if not candidates:
+            value = walltime[field]
+            if isinstance(value, dict):
+                value = "/".join(str(value.get(k)) for k in ("dataset_type", "variant"))
+            return None, f"no profiling runtime record with {field} {value}"
+    candidates = [ref for ref in candidates if isinstance(ref.get("per_call_s"), (int, float))]
+    if not candidates:
+        return None, "the matching profiling records carry no per-call time"
+    best = max(
+        candidates,
+        key=lambda r: (
+            r.get("status") in PROFILING_STATUS_ORDER,
+            source_pixels is not None and r.get("source_pixels") == source_pixels,
+            r.get("measured_at") or "",
+            r["id"],
+        ),
+    )
+    return best, None
+
+
+def source_pixels_of(configuration):
+    """The inference run's source pixel count, when its row records one.
+
+    Rectangular: the product of ``mesh_shape``. Delaunay: ``mesh_pixels``, the
+    Hilbert-drawn interior vertex count, which is how the profiling size bins count
+    a Delaunay mesh (its zeroed edge ring is excluded on both sides). Else None.
     """
-    identity = ref.get("identity") or {}
-    config = ref.get("configuration") or {}
-    device = {"gpu": "gpu", "cpu": "cpu"}.get(identity.get("backend"))
-    precision = {"float64": "fp64", "fp64": "fp64", "mixed": "mixed"}.get(identity.get("precision"))
-    operator = config.get("operator") or config.get("inversion")
-    backend = config.get("backend") or ("jax" if device == "gpu" else None)
-    if None in (device, precision, operator, backend):
-        return None
-    return f"{backend}_{device}_{operator}_{precision}"
-
-
-def match_reference(walltime, references):
-    """``(record id, predicted ms per eval)`` of the Pulse runtime record whose
-    (dataset, model, instrument, setup) equals the walltime record's, else
-    ``(None, None)``."""
-    likelihood = walltime["likelihood"]
-    candidates = [
-        ref
-        for ref in references
-        if ref.get("dataset") == likelihood["dataset_type"]
-        and ref.get("model") == likelihood["variant"]
-        and ref.get("instrument") == walltime["instrument"]
-        and _reference_setup(ref) == walltime["setup_id"]
-    ]
-    for metric in REFERENCE_METRICS:
-        for ref in sorted(candidates, key=lambda r: r["id"]):
-            value = (ref.get("measurement") or {}).get(metric)
-            if ref.get("metric") == metric and isinstance(value, (int, float)):
-                return ref["id"], value * 1000.0
-    return None, None
+    shape = configuration.get("mesh_shape")
+    if (
+        isinstance(shape, list)
+        and shape
+        and all(isinstance(n, int) and not isinstance(n, bool) and n > 0 for n in shape)
+    ):
+        return math.prod(shape)
+    pixels = configuration.get("mesh_pixels")
+    if (
+        configuration.get("mesh") == "delaunay"
+        and isinstance(pixels, int)
+        and not isinstance(pixels, bool)
+    ):
+        return pixels
+    return None
 
 
 def build_walltime(root, summary_doc, revision, references=None):
@@ -594,6 +647,7 @@ def build_walltime(root, summary_doc, revision, references=None):
         if r["model_variant"] == "default"
     }
     skipped = Counter()
+    unmatched = Counter()
     records = []
     for r in sorted(stages, key=lambda r: r["id"]):
         values = r["diagnostics"]["values"]
@@ -630,7 +684,15 @@ def build_walltime(root, summary_doc, revision, references=None):
             "stage": r["stage"],
             "seed": r["seed"],
         }
-        ref_id, predicted = match_reference(item, references)
+        if values.get("inversion_applies") is False:
+            ref, reason, pixels = None, NO_INVERSION_REASON, None
+        else:
+            pixels = source_pixels_of(r["configuration"])
+            ref, reason = match_profiling(item, references, pixels)
+        if ref is None:
+            unmatched[reason] += 1
+        predicted = ref["per_call_s"] * 1000.0 if ref is not None else None
+        ref_pixels = ref.get("source_pixels") if ref is not None else None
         status, basis = PARITY_RULINGS.get(
             (
                 likelihood["dataset_type"],
@@ -658,7 +720,18 @@ def build_walltime(root, summary_doc, revision, references=None):
             wall_s=wall,
             likelihood_evals=evals,
             implied_ms_per_eval=implied,
-            reference_runtime_record_id=ref_id,
+            implied_s_per_eval=implied / 1000.0 if implied is not None else None,
+            source_pixels=pixels,
+            profiling_record_id=ref["id"] if ref is not None else None,
+            profiling_per_call_s=ref["per_call_s"] if ref is not None else None,
+            profiling_per_call_source=ref.get("per_call_source") if ref is not None else None,
+            profiling_status=ref.get("status") if ref is not None else None,
+            profiling_source_pixels=ref_pixels,
+            profiling_unmatched_reason=reason,
+            size_match=(
+                pixels == ref_pixels if pixels is not None and ref_pixels is not None else None
+            ),
+            reference_runtime_record_id=ref["id"] if ref is not None else None,
             predicted_ms_per_eval=predicted,
             ratio_measured_over_predicted=implied / predicted if implied and predicted else None,
             cores=r["hardware"].get("cores"),
@@ -671,23 +744,41 @@ def build_walltime(root, summary_doc, revision, references=None):
             evidence_path=r["evidence_paths"][0],
         )
         records.append(item)
-    unmatched = sum(1 for item in records if item["reference_runtime_record_id"] is None)
+    n = len(records)
     limitations = [
         "Full-fit measurements: one Nautilus stage of one SLaM chain per record, never a "
         "per-likelihood cost; the sampler is <sampler>:<stage> because the key has no stage",
-        "wall_s is the sampler clock (samples_info.json) and includes sampler overhead; "
-        "implied_ms_per_eval = wall_s / likelihood_evals * 1000 is therefore an upper bound "
-        "on the per-evaluation cost",
+        "wall_s is the sampler clock (samples_info.json). implied_s_per_eval = wall_s / "
+        "likelihood_evals (implied_ms_per_eval the same in ms) is the one per-evaluation "
+        "number, on every hardware: it deliberately includes the sampler's overhead "
+        "(Nautilus bookkeeping, batching), so it is the cost a fit actually pays per "
+        "evaluation, an upper bound on the bare likelihood call",
         "parallel_efficiency is null: no 1-core row of any key exists yet",
         "parity_status is not_assessed unless a declared ruling of record names the run "
         "(parity_basis); the exporter computes no parity verdict",
     ]
+    matched = n - sum(unmatched.values())
+    match_line = (
+        f"{matched} of {n} records pair with a profiling-summary@3 runtime record of the "
+        f"lens snapshot cached in {PULSE_REFERENCE} on an exact (likelihood, instrument, "
+        "setup_id, host_class, model_variant) match, the current record first, then the "
+        "one whose size bin equals the run's source pixels, then the newest "
+        "(profiling_status says which); stages that solve no inversion are never paired; "
+        "profiling_per_call_s is Pulse's per-call "
+        "time of that record, predicted_ms_per_eval the same in ms"
+    )
     if unmatched:
+        match_line += "; unmatched: " + "; ".join(
+            f"{count} {reason}" for reason, count in sorted(unmatched.items())
+        )
+    limitations.append(match_line)
+    sized = Counter(item["size_match"] for item in records if item["profiling_record_id"])
+    if matched:
         limitations.append(
-            f"{unmatched} of {len(records)} records have no Pulse runtime reference: the lens "
-            "snapshot's runtime records do not determine the operator (dense/sparse) or match "
-            "the instrument and mesh, so reference_runtime_record_id and predicted_ms_per_eval "
-            "are null until the lens pin moves to profiling-summary@3"
+            f"size_match compares the run's source pixels (rectangular mesh_shape product, "
+            f"Delaunay mesh_pixels Hilbert vertices) with the profiling record's size bin: "
+            f"{sized[True]} match, {sized[False]} differ (a different-size likelihood than "
+            f"the run's), {sized[None]} unknown because a side records no count"
         )
     kept_prefix = sum(
         1 for item in records if item["host_class"] == "hpc_a100" and "_cpu_" in item["setup_id"]

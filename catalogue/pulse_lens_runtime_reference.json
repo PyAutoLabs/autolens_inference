@@ -1,244 +1,1496 @@
 {
-  "commit": "173ab272904f98e378d9d298bf0e6243dffd1d1a",
-  "fetched_at": "2026-10-19T09:24:42Z",
+  "commit": "29caed89879399db78f2c6b3734558c844a66b19",
+  "fetched_at": "2026-10-25T19:33:56Z",
   "instance": "lens",
   "records": [
     {
-      "configuration": {
-        "delaunay_vertices": 1500,
-        "source_pixels": 1500
+      "host_class": "local_laptop",
+      "id": "lifecycle/00313af0790df091118b",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
       },
-      "dataset": "interferometer",
-      "id": "measurement/07d39632cb9e060387dd",
-      "identity": {
-        "backend": "gpu",
-        "device": "a100",
-        "precision": "float64"
-      },
-      "instrument": "alma",
-      "measurement": {
-        "single_jit_block": 0.049513059499440716
-      },
+      "measured_at": "2026-07-11T00:00:00Z",
       "metric": "single_jit_block",
-      "model": "delaunay",
-      "setup_id": "interferometer/delaunay/alma/c00199cd0663a6f29c96"
+      "model_variant": "default",
+      "per_call_s": 0.5747806300001684,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_dense_fp64",
+      "source_pixels": null,
+      "status": "superseded",
+      "superseded_by": "lifecycle/4baa9bc04c8d24a713b6"
     },
     {
-      "configuration": {
-        "source_pixels": 1521
-      },
-      "dataset": "interferometer",
-      "id": "measurement/5ad8678aaa5a1fc47227",
-      "identity": {
-        "backend": "gpu",
-        "device": "a100",
-        "precision": "float64"
-      },
-      "instrument": "sdp81",
-      "measurement": {
-        "single_jit_block": 0.04523600130341947
-      },
-      "metric": "single_jit_block",
-      "model": "rectangular",
-      "setup_id": "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580"
-    },
-    {
-      "configuration": {
-        "delaunay_vertices": 1500,
-        "source_pixels": 1500
-      },
-      "dataset": "interferometer",
-      "id": "measurement/5cf324f959cbd96df392",
-      "identity": {
-        "backend": "gpu",
-        "device": "a100",
-        "precision": "float64"
-      },
-      "instrument": "sdp81",
-      "measurement": {
-        "single_jit_block": 0.0537076534004882
-      },
-      "metric": "single_jit_block",
-      "model": "delaunay",
-      "setup_id": "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c"
-    },
-    {
-      "configuration": {
-        "delaunay_vertices": 1500,
-        "source_pixels": 1500
-      },
-      "dataset": "imaging",
-      "id": "measurement/65c55677d7db7d3e755e",
-      "identity": {
-        "backend": "gpu",
-        "device": "a100",
-        "precision": "float64"
-      },
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/05dde64a0eb7fdd0c4a1",
       "instrument": "hst",
-      "measurement": {
-        "single_jit_block": 0.06495481780730188
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
       },
+      "measured_at": "2026-10-25T14:15:52Z",
       "metric": "single_jit_block",
-      "model": "delaunay",
-      "setup_id": "imaging/delaunay/hst/9b00259c44eff5943b23"
+      "model_variant": "default",
+      "per_call_s": 1.2947989260137547,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
     },
     {
-      "configuration": {
-        "delaunay_vertices": 1500,
-        "source_pixels": 1500
-      },
-      "dataset": "interferometer",
-      "id": "measurement/78267b21742073b7bb03",
-      "identity": {
-        "backend": "cpu",
-        "device": "cpu",
-        "precision": "float64"
-      },
-      "instrument": "sdp81",
-      "measurement": {
-        "full_call.mean_s": 1.5030150013626553
-      },
-      "metric": "full_call.mean_s",
-      "model": "delaunay",
-      "setup_id": "interferometer/delaunay/sdp81/5eb412356335dad23303"
-    },
-    {
-      "configuration": {
-        "delaunay_vertices": 1500,
-        "source_pixels": 1500
-      },
-      "dataset": "interferometer",
-      "id": "measurement/b280b41456ac0659bccc",
-      "identity": {
-        "backend": "cpu",
-        "device": "cpu",
-        "precision": "float64"
-      },
-      "instrument": "alma",
-      "measurement": {
-        "full_call.mean_s": 1.2619635818409733
-      },
-      "metric": "full_call.mean_s",
-      "model": "delaunay",
-      "setup_id": "interferometer/delaunay/alma/00e86a7de323cb7098eb"
-    },
-    {
-      "configuration": {
-        "source_pixels": 1521
-      },
-      "dataset": "interferometer",
-      "id": "measurement/b568267428fbab523465",
-      "identity": {
-        "backend": "gpu",
-        "device": "a100",
-        "precision": "float64"
-      },
-      "instrument": "alma",
-      "measurement": {
-        "single_jit_block": 0.044458239999949
-      },
-      "metric": "single_jit_block",
-      "model": "rectangular",
-      "setup_id": "interferometer/rectangular/alma/5e3423306e47ff2283ff"
-    },
-    {
-      "configuration": {
-        "delaunay_vertices": 1500,
-        "source_pixels": 1500
-      },
-      "dataset": "imaging",
-      "id": "measurement/c7d86c7b4ddc20d7d86e",
-      "identity": {
-        "backend": "gpu",
-        "device": "a100",
-        "precision": "float64"
-      },
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/06a9dad80c65ecd81c6c",
       "instrument": "hst",
-      "measurement": {
-        "vmap.per_call": 0.04253356978151714
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
       },
-      "metric": "vmap.per_call",
-      "model": "delaunay",
-      "setup_id": "imaging/delaunay/hst/9b00259c44eff5943b23"
-    },
-    {
-      "configuration": {
-        "source_pixels": 1521
-      },
-      "dataset": "interferometer",
-      "id": "measurement/cb842f1c629a33b90314",
-      "identity": {
-        "backend": "cpu",
-        "device": "cpu",
-        "precision": "float64"
-      },
-      "instrument": "alma",
-      "measurement": {
-        "full_call.mean_s": 1.8301946158370763
-      },
-      "metric": "full_call.mean_s",
-      "model": "rectangular",
-      "setup_id": "interferometer/rectangular/alma/c6ff0b2db1b9b636c14c"
-    },
-    {
-      "configuration": {
-        "source_pixels": null
-      },
-      "dataset": "interferometer",
-      "id": "measurement/d399e1ba20dcdf9665e0",
-      "identity": {
-        "backend": "gpu",
-        "device": "a100",
-        "precision": "float64"
-      },
-      "instrument": "sdp81",
-      "measurement": {
-        "single_jit_block": 0.02829210730269551
-      },
+      "measured_at": "2026-10-25T14:15:22Z",
       "metric": "single_jit_block",
-      "model": "mge",
-      "setup_id": "interferometer/mge/sdp81/61c6dccf97c81d66fc1e"
+      "model_variant": "default",
+      "per_call_s": 1.8948534442664824,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
     },
     {
-      "configuration": {
-        "source_pixels": 1521
+      "host_class": "hpc_a100",
+      "id": "lifecycle/0756e600e86d7ae6a462",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
       },
-      "dataset": "interferometer",
-      "id": "measurement/ee5b21bd78ba2a34a850",
-      "identity": {
-        "backend": "cpu",
-        "device": "cpu",
-        "precision": "float64"
-      },
-      "instrument": "sdp81",
-      "measurement": {
-        "full_call.mean_s": 1.8505233152046505
-      },
-      "metric": "full_call.mean_s",
-      "model": "rectangular",
-      "setup_id": "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+      "measured_at": "2026-10-25T14:24:56Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.0009966248609089234,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
     },
     {
-      "configuration": {
-        "delaunay_vertices": 1500,
-        "source_pixels": 1500
-      },
-      "dataset": "imaging",
-      "id": "measurement/fca0c4db1aea639cbfe3",
-      "identity": {
-        "backend": "gpu",
-        "device": "a100",
-        "precision": "float64"
-      },
+      "host_class": "hpc_a100",
+      "id": "lifecycle/0f45aa8eb79d60157031",
       "instrument": "hst",
-      "measurement": {
-        "vmap.batch_time": 0.6805371165042743
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
       },
-      "metric": "vmap.batch_time",
-      "model": "delaunay",
-      "setup_id": "imaging/delaunay/hst/9b00259c44eff5943b23"
+      "measured_at": "2026-10-25T14:16:29Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 2.110378340033155,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/12348bea7be2ca70cffb",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:21:38Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.07228920599991398,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/12c678df16e04f4f9011",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:20:30Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.04793449853750644,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/190ebc582d9aba9aaa9c",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-10-25T14:12:51Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.006797155533179951,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_dense_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/1ae46b0872f10459a7c4",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-10-25T14:20:36Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 6.4267268682325565,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/1d22ab6d161f8f4292aa",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-09-08T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.04253356978151714,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/73c19173fcc983318b61"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/1e1f10730abe94d348b9",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-08T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.052617737780383325,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/c661098ad46c65fa59b2"
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/1f22a4a5fcd73276ec53",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:43:01Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 8.671295497493702,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "local_laptop",
+      "id": "lifecycle/1f23869d3a8fe86c461a",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-07-11T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 5.159429313333264,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1521",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1521,
+      "status": "superseded",
+      "superseded_by": "lifecycle/2b5e34f509175fd4d030"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/22c24ae6e2c83dc51d89",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:43:26Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 1.7091398410334175,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "local_laptop",
+      "id": "lifecycle/2375c34d7bf6771daa14",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-07-11T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 9.69070508666664,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1521",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1521,
+      "status": "superseded",
+      "superseded_by": "lifecycle/9bb2e30e94491253641b"
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/2b5e34f509175fd4d030",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:17:33Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 2.0294790268332386,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/304ac75d242dcbc2c22f",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:19:19Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 1.6880716275190935,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/3216ffc143645fb46c72",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-10-25T14:13:56Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.3296527058992069,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_dense_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/321ec1f6f2a5955a9a20",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:14:30Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.9516839939897181,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/3617cdce4ec7d5357c4f",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T15:55:21Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 50.84276133849926,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/371f67d50254479493ee",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:18:33Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.01815755124066527,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/403420f8debaaa38956c",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:43:20Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 9.982177169498755,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/42f6a707360ce63b8150",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:45:05Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.025501322662421444,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/456f7d65babc5524183a",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:23:11Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.007925599459395017,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/46db4990a22e25aee123",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T16:03:39Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 1.0532987551996484,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/47abb3142f90f1aca9ad",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-09-10T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.03207861754926853,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1521",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1521,
+      "status": "superseded",
+      "superseded_by": "lifecycle/42f6a707360ce63b8150"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/4b514c4262172f610fee",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-10-25T15:12:29Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.018979008866396422,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/4baa9bc04c8d24a713b6",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-10-25T14:17:25Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.04155175186654863,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_dense_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/4c53e409a27040f5d6a4",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:14:57Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.6830228038335918,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/5058faa145a0878a47f3",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-08T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.05420933398709167,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/c661098ad46c65fa59b2"
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/54979849c807d452c510",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-10-25T14:15:17Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.014385875800508074,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_dense_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/5556ca430bc180c2d536",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:13:02Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.8199717730021803,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/6060fdcfa2e5a4a0c168",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:13:38Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.2825032755063148,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/61082dc032d7280b3bd1",
+      "instrument": "simple",
+      "likelihood": {
+        "dataset_type": "point_source_source",
+        "variant": "source_plane"
+      },
+      "measured_at": "2026-10-17T13:40:34Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 5.261209638168414e-05,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_na_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/66e1dab83584a97d179f",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-09-07T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.03952044898760505,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/73c19173fcc983318b61"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/70bcae3ab1c4777651f0",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-10-25T14:38:11Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 1.1494532450187762,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/714e3d900cc4d2b9cf26",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-08T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.05004380617610878,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/c661098ad46c65fa59b2"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/73c19173fcc983318b61",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:18:19Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.0350541401125156,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/74a9eea52d32b570c552",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-10T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.04925385855603963,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/70bcae3ab1c4777651f0"
+    },
+    {
+      "host_class": "local_laptop",
+      "id": "lifecycle/75de45ca8837a88fdd77",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-07-11T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 4.922238283333475,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_dense_fp64",
+      "source_pixels": null,
+      "status": "superseded",
+      "superseded_by": "lifecycle/3216ffc143645fb46c72"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/770dce7d7db7a1fc3b53",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-10-25T14:19:22Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.0001985996859275474,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/780ad479b1fe66279696",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T15:00:28Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 57.17888280389889,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/8a475e9abd97a8c4a1c0",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-10-25T14:39:05Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.0004115555843782204,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/8aa5c4db3adb7c0d80bb",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-08T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.058021992661815604,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/c661098ad46c65fa59b2"
+    },
+    {
+      "host_class": "local_laptop",
+      "id": "lifecycle/8bc2ff02e7dff31f63f1",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "mge"
+      },
+      "measured_at": "2026-07-11T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.1651308966667178,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_dense_fp64",
+      "source_pixels": null,
+      "status": "superseded",
+      "superseded_by": "lifecycle/54979849c807d452c510"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/92b4ae95294d32c1fb68",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-05T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.046442550668143665,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/c661098ad46c65fa59b2"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/97d2ae3cab5f9bbc9d8f",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:19:30Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 4.68563346293328,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/99d7c3c7623e3d43d059",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T15:10:20Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.9353394016012316,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/9bb2e30e94491253641b",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:21:10Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 4.210345992800042,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/9e4861d45b9802a91868",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:21:49Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.6337535231665242,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/a9e102b324300939da14",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:15:15Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.8574389941000845,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/b202eb6f7da58a38882f",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:14:16Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.8266013435000786,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/b33889772dea8d2e5ede",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-09-10T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.036653317512536886,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1521",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1521,
+      "status": "superseded",
+      "superseded_by": "lifecycle/cc3f3365b6ac65388a93"
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/b5b87c504713b9831857",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:19:41Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 4.361339337033375,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/b62534053c00fb102bf4",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:15:54Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.6967363520088838,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/b7830c7f63c511d4a643",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-09-11T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.03210441000701394,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1521",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1521,
+      "status": "superseded",
+      "superseded_by": "lifecycle/42f6a707360ce63b8150"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/bc5ed323618c58fc7682",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:24:47Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.013191267443744437,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/bdffd9d6d157b3b66435",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:35:05Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.10746221533772768,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "local_laptop",
+      "id": "lifecycle/bf6c7424588be8e25d6e",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-07-11T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 12.300888043333423,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/b5b87c504713b9831857"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/c07af59a8d393975dd28",
+      "instrument": "euclid",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:16:48Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.014795395054670734,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "local_laptop",
+      "id": "lifecycle/c3ecb946caefec95e1de",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-07-11T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 5.215584503333351,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/06a9dad80c65ecd81c6c"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/c661098ad46c65fa59b2",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-10-25T14:31:40Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.04274271657504869,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/cb1505046674e33ef3de",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-08T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.040915023849811404,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/c661098ad46c65fa59b2"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/cbc5540f3214caf61aba",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-10-25T14:29:33Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 6.234587844467023,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/cc3f3365b6ac65388a93",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:47:06Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.04118986614375899,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/cfba00e49ad2fb8681cb",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:30:59Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 3.9401540663665706,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/d21f7e781447b03b022d",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-09-10T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.04804177490004804,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/12c678df16e04f4f9011"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/d34ebb3d52e02dfb8b16",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:24:00Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.10810742296234821,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/d570569f32c953038fde",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T15:59:21Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.31083233579993247,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/d7020017fca2249bf32b",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:32:36Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 48.79413008099946,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/d93b4dad29e8a0f77987",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:17:47Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 1.7445965755032375,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "standard",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/dcaeeeda42d44e4eae53",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-09-08T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.03967809098830912,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/73c19173fcc983318b61"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/dfe187651d7341aeaafa",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-05T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.06287335734959924,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/c661098ad46c65fa59b2"
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/e08b7a6ff7b9daea8790",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T14:34:59Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 55.29190935999795,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/e8de6a42a051f592a10a",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay_nn"
+      },
+      "measured_at": "2026-09-08T00:00:00Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.040857585475896484,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_1500",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1500,
+      "status": "superseded",
+      "superseded_by": "lifecycle/c661098ad46c65fa59b2"
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/ec69a200557ea8212e5e",
+      "instrument": "jwst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-25T14:32:50Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.06284201140006189,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/fa028d54604cd08d3555",
+      "instrument": "ao",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "delaunay"
+      },
+      "measured_at": "2026-10-25T15:05:30Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.3669254026986891,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 1250,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/fcb319f0f24b8cc9fd37",
+      "instrument": "simple",
+      "likelihood": {
+        "dataset_type": "point_source_source",
+        "variant": "source_plane"
+      },
+      "measured_at": "2026-10-17T13:41:15Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 4.768376311403699e-06,
+      "per_call_source": "vmap.per_call",
+      "regime": "standard",
+      "setup_id": "jax_gpu_na_fp64",
+      "source_pixels": null,
+      "status": "current",
+      "superseded_by": null
     }
   ],
-  "schema": "profiling-summary@2",
-  "source": "PyAutoPulse snapshots/lens.json"
+  "schema": "profiling-summary@3",
+  "source": "PyAutoPulse snapshots/lens.json",
+  "standard_source_pixels": {
+    "delaunay": 1250,
+    "delaunay_nn": 1250,
+    "rectangular": 1225
+  }
 }

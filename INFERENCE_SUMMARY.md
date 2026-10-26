@@ -74,14 +74,24 @@ Clocks and derived numbers, all computed here (Pulse computes nothing):
 - `wall_s`: the stage's `wall_s`, the sampler clock. It includes sampler overhead,
   so `implied_ms_per_eval = wall_s / likelihood_evals * 1000` is an upper bound on
   the per-evaluation cost, never a per-likelihood measurement.
-- `predicted_ms_per_eval`, `reference_runtime_record_id`: from the committed extract
+- `implied_s_per_eval`: `implied_ms_per_eval` in seconds, beside it. This is the one
+  per-evaluation number on every hardware: it includes the sampler's overhead on
+  purpose, so it is the cost a fit actually pays per evaluation.
+- `profiling_record_id`, `profiling_per_call_s`, `profiling_per_call_source`,
+  `profiling_status`, `profiling_source_pixels`, `profiling_unmatched_reason`: the
+  `profiling-summary@3` runtime record of the committed extract
   `catalogue/pulse_lens_runtime_reference.json` of the Pulse `lens` snapshot
-  (refresh with `--refresh-pulse-reference <PyAutoPulse>/snapshots/lens.json`).
-  A runtime record matches when its dataset, model and instrument equal the
-  record's likelihood and instrument and it determines the same `setup_id`
-  (backend, device, operator, precision); the metric is `vmap.per_call`, else
-  `single_jit_block`, converted to ms. A legacy record that omits the operator never
-  matches. No match leaves both null and adds a limitation. Today no record matches.
+  (refresh with `--refresh-pulse-reference <PyAutoPulse>/snapshots/lens.json`) whose
+  `likelihood`, `instrument`, `setup_id`, `host_class` and `model_variant` equal the
+  record's exactly; the `current` record first, then the one whose size bin equals
+  the run's source pixels, then the newest. A stage that solves no inversion
+  (`inversion_applies: false`, e.g. `source_lp[1]`) is never paired. The per-call time is
+  Pulse's own (`projected_node_throughput.per_call_s`, else the headline metric).
+  `reference_runtime_record_id` and `predicted_ms_per_eval` (per-call in ms) repeat
+  the same match for compatibility. No match leaves them null with the reason.
+- `source_pixels`, `size_match`: the run's source pixel count (rectangular
+  `mesh_shape` product, Delaunay `mesh_pixels` Hilbert vertices) against the profiling
+  record's size bin; null when either side records no count.
 - `ratio_measured_over_predicted`: implied over predicted, null without a prediction.
 - `parallel_efficiency`: null until a 1-core row of the same key exists.
 - `parity_status`: `not_assessed` unless `PARITY_RULINGS` in the exporter declares a
