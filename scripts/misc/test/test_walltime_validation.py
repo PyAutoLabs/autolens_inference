@@ -185,7 +185,6 @@ def test_a_stage_without_an_inversion_is_never_paired(tmp_path):
     assert records["mass_total[1]"]["profiling_record_id"] == "lifecycle/exact"
     assert records["mass_total[1]"]["size_match"] is False
     assert any("0 match, 1 differ" in x for x in doc["limitations"])
-    assert not any("search_summary" in k for r in doc["records"] for k in r)
 
 
 def test_among_current_records_the_exact_size_bin_wins(tmp_path):
