@@ -683,6 +683,71 @@ def rect_mesh_classes(cli: InferenceCLI, al=None):
     )
 
 
+#: The two per-evaluation timings of PyAutoFit's ``search.summary``, keyed by the
+#: row field each lands in (``autofit/text/text_util.py``). Both are seconds:
+#:
+#: - ``log_likelihood_eval_s``: one call of the fitness at the max-likelihood
+#:   point, timed once after the fit (``search/updater.py``; no warm-up, no
+#:   repetition, so on a JAX leg it can include tracing or compilation).
+#: - ``time_per_sample_s``: the sampler's ``time`` over its ``total_samples``.
+SEARCH_SUMMARY_LINES = {
+    "log_likelihood_eval_s": "Log Likelihood Function Evaluation Time (seconds)",
+    "time_per_sample_s": "Time Per Sample (seconds)",
+}
+
+
+def parse_search_summary(text: str) -> dict:
+    """``{field: float | None}`` for each :data:`SEARCH_SUMMARY_LINES` entry of a
+    ``search.summary`` text. A line that is absent, repeated with different
+    values, or not a finite non-negative number reads ``None``; nothing is guessed."""
+    found: dict[str, set] = {field: set() for field in SEARCH_SUMMARY_LINES}
+    labels = {label: field for field, label in SEARCH_SUMMARY_LINES.items()}
+    for line in text.splitlines():
+        label, sep, value = line.partition("=")
+        field = labels.get(label.strip())
+        if not sep or field is None:
+            continue
+        try:
+            number = float(value.strip())
+        except ValueError:
+            number = None
+        if number is not None and not (number >= 0 and number != float("inf")):
+            number = None
+        found[field].add(number)
+    return {field: next(iter(v)) if len(v) == 1 else None for field, v in found.items()}
+
+
+def search_summary_from(output_path, *, path_label: str | None = None) -> dict:
+    """The ``search_summary`` block of one stage row, read from its identifier dir.
+
+    ``{log_likelihood_eval_s, time_per_sample_s, path}``, plus ``reason`` whenever
+    a field is null (no directory, no file, unreadable file or missing line).
+    ``path`` is ``path_label`` when given (a repo-relative spelling), else the
+    file's own path; it is null when the file does not exist.
+    """
+    block = {field: None for field in SEARCH_SUMMARY_LINES}
+    block["path"] = None
+    if output_path is None:
+        block["reason"] = "No search output directory for this stage"
+        return block
+    path = Path(output_path) / "search.summary"
+    try:
+        text = path.read_text()
+    except FileNotFoundError:
+        block["reason"] = "No search.summary in the stage's output directory"
+        return block
+    except (OSError, UnicodeDecodeError) as exc:
+        block["path"] = path_label or str(path)
+        block["reason"] = f"search.summary unreadable: {type(exc).__name__}"
+        return block
+    block.update(parse_search_summary(text))
+    block["path"] = path_label or str(path)
+    missing = [SEARCH_SUMMARY_LINES[f] for f in SEARCH_SUMMARY_LINES if block[f] is None]
+    if missing:
+        block["reason"] = "search.summary lacks a single finite value for: " + "; ".join(missing)
+    return block
+
+
 def device_info_dict() -> dict:
     """Capture backend / device / nvidia-smi summary for the current JAX process.
 
