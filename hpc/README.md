@@ -72,15 +72,19 @@ export PYAUTO_RELEASE_PIN=2026.10.17.1
 `PYAUTO_RELEASE_PIN` is recorded in every SLaM result row (schema v3, `release_pin`) as a
 *claim*; the row's `library_revisions` — the HEAD commits of the checkouts the process
 actually imported — is the *evidence*, and a reader checks one against the other. For
-2026.10.17.1 a pinned row's `library_revisions` must equal the tag commits:
+2026.10.17.1 a pinned row's `library_revisions` must equal the commit each tag points at.
+The tags are *annotated*, so the GitHub tag ref (and `git rev-parse 2026.10.17.1`) names a tag
+object whose SHA is not a commit; `library_revisions` records the checkout's `HEAD`, which is
+the tag's commit (`git rev-parse '2026.10.17.1^{commit}'`, or the `^{}` line of
+`git ls-remote`):
 
-| repo | tag `2026.10.17.1` |
-|---|---|
-| PyAutoNerves | `42b4d31` |
-| PyAutoFit | `f4d4f60` |
-| PyAutoArray | `9993b42` |
-| PyAutoGalaxy | `f555e31` |
-| PyAutoLens | `02f9402` |
+| repo | commit of tag `2026.10.17.1` | (annotated tag object, never in a row) |
+|---|---|---|
+| PyAutoNerves | `7f3055b` | `42b4d31` |
+| PyAutoFit | `4b183e2` | `f4d4f60` |
+| PyAutoArray | `e59d5fa` | `9993b42` |
+| PyAutoGalaxy | `35100de` | `f555e31` |
+| PyAutoLens | `c90eceb` | `02f9402` |
 
 A pin directory is never pulled, rebased or edited after creation; a new release gets a new
 directory. Rows also record `slurm_job_id` (`<array job>_<task>` inside an array).
