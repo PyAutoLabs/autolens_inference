@@ -127,7 +127,6 @@ from _inference_cli import (  # noqa: E402
     parse_inference_cli,
     rect_mesh_classes,
     row_stem,
-    search_summary_from,
     split_config_name,
     validation_layout,
     variant_name,
@@ -604,9 +603,6 @@ def _stage_row(
     - ``positions.info`` -> ``positions_info_present``. A pixelized stage without
       it is not citable.
     - ``.completed`` -> ``completed``.
-    - ``search.summary`` -> ``search_summary`` (``log_likelihood_eval_s``,
-      ``time_per_sample_s``, ``path``; null fields plus ``reason`` when the file
-      or a line is absent), via ``_inference_cli.search_summary_from``.
 
     ``total_accepted_samples`` is deliberately not read: nautilus 1.0.5 sets it
     to ``n_like`` as well, so it is a duplicate, not an acceptance count.
@@ -638,7 +634,6 @@ def _stage_row(
         "completed": bool(output_path is not None and (output_path / ".completed").exists()),
         "resumed": bool(resumed),
         "output_path": str(output_path) if output_path is not None else None,
-        "search_summary": search_summary_from(output_path),
     }
     if compile_s_note:
         row["compile_s_note"] = compile_s_note

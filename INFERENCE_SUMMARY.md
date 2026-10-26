@@ -74,25 +74,18 @@ Clocks and derived numbers, all computed here (Pulse computes nothing):
 - `wall_s`: the stage's `wall_s`, the sampler clock. It includes sampler overhead,
   so `implied_ms_per_eval = wall_s / likelihood_evals * 1000` is an upper bound on
   the per-evaluation cost, never a per-likelihood measurement.
-- `implied_s_per_eval`: `implied_ms_per_eval` in seconds, beside it.
-- `likelihood_eval_s_search_summary`, `time_per_sample_s_search_summary`: PyAutoFit's
-  `search.summary` "Log Likelihood Function Evaluation Time" (one un-repeated call at
-  the max-likelihood point after the fit; on a JAX leg it can include compilation)
-  and "Time Per Sample", raw seconds. Read from the stage row's `search_summary`
-  (written by `_runner._stage_row`), else from the committed sidecar
-  `catalogue/search_summary_backfill.json`; `search_summary_source` says which.
-  Older rows are backfilled from a local run output tree with
-  `scripts/misc/tooling/search_summary_backfill.py --output-root <output> --write`
-  (`--check` compares; local only, since CI has no output tree). The tool uses the
-  row's recorded identifier directory, else a sole or agreeing candidate, and
-  refuses disagreeing candidates as ambiguous.
+- `implied_s_per_eval`: `implied_ms_per_eval` in seconds, beside it. This is the one
+  per-evaluation number on every hardware: it includes the sampler's overhead on
+  purpose, so it is the cost a fit actually pays per evaluation.
 - `profiling_record_id`, `profiling_per_call_s`, `profiling_per_call_source`,
   `profiling_status`, `profiling_source_pixels`, `profiling_unmatched_reason`: the
   `profiling-summary@3` runtime record of the committed extract
   `catalogue/pulse_lens_runtime_reference.json` of the Pulse `lens` snapshot
   (refresh with `--refresh-pulse-reference <PyAutoPulse>/snapshots/lens.json`) whose
   `likelihood`, `instrument`, `setup_id`, `host_class` and `model_variant` equal the
-  record's exactly; the `current` record first, else the newest. The per-call time is
+  record's exactly; the `current` record first, then the one whose size bin equals
+  the run's source pixels, then the newest. A stage that solves no inversion
+  (`inversion_applies: false`, e.g. `source_lp[1]`) is never paired. The per-call time is
   Pulse's own (`projected_node_throughput.per_call_s`, else the headline metric).
   `reference_runtime_record_id` and `predicted_ms_per_eval` (per-call in ms) repeat
   the same match for compatibility. No match leaves them null with the reason.

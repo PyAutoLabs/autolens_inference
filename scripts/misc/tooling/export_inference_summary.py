@@ -55,8 +55,6 @@ DIAGNOSTICS = (
     "ess",
     "r_hat",
     "acceptance_fraction",
-    # The stage's search.summary timings (_runner._stage_row), when the row has them.
-    "search_summary",
 )
 CONFIG = (
     "config_name",
@@ -483,10 +481,6 @@ PARITY_RULINGS = {
 }
 
 
-#: The committed sidecar of search.summary timings for stage rows written before
-#: ``_stage_row`` recorded ``search_summary`` (``search_summary_backfill.py``).
-SEARCH_SUMMARY_BACKFILL = "catalogue/search_summary_backfill.json"
-
 #: The fields an inference wall-time record and a profiling runtime record must
 #: share exactly to be paired. ``regime`` (the profiling size bin) is not a key:
 #: the size is compared separately and reported as ``size_match``.
@@ -568,10 +562,16 @@ def refresh_pulse_reference(snapshot_path, root=ROOT):
     return out
 
 
-def match_profiling(walltime, references):
+#: Why a stage that solves no inversion is never paired: every profiling runtime
+#: record of a pixelized likelihood times the inversion it would not run.
+NO_INVERSION_REASON = "stage has no inversion (parametric); no matching profiling likelihood"
+
+
+def match_profiling(walltime, references, source_pixels=None):
     """``(record, reason)``: the profiling runtime record whose
-    :data:`PROFILING_MATCH_KEYS` equal the wall-time record's, current first, else
-    the newest; ``(None, reason)`` names the first key no record shares."""
+    :data:`PROFILING_MATCH_KEYS` equal the wall-time record's; current first, then
+    the one whose size bin equals ``source_pixels``, then the newest.
+    ``(None, reason)`` names the first key no record shares."""
     candidates = list(references)
     for field in PROFILING_MATCH_KEYS:
         candidates = [ref for ref in candidates if ref.get(field) == walltime[field]]
@@ -587,6 +587,7 @@ def match_profiling(walltime, references):
         candidates,
         key=lambda r: (
             r.get("status") in PROFILING_STATUS_ORDER,
+            source_pixels is not None and r.get("source_pixels") == source_pixels,
             r.get("measured_at") or "",
             r["id"],
         ),
@@ -618,22 +619,7 @@ def source_pixels_of(configuration):
     return None
 
 
-def _search_summary(values, backfill, row_path, stage):
-    """``(block, source)``: the row's own ``search_summary`` else the sidecar's."""
-    block = values.get("search_summary")
-    if isinstance(block, dict):
-        return block, "row"
-    block = (backfill.get(row_path) or {}).get(stage)
-    if isinstance(block, dict):
-        return block, "backfill"
-    return {}, None
-
-
-def _seconds(value):
-    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
-
-
-def build_walltime(root, summary_doc, revision, references=None, backfill=None):
+def build_walltime(root, summary_doc, revision, references=None):
     """``walltime-validation@1`` from the current SLaM validation rows.
 
     One record per (likelihood, instrument, setup_id, host_class, model_variant,
@@ -645,9 +631,6 @@ def build_walltime(root, summary_doc, revision, references=None, backfill=None):
     if references is None:
         path = root / PULSE_REFERENCE
         references = json.loads(path.read_text())["records"] if path.exists() else []
-    if backfill is None:
-        path = root / SEARCH_SUMMARY_BACKFILL
-        backfill = json.loads(path.read_text())["rows"] if path.exists() else {}
     stages = [
         r
         for r in summary_doc["records"]
@@ -701,13 +684,15 @@ def build_walltime(root, summary_doc, revision, references=None, backfill=None):
             "stage": r["stage"],
             "seed": r["seed"],
         }
-        ref, reason = match_profiling(item, references)
+        if values.get("inversion_applies") is False:
+            ref, reason, pixels = None, NO_INVERSION_REASON, None
+        else:
+            pixels = source_pixels_of(r["configuration"])
+            ref, reason = match_profiling(item, references, pixels)
         if ref is None:
             unmatched[reason] += 1
         predicted = ref["per_call_s"] * 1000.0 if ref is not None else None
-        pixels = source_pixels_of(r["configuration"])
         ref_pixels = ref.get("source_pixels") if ref is not None else None
-        block, block_source = _search_summary(values, backfill, r["parent_run_id"], r["stage"])
         status, basis = PARITY_RULINGS.get(
             (
                 likelihood["dataset_type"],
@@ -736,9 +721,6 @@ def build_walltime(root, summary_doc, revision, references=None, backfill=None):
             likelihood_evals=evals,
             implied_ms_per_eval=implied,
             implied_s_per_eval=implied / 1000.0 if implied is not None else None,
-            likelihood_eval_s_search_summary=_seconds(block.get("log_likelihood_eval_s")),
-            time_per_sample_s_search_summary=_seconds(block.get("time_per_sample_s")),
-            search_summary_source=block_source,
             source_pixels=pixels,
             profiling_record_id=ref["id"] if ref is not None else None,
             profiling_per_call_s=ref["per_call_s"] if ref is not None else None,
@@ -766,36 +748,23 @@ def build_walltime(root, summary_doc, revision, references=None, backfill=None):
     limitations = [
         "Full-fit measurements: one Nautilus stage of one SLaM chain per record, never a "
         "per-likelihood cost; the sampler is <sampler>:<stage> because the key has no stage",
-        "wall_s is the sampler clock (samples_info.json) and includes sampler overhead; "
-        "implied_ms_per_eval = wall_s / likelihood_evals * 1000 (implied_s_per_eval the same "
-        "in seconds) is therefore an upper bound on the per-evaluation cost",
+        "wall_s is the sampler clock (samples_info.json). implied_s_per_eval = wall_s / "
+        "likelihood_evals (implied_ms_per_eval the same in ms) is the one per-evaluation "
+        "number, on every hardware: it deliberately includes the sampler's overhead "
+        "(Nautilus bookkeeping, batching), so it is the cost a fit actually pays per "
+        "evaluation, an upper bound on the bare likelihood call",
         "parallel_efficiency is null: no 1-core row of any key exists yet",
         "parity_status is not_assessed unless a declared ruling of record names the run "
         "(parity_basis); the exporter computes no parity verdict",
-        "likelihood_eval_s_search_summary is PyAutoFit's search.summary 'Log Likelihood "
-        "Function Evaluation Time': one un-repeated call of the fitness at the "
-        "max-likelihood point after the fit, so on a JAX leg it can include tracing or "
-        "compilation; time_per_sample_s_search_summary is its 'Time Per Sample' (sampler "
-        "time over total samples). Both are raw seconds",
     ]
-    by_source = Counter(item["search_summary_source"] for item in records)
-    with_summary = sum(
-        1
-        for item in records
-        if item["likelihood_eval_s_search_summary"] is not None
-        or item["time_per_sample_s_search_summary"] is not None
-    )
-    limitations.append(
-        f"{with_summary} of {n} records carry search.summary timings "
-        f"({by_source['row']} from the stage row, {by_source['backfill']} from "
-        f"{SEARCH_SUMMARY_BACKFILL}); {n - with_summary} have none"
-    )
     matched = n - sum(unmatched.values())
     match_line = (
         f"{matched} of {n} records pair with a profiling-summary@3 runtime record of the "
         f"lens snapshot cached in {PULSE_REFERENCE} on an exact (likelihood, instrument, "
-        "setup_id, host_class, model_variant) match, the current record first, else the "
-        "newest (profiling_status says which); profiling_per_call_s is Pulse's per-call "
+        "setup_id, host_class, model_variant) match, the current record first, then the "
+        "one whose size bin equals the run's source pixels, then the newest "
+        "(profiling_status says which); stages that solve no inversion are never paired; "
+        "profiling_per_call_s is Pulse's per-call "
         "time of that record, predicted_ms_per_eval the same in ms"
     )
     if unmatched:

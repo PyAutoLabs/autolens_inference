@@ -25,10 +25,8 @@ PULSE = next(
 )
 
 
-def _walltime(root, references=(), backfill=None):
-    return summary.build_walltime(
-        root, feed(root), "a" * 40, references=list(references), backfill=backfill or {}
-    )
+def _walltime(root, references=()):
+    return summary.build_walltime(root, feed(root), "a" * 40, references=list(references))
 
 
 def _row(config, variant="slam_base", seed=0, stages=None, job="1_0"):
@@ -170,36 +168,39 @@ def test_current_is_preferred_else_the_newest_and_size_is_compared(tmp_path):
     assert record["profiling_record_id"] == "lifecycle/current"
 
 
-def test_search_summary_timings_come_from_the_row_else_the_backfill(tmp_path):
-    own = {"log_likelihood_eval_s": 0.4, "time_per_sample_s": 1.9, "path": "x"}
+def test_a_stage_without_an_inversion_is_never_paired(tmp_path):
     stages = [
-        _stage("source_lp[1]", 100.0, 1000, search_summary=own),
-        _stage("mass_total[1]", 50.0, 500),
-        _stage("light[1]", 20.0, 200),
+        _stage("source_lp[1]", 100.0, 1000, inversion_applies=False),
+        _stage("mass_total[1]", 50.0, 500, inversion_applies=True),
     ]
     row = _row("hpc_a100_jax_gpu_dense_fp64", stages=stages)
     row["mesh_shape"] = [28, 28]
     _put_validation(tmp_path, row)
-    path = (
-        "results/imaging/rectangular/hst/validation/default/jax_gpu_dense_fp64/seed_0/stages.json"
-    )
-    backfill = {
-        path: {
-            "source_lp[1]": {"log_likelihood_eval_s": 9.0, "time_per_sample_s": 9.0},
-            "mass_total[1]": {"log_likelihood_eval_s": 0.3, "time_per_sample_s": 0.1},
-        }
-    }
-    doc = _walltime(tmp_path, [_reference("lifecycle/exact")], backfill)
+    doc = _walltime(tmp_path, [_reference("lifecycle/exact")])
     records = {r["stage"]: r for r in doc["records"]}
-    assert records["source_lp[1]"]["likelihood_eval_s_search_summary"] == 0.4
-    assert records["source_lp[1]"]["search_summary_source"] == "row"
-    assert records["mass_total[1]"]["time_per_sample_s_search_summary"] == 0.1
-    assert records["mass_total[1]"]["search_summary_source"] == "backfill"
-    assert records["light[1]"]["likelihood_eval_s_search_summary"] is None
-    assert records["light[1]"]["search_summary_source"] is None
+    lp = records["source_lp[1]"]
+    assert lp["profiling_record_id"] is None and lp["reference_runtime_record_id"] is None
+    assert lp["size_match"] is None and lp["source_pixels"] is None
+    assert lp["profiling_unmatched_reason"] == summary.NO_INVERSION_REASON
+    assert records["mass_total[1]"]["profiling_record_id"] == "lifecycle/exact"
     assert records["mass_total[1]"]["size_match"] is False
-    assert any("2 of 3 records carry search.summary" in x for x in doc["limitations"])
-    assert any("0 match, 3 differ" in x for x in doc["limitations"])
+    assert any("0 match, 1 differ" in x for x in doc["limitations"])
+    assert not any("search_summary" in k for r in doc["records"] for k in r)
+
+
+def test_among_current_records_the_exact_size_bin_wins(tmp_path):
+    row = _row("hpc_a100_jax_gpu_dense_fp64", stages=[_stage("mass_total[1]", 50.0, 500)])
+    row["mesh_shape"] = [28, 28]
+    _put_validation(tmp_path, row)
+    standard = _reference("lifecycle/standard", measured_at="2026-10-25T00:00:00Z")
+    sized = _reference(
+        "lifecycle/sized",
+        regime="source_pixels_784",
+        source_pixels=784,
+        measured_at="2026-10-01T00:00:00Z",
+    )
+    (record,) = _walltime(tmp_path, [standard, sized])["records"]
+    assert record["profiling_record_id"] == "lifecycle/sized" and record["size_match"] is True
 
 
 def test_the_reference_cache_is_profiling_summary_v3_runtime_records():

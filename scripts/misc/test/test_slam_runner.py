@@ -224,62 +224,6 @@ def test_stage_row_reports_a_missing_positions_info(tmp_path):
     assert row["resumed"] is True
 
 
-#: A real Nautilus ``search.summary`` (jax_cpu dense source_pix[1], seed 0).
-SEARCH_SUMMARY_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "search.summary"
-
-
-def _stage_row_of(output_path):
-    return _runner._stage_row(
-        "source_pix[1]",
-        output_path,
-        n_live=150,
-        n_batch=20,
-        free_parameters=10,
-        total_wall_s=1.0,
-        compile_s=None,
-        resumed=False,
-        inversion_applies=True,
-    )
-
-
-def test_stage_row_reads_the_search_summary_timings(tmp_path):
-    output_path = _fake_search_dir(tmp_path)
-    (output_path / "search.summary").write_text(SEARCH_SUMMARY_FIXTURE.read_text())
-    block = _stage_row_of(output_path)["search_summary"]
-    assert block["log_likelihood_eval_s"] == 8.641005992889404
-    assert block["time_per_sample_s"] == 1.1063321578481946
-    assert block["path"] == str(output_path / "search.summary")
-    assert "reason" not in block
-
-
-def test_stage_row_search_summary_is_null_with_a_reason_when_absent(tmp_path):
-    block = _stage_row_of(_fake_search_dir(tmp_path))["search_summary"]
-    assert block["log_likelihood_eval_s"] is None and block["time_per_sample_s"] is None
-    assert block["path"] is None and "No search.summary" in block["reason"]
-    block = _stage_row_of(None)["search_summary"]
-    assert block["path"] is None and "No search output directory" in block["reason"]
-
-
-def test_a_missing_or_malformed_summary_line_reads_null(tmp_path):
-    output_path = _fake_search_dir(tmp_path)
-    text = SEARCH_SUMMARY_FIXTURE.read_text().replace(
-        "Time Per Sample (seconds) = 1.1063321578481946", "Time Per Sample (seconds) = nan"
-    )
-    (output_path / "search.summary").write_text(text)
-    block = _stage_row_of(output_path)["search_summary"]
-    assert block["log_likelihood_eval_s"] == 8.641005992889404
-    assert block["time_per_sample_s"] is None and "Time Per Sample" in block["reason"]
-    lines = [
-        line
-        for line in SEARCH_SUMMARY_FIXTURE.read_text().splitlines()
-        if not line.startswith("Log Likelihood Function Evaluation Time")
-    ]
-    (output_path / "search.summary").write_text("\n".join(lines))
-    block = _stage_row_of(output_path)["search_summary"]
-    assert block["log_likelihood_eval_s"] is None
-    assert block["time_per_sample_s"] == 1.1063321578481946
-
-
 def test_stage_row_survives_a_search_dir_that_never_appeared():
     row = _runner._stage_row(
         "light[1]",
