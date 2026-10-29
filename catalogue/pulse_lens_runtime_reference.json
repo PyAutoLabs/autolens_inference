@@ -1,6 +1,6 @@
 {
-  "commit": "29caed89879399db78f2c6b3734558c844a66b19",
-  "fetched_at": "2026-10-25T19:33:56Z",
+  "commit": "a1a4ccf16fd6c30ce0a3d14e6ec0aec382d7099c",
+  "fetched_at": "2026-10-27T13:08:04Z",
   "instance": "lens",
   "records": [
     {
@@ -612,6 +612,63 @@
       "superseded_by": null
     },
     {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/5d93f1a08e8a7d5e3c9e",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-27T10:59:21Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.013282744462412666,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_784",
+      "setup_id": "jax_gpu_dense_fp64",
+      "source_pixels": 784,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/5e126050d5a2da290c4f",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-27T10:57:47Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 1.1555811246003336,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_784",
+      "setup_id": "jax_cpu_sparse_fp64",
+      "source_pixels": 784,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_ral_cpu",
+      "id": "lifecycle/5f82f2a2be617991560c",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-27T10:54:23Z",
+      "metric": "single_jit_block",
+      "model_variant": "default",
+      "per_call_s": 0.5665083820058499,
+      "per_call_source": "warm_iid_median_s",
+      "regime": "source_pixels_784",
+      "setup_id": "numba_cpu_sparse_fp64",
+      "source_pixels": 784,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
       "host_class": "hpc_ral_cpu",
       "id": "lifecycle/6060fdcfa2e5a4a0c168",
       "instrument": "euclid",
@@ -1045,6 +1102,25 @@
       "regime": "standard",
       "setup_id": "numba_cpu_sparse_fp64",
       "source_pixels": 1225,
+      "status": "current",
+      "superseded_by": null
+    },
+    {
+      "host_class": "hpc_a100",
+      "id": "lifecycle/b737f77c5c2c2a9c9231",
+      "instrument": "hst",
+      "likelihood": {
+        "dataset_type": "imaging",
+        "variant": "rectangular"
+      },
+      "measured_at": "2026-10-27T11:01:14Z",
+      "metric": "single_jit_median",
+      "model_variant": "default",
+      "per_call_s": 0.029244039837794843,
+      "per_call_source": "vmap.per_call",
+      "regime": "source_pixels_784",
+      "setup_id": "jax_gpu_sparse_fp64",
+      "source_pixels": 784,
       "status": "current",
       "superseded_by": null
     },
