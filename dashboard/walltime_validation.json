@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-26T14:32:55Z",
+  "generated_at": "2026-10-27T13:55:39Z",
   "limitations": [
     "Full-fit measurements: one Nautilus stage of one SLaM chain per record, never a per-likelihood cost; the sampler is <sampler>:<stage> because the key has no stage",
     "wall_s is the sampler clock (samples_info.json). implied_s_per_eval = wall_s / likelihood_evals (implied_ms_per_eval the same in ms) is the one per-evaluation number, on every hardware: it deliberately includes the sampler's overhead (Nautilus bookkeeping, batching), so it is the cost a fit actually pays per evaluation, an upper bound on the bare likelihood call",
@@ -11,7 +11,7 @@
     "6 stage(s) omitted: stages loaded from another config (--stages-from) are not this run's fit",
     "33 stage(s) omitted: non-default model-variant stages identical to the default run's (one --lens-light both job, one fit) are listed once, under default"
   ],
-  "producer_revision": "6b19b94efcb5c67afe252df382d2f4eee72e62f9",
+  "producer_revision": "77813c61c4b4f8dce812a67e77394e9341545f4b",
   "project": "autolens_inference",
   "records": [
     {
