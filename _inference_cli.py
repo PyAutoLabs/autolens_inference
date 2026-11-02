@@ -33,11 +33,29 @@ from dataclasses import dataclass
 from pathlib import Path
 
 #: The ``--backend`` vocabulary — the middle field of the config-name grammar
-#: ``{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}``.
+#: ``{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse,na}_{fp64,mp}[_{nufft,wtilde}]``.
 BACKENDS = ("jax_cpu", "numba_cpu", "jax_gpu")
 
-#: The ``--inversion`` vocabulary — the third field of the same grammar.
-INVERSIONS = ("dense", "sparse")
+#: The ``--inversion`` vocabulary — the third field of the same grammar. ``na`` is a
+#: likelihood that solves no linear inversion at all (point source, cluster): the
+#: Pulse setup ids spell it ``jax_cpu_na_fp64``. Which of the three a leaf accepts
+#: is the leaf's own rule (the imaging SLaM chain refuses ``na``; the point leaf
+#: refuses ``sparse``).
+INVERSIONS = ("dense", "sparse", "na")
+
+#: The ``--transformer`` vocabulary — the optional fifth field, which only a
+#: visibility-space likelihood carries: ``nufft`` is the dense mapping-matrix route
+#: through the NUFFT, ``wtilde`` the sparse W~ operator (the Pulse setup ids
+#: ``jax_cpu_dense_fp64_nufft`` / ``numba_cpu_sparse_fp64_wtilde``). Each belongs to
+#: exactly one inversion, so a name pairing ``sparse`` with ``nufft`` is refused.
+TRANSFORMERS = ("nufft", "wtilde")
+TRANSFORMER_INVERSION = {"nufft": "dense", "wtilde": "sparse"}
+
+#: The grammar as one string, for error messages and ``--help``.
+CONFIG_NAME_GRAMMAR = (
+    "{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse,na}_{fp64,mp}"
+    "[_{nufft,wtilde}]"
+)
 
 #: The ``--config-name`` grammar, as a regex with one group per field:
 #: ``(where, backend, inversion, precision)``. ``where`` names the hardware:
@@ -48,16 +66,65 @@ INVERSIONS = ("dense", "sparse")
 #: refuse a name whose fields disagree with the flags actually passed — a config
 #: name that lies about its run turns a parity row into a lie, and nothing
 #: downstream (the result JSON, the README table, a Cortex ruling) can detect it.
+#:
+#: The groups are ``(where, backend, inversion, precision, transformer)``; the
+#: fifth is ``None`` on every name without the suffix, which is every imaging and
+#: point-source name. Match through :func:`parse_config_name`, which also refuses a
+#: transformer on the wrong inversion — the regex alone would accept
+#: ``..._sparse_fp64_nufft``.
 CONFIG_NAME_RE = re.compile(
-    r"^(local|hpc_a100|hpc_ral)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse)_(fp64|mp)$"
+    r"^(local|hpc_a100|hpc_ral)_(jax_cpu|numba_cpu|jax_gpu)_(dense|sparse|na)_(fp64|mp)"
+    r"(?:_(nufft|wtilde))?$"
 )
+
+
+@dataclass(frozen=True)
+class ConfigName:
+    """The fields of a config name of the grammar above."""
+
+    where: str
+    backend: str
+    inversion: str
+    precision: str
+    transformer: str | None
+
+    @property
+    def setup_id(self) -> str:
+        """``<backend>_<inversion>_<precision>[_<transformer>]``: the name less ``where``."""
+        tail = f"_{self.transformer}" if self.transformer else ""
+        return f"{self.backend}_{self.inversion}_{self.precision}{tail}"
+
+
+def parse_config_name(config_name) -> ConfigName | None:
+    """The fields of ``config_name``, or ``None`` when it is outside the grammar.
+
+    A transformer is part of the grammar only on its own inversion
+    (:data:`TRANSFORMER_INVERSION`): ``dense_fp64_nufft`` and ``sparse_fp64_wtilde``
+    parse, ``sparse_fp64_nufft`` and ``na_fp64_wtilde`` do not.
+    """
+    match = CONFIG_NAME_RE.match(config_name) if isinstance(config_name, str) else None
+    if match is None:
+        return None
+    fields = ConfigName(*match.groups())
+    if fields.transformer and TRANSFORMER_INVERSION[fields.transformer] != fields.inversion:
+        return None
+    return fields
+
+
+def config_name_for(where: str, setup_id: str) -> str:
+    """The config name a ``setup_id`` runs under at ``where`` (refused if outside the grammar)."""
+    name = f"{where}_{setup_id}"
+    if parse_config_name(name) is None:
+        raise ValueError(f"{name!r} is not a config name of the grammar {CONFIG_NAME_GRAMMAR}")
+    return name
+
 
 #: The ``--mesh`` vocabulary — which source pixelization family the pixelized
 #: stages are built from. A folder and a payload field, never part of the
 #: config-name grammar: the config name says which *backend* ran, the mesh says
 #: which *model* ran, and conflating them would make one label carry two
 #: independent axes.
-MESHES = ("rect", "delaunay")
+MESHES = ("rect", "delaunay", "delaunay_nn")
 
 #: The mesh family a run uses when neither the leaf nor ``--mesh`` names one.
 MESH_DEFAULT = "rect"
@@ -65,8 +132,17 @@ MESH_DEFAULT = "rect"
 #: What ``--mesh-pixels`` resolves to per family. 28 for ``rect`` is the 28x28
 #: shape of the workspace default (``slam_start_here.py``); 1250 for
 #: ``delaunay`` is a vertex count, not a shape — the two numbers are not
-#: comparable and are not meant to be.
-MESH_PIXELS_DEFAULT = {"rect": 28, "delaunay": 1250}
+#: comparable and are not meant to be. ``delaunay_nn`` (``al.mesh.DelaunayNN``, the
+#: Sibson natural-neighbour interpolation of the same vertices) counts like ``delaunay``.
+MESH_PIXELS_DEFAULT = {"rect": 28, "delaunay": 1250, "delaunay_nn": 1250}
+
+#: The profiled STANDARD size per mesh family (autolens_profiling
+#: ``_production_config.STANDARD_RECT_PIXELS_YX`` / ``STANDARD_HILBERT_PIXELS``, human
+#: ruling 2026-10-23): rectangular 35 x 35 = 1225, Delaunay 1250 Hilbert vertices. A
+#: phase-4 family whose likelihood was profiled only at the standard size runs its mesh
+#: at this size (its leaf passes ``default_mesh_pixels``); the imaging leaves keep the
+#: workspace 28 x 28, and ``--mesh rect --mesh-pixels 35`` there is the ``rect_35`` variant.
+MESH_PIXELS_STANDARD = {"rect": 35, "delaunay": 1250, "delaunay_nn": 1250}
 
 #: The variant name of the workspace-default run: a 28x28 rectangular mesh. It
 #: is the one variant whose name is not derived from the mesh, because it is the
@@ -81,6 +157,12 @@ BASE_VARIANT = "slam_base"
 #: the production SLaM Delaunay pipeline, rather than ``delaunay_1250``; any
 #: other vertex count keeps the derived ``delaunay_<n>`` name.
 DELAUNAY_BASE_VARIANT = "slam_delaunay"
+
+#: The variant name of the SLaM chain run on ``al.mesh.DelaunayNN`` at its default
+#: 1250 vertices, the Delaunay recipe with only the interpolation changed. Its own
+#: likelihood (``imaging/delaunay_nn`` in the profiling catalogue), so it is filed under
+#: ``results/<dataset_type>/delaunay_nn/``, never under ``delaunay/``.
+DELAUNAY_NN_BASE_VARIANT = "slam_delaunay_nn"
 
 #: The mirrored results layout (autolens_inference#41). A config name splits into
 #: a ``setup_id`` (``<backend>_<device>_<operator>_<precision>``, the folder) and a
@@ -99,19 +181,30 @@ SEARCH_LAYOUT = {("point_source", "source_plane_solved"): ("point_source_source"
 
 def split_config_name(config_name: str) -> tuple[str, str]:
     """``(setup_id, host_class)`` for a config name of the grammar above."""
-    match = CONFIG_NAME_RE.match(config_name)
-    if not match:
+    fields = parse_config_name(config_name)
+    if fields is None:
         raise ValueError(f"config name {config_name!r} does not match the grammar")
-    where = match.group(1)
-    return config_name[len(where) + 1 :], HOST_CLASSES[where]
+    return fields.setup_id, HOST_CLASSES[fields.where]
 
 
 def validation_layout(variant: str) -> tuple[str, str]:
-    """``(likelihood variant, model_variant)`` for a SLaM run variant:
+    """``(likelihood variant, model_variant)`` for an imaging SLaM run variant:
     ``slam_base`` -> ``(rectangular, default)``, ``slam_base_light_fixed`` ->
-    ``(rectangular, light_fixed)``, ``slam_delaunay`` -> ``(delaunay, default)``."""
-    family = "delaunay" if "delaunay" in variant else "rectangular"
-    for base in (BASE_VARIANT, DELAUNAY_BASE_VARIANT):
+    ``(rectangular, light_fixed)``, ``slam_delaunay`` -> ``(delaunay, default)``,
+    ``slam_delaunay_nn`` -> ``(delaunay_nn, default)``.
+
+    The DelaunayNN bases are tested before the Delaunay ones: ``slam_delaunay_nn`` also
+    starts with ``slam_delaunay_``, and would otherwise read as the Delaunay model
+    variant ``nn``. A row of another family declares its likelihood and model variant
+    outright (``slam._core``) and is never laid out from its variant name.
+    """
+    if "delaunay_nn" in variant:
+        family = "delaunay_nn"
+    elif "delaunay" in variant:
+        family = "delaunay"
+    else:
+        family = "rectangular"
+    for base in (BASE_VARIANT, DELAUNAY_NN_BASE_VARIANT, DELAUNAY_BASE_VARIANT):
         if variant == base:
             return family, "default"
         if variant.startswith(base + "_"):
@@ -138,13 +231,18 @@ STAGES = ("source_lp", "source_pix_1", "source_pix_2", "light", "mass_total")
 SHAREABLE_STAGES = ("source_lp",)
 
 
-def parse_stages_from(value: str) -> tuple[str, tuple[str, ...]]:
+def parse_stages_from(
+    value: str,
+    stages_vocabulary: tuple[str, ...] = STAGES,
+    shareable: tuple[str, ...] = SHAREABLE_STAGES,
+) -> tuple[str, tuple[str, ...]]:
     """Parse ``--stages-from <config_name>:<stage>[,<stage>]``.
 
     Returns ``(config_name, stages)`` and raises ``ValueError`` naming the
     problem for a malformed value, a config name outside the grammar, a stage
-    outside :data:`STAGES` or a stage that may not be shared
-    (:data:`SHAREABLE_STAGES`). The checks that need this run's own flags (same
+    outside the chain's ``stages_vocabulary`` (default :data:`STAGES`, the imaging
+    chain) or a stage that may not be shared (``shareable``, default
+    :data:`SHAREABLE_STAGES`). The checks that need this run's own flags (same
     config, same precision) live in the driver.
     """
     config_name, sep, stage_list = str(value).partition(":")
@@ -154,18 +252,18 @@ def parse_stages_from(value: str) -> tuple[str, tuple[str, ...]]:
             f"--stages-from {value!r} must be <config_name>:<stage>[,<stage>], "
             "e.g. hpc_a100_jax_cpu_dense_fp64:source_lp"
         )
-    if not CONFIG_NAME_RE.match(config_name):
+    if parse_config_name(config_name) is None:
         raise ValueError(
             f"--stages-from config {config_name!r} does not match the config-name "
-            "grammar {local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
+            f"grammar {CONFIG_NAME_GRAMMAR}"
         )
     stages = []
     for stage in (s.strip() for s in stage_list.split(",")):
-        if stage not in STAGES:
-            raise ValueError(f"--stages-from stage {stage!r} is not one of {STAGES}")
-        if stage not in SHAREABLE_STAGES:
+        if stage not in stages_vocabulary:
+            raise ValueError(f"--stages-from stage {stage!r} is not one of {stages_vocabulary}")
+        if stage not in shareable:
             raise ValueError(
-                f"--stages-from stage {stage!r} cannot be shared: only {SHAREABLE_STAGES} "
+                f"--stages-from stage {stage!r} cannot be shared: only {shareable} "
                 "(parametric, no inversion) may be loaded from another config's chain"
             )
         if stage not in stages:
@@ -234,14 +332,22 @@ class InferenceCLI:
     lens_light: str = LENS_LIGHT_DEFAULT
     results_tag: str | None = None
     stages_from: tuple[str, tuple[str, ...]] | None = None
+    transformer: str | None = None
 
 
 def parse_inference_cli(
     default_config_name: str | None = None,
     default_mesh: str | None = None,
     default_mesh_pixels: int | None = None,
+    stages_vocabulary: tuple[str, ...] = STAGES,
+    shareable_stages: tuple[str, ...] = SHAREABLE_STAGES,
 ) -> InferenceCLI:
     """Parse the run flags accepted by every leaf script.
+
+    ``stages_vocabulary`` / ``shareable_stages`` are the chain's ``--stages`` and
+    ``--stages-from`` vocabularies; they default to the imaging SLaM chain's
+    (:data:`STAGES`, :data:`SHAREABLE_STAGES`), and a family driver with its own
+    chain passes its own (``slam._core.Family.stage_keys``).
 
     When ``--config-name`` is omitted, falls back to ``default_config_name``.
 
@@ -272,9 +378,10 @@ def parse_inference_cli(
         default=None,
         help=(
             "Output-filename label for the run, from the grammar "
-            "{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp} "
+            f"{CONFIG_NAME_GRAMMAR} "
             "(e.g. local_jax_cpu_dense_fp64, hpc_a100_jax_gpu_sparse_fp64, "
-            "hpc_ral_numba_cpu_sparse_fp64). "
+            "hpc_ral_numba_cpu_sparse_fp64, hpc_ral_jax_cpu_na_fp64, "
+            "hpc_a100_jax_gpu_sparse_fp64_wtilde). "
             "Runs sharing a target and differing only in this label are one "
             "parity row. When omitted, the script keeps its single-config "
             "filename pattern."
@@ -315,7 +422,21 @@ def parse_inference_cli(
             "``dataset.apply_sparse_operator()`` under JAX on any device, and "
             "``dataset.apply_sparse_operator_cpu()`` under numba. Calling the "
             "JAX one on a numba leg does not error — it produces a leg that is "
-            "neither. Parsed and recorded in phase 1."
+            "neither. 'na' is a likelihood with no linear inversion at all (point "
+            "source, cluster); each leaf accepts only the values its likelihood has. "
+            "Parsed and recorded in phase 1."
+        ),
+    )
+    parser.add_argument(
+        "--transformer",
+        choices=TRANSFORMERS,
+        default=None,
+        help=(
+            "The visibility-space route, the optional fifth field of the config name: "
+            "'nufft' (dense, the mapping matrix through the NUFFT) or 'wtilde' (sparse, "
+            "the W~ operator). Only an interferometer-family leaf takes it, and it must "
+            "agree with --inversion and with the name. Omitted = no transformer field, "
+            "which is every imaging and point-source run."
         ),
     )
     parser.add_argument(
@@ -396,11 +517,14 @@ def parse_inference_cli(
             "--rect-mesh, the workspace default, at a --mesh-pixels x "
             "--mesh-pixels shape — or 'delaunay' — al.mesh.Delaunay at "
             "--mesh-pixels VERTICES, paired with a Split regularization because "
-            "al.reg.Adapt cannot be traced on this mesh family under jit. The "
+            "al.reg.Adapt cannot be traced on this mesh family under jit — or "
+            "'delaunay_nn' — al.mesh.DelaunayNN, the same vertices and "
+            "regularization with Sibson natural-neighbour interpolation, its own "
+            "likelihood (filed under delaunay_nn/). The "
             "mesh is NOT part of the config-name grammar: it names the model "
             "under test, while the config name names the backend that ran it. "
             "It is instead a run variant (results/<dataset_class>/<rectangular|"
-            "delaunay>/<instrument>/validation/<model_variant>/) and a field of the "
+            "delaunay|delaunay_nn>/<instrument>/validation/<model_variant>/) and a field of the "
             "target id, so a mesh experiment never joins the base run's parity "
             "row. Omitted = the leaf script's own default (usually 'rect')."
         ),
@@ -414,9 +538,11 @@ def parse_inference_cli(
             "thing per family and the two are not comparable: under '--mesh "
             "rect' it is the side of the square mesh (28 -> 28x28 = 784 cells, "
             "the workspace default), under '--mesh delaunay' it is the vertex "
-            "count outright (default 1250). Non-default values name their own "
-            "variant folder (rect_40, delaunay_1500; the Delaunay default is "
-            "slam_delaunay), so a mesh-resolution "
+            "count outright (default 1250, and the same for 'delaunay_nn'). The "
+            "profiled standard size is rect 35 (35x35 = 1225) and 1250 vertices "
+            "(MESH_PIXELS_STANDARD). Non-default values name their own "
+            "variant folder (rect_35, rect_40, delaunay_1500; the Delaunay default is "
+            "slam_delaunay, the DelaunayNN one slam_delaunay_nn), so a mesh-resolution "
             "sweep never overwrites the base run."
         ),
     )
@@ -450,7 +576,7 @@ def parse_inference_cli(
     )
     parser.add_argument(
         "--stages",
-        choices=STAGES,
+        choices=stages_vocabulary,
         default=None,
         help=(
             "Stop the pipeline after this stage instead of running the whole "
@@ -517,7 +643,7 @@ def parse_inference_cli(
     stages_from = None
     if args.stages_from is not None:
         try:
-            stages_from = parse_stages_from(args.stages_from)
+            stages_from = parse_stages_from(args.stages_from, stages_vocabulary, shareable_stages)
         except ValueError as exc:
             parser.error(str(exc))
     config_name = args.config_name or default_config_name
@@ -552,6 +678,7 @@ def parse_inference_cli(
         lens_light=args.lens_light,
         results_tag=args.results_tag,
         stages_from=stages_from,
+        transformer=args.transformer,
     )
 
 
@@ -566,6 +693,8 @@ def base_variant_name(cli: InferenceCLI) -> str:
         return BASE_VARIANT
     if cli.mesh == "delaunay" and cli.mesh_pixels == MESH_PIXELS_DEFAULT["delaunay"]:
         return DELAUNAY_BASE_VARIANT
+    if cli.mesh == "delaunay_nn" and cli.mesh_pixels == MESH_PIXELS_DEFAULT["delaunay_nn"]:
+        return DELAUNAY_NN_BASE_VARIANT
     return f"{cli.mesh}_{cli.mesh_pixels}"
 
 

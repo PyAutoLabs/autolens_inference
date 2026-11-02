@@ -1,10 +1,22 @@
-"""The backend-parameterised SLaM base-run driver.
+"""The imaging SLaM stage builder and its driver, on the shared core.
 
 One function, :func:`run_slam`, runs the standard 5-stage imaging SLaM chain
 end to end under any ``--backend`` × ``--inversion`` combination, records every
 stage as a comparable row, and writes one result JSON (+ PNG) per
-``(config_name, seed)``. Every ``scripts/<dataset_class>/slam/<target>.py`` leaf
+``(config_name, seed)``. Every ``scripts/imaging/<variant>/validation/`` leaf
 is a ~25-line shim over it.
+
+Everything about a leg that is not imaging — the flag checks, the backend
+environment, the stage-row readers, the posterior and truth helpers, the output
+prefix, the row provenance, ``--stages-from`` and the ``stages.json`` writer —
+lives in :mod:`slam._core`, and is re-exported here under the names it has
+always had (``from slam._runner import validate_config_name`` keeps working).
+This module is the *imaging family*: the dataset, the five stage builders, the
+mesh models and the lens-light modes. Other families register their own chain
+with :class:`slam._core.Family` and run through :func:`slam._core.run_family`;
+see that module's docstring, and ``scripts/misc/slam/README.md``. The
+pixelization helpers here (:func:`mesh_models`, :func:`_adapt_images`,
+:func:`mesh_fields`) take any masked dataset and are meant to be shared.
 
 The chain mirrors ``autolens_workspace/scripts/guides/modeling/slam_start_here.py``
 (the five module-level stage functions there, at the time of writing lines
@@ -14,7 +26,8 @@ The chain mirrors ``autolens_workspace/scripts/guides/modeling/slam_start_here.p
 ``RectangularBilinearAdaptDensity`` then ``RectangularBilinearAdaptImage`` mesh
 under ``reg.Adapt`` (the ``slam_base`` **run variant**; ``--mesh delaunay``
 swaps both stages for ``al.mesh.Delaunay`` under ``reg.AdaptSplit`` and names
-its own variant folder — see :func:`mesh_models` and :func:`target_id`),
+its own variant folder, and ``--mesh delaunay_nn`` for ``al.mesh.DelaunayNN`` —
+see :func:`mesh_models` and :func:`target_id`),
 MGE 20x2 lens light / 20x1 source, the S/N 3.0 adapt-image
 cap, and ``Isothermal + ExternalShear`` chained into a ``PowerLaw`` via
 ``al.util.chaining.mass_and_fields_from(..., unfix_mass_centre=True)``.
@@ -103,70 +116,77 @@ Hazards this module is built around (do not rediscover them)
 
 from __future__ import annotations
 
-import json
 import math
-import os
 import sys
 import time
 from pathlib import Path
 from typing import NamedTuple
 
 _ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exists())
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
+for _path in (str(_ROOT), str(_ROOT / "scripts" / "misc")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from _inference_cli import (  # noqa: E402
     BASE_VARIANT,
-    CONFIG_NAME_RE,
     STAGES,
     InferenceCLI,
     auto_simulate_if_missing,
     base_variant_name,
-    device_info_dict,
     lens_light_modes,
     parse_inference_cli,
     rect_mesh_classes,
-    row_stem,
-    split_config_name,
     validation_layout,
     variant_name,
 )
 
-#: Version of the ``stages_seed<n>.json`` schema written by :func:`_write_results`.
-#:
-#: v2 added the run variant and the mesh it is named after: ``variant``,
-#: ``mesh``, ``mesh_pixels`` and ``regularization`` (the resolved scheme name),
-#: with ``mesh_shape`` now ``null`` on a row whose mesh has no shape (Delaunay
-#: takes a vertex count). v1 rows are still read — every reader falls back to
-#: the base variant when the field is absent, which is what those rows are.
-#:
-#: v3 added the lens-light mode and the row's provenance: ``lens_light_mode``
-#: (``linear`` / ``fixed``; the ``fixed`` mode is also the ``_light_fixed``
-#: variant suffix), ``library_revisions`` (the five import-selected PyAuto*
-#: checkouts' HEAD commits, or ``null`` with ``library_revisions_note`` when
-#: they cannot be pinned), ``release_pin`` (``PYAUTO_RELEASE_PIN``, exported by
-#: a submit that runs against a pinned release checkout, else ``null``),
-#: ``slurm_job_id`` (``<array job>_<task>`` inside an array, ``SLURM_JOB_ID``
-#: otherwise, else ``null``) and ``results_tag`` (``--results-tag``, else
-#: ``null``). v1/v2 rows still read: an absent ``lens_light_mode`` is
-#: ``linear`` (the only mode that existed), absent provenance is ``null``.
-SCHEMA_VERSION = 3
-
-#: Exit code of a ``--stages-from`` run whose shared stage is not complete in
-#: the other config's tree (nothing is fitted). 2 stays the flag/environment
-#: refusal; 4 is the submit's in-job wait timing out.
-SHARED_STAGE_INCOMPLETE_EXIT = 3
-
-SHARED_STAGE_NOTE = (
-    "loaded from another config's completed fit (--stages-from), not fitted by "
-    "this run: wall_s and likelihood_evals are that fit's, kept for the record "
-    "and excluded from chain_wall_s"
+# The dataset-agnostic core, re-exported under the names this module has always
+# exposed: the point-source runner, the tests and every reader import them from here.
+from slam._core import (  # noqa: E402
+    CHAIN_WALL_NOTE,
+    COMPILE_S_TEST_MODE_NOTE,
+    LOG_EVIDENCE_ERR_NOTE,
+    NUMBA_THREAD_ENV,
+    SCHEMA_VERSION,
+    SHARED_STAGE_INCOMPLETE_EXIT,
+    SHARED_STAGE_NOTE,
+    SharedStageIncomplete,
+    _as_float,
+    _device_info,
+    _marginalized,
+    _plot_stages,
+    _read_json,
+    _stage_row,
+    _write_results,
+    chain_wall_from,
+    checkpoint_exists,
+    config_name_precision,
+    library_revisions_or_note,
+    mark_shared_stage,
+    open_leg,
+    output_path_prefix,
+    posterior_from_result,
+    posterior_keys,
+    posterior_path,
+    refuse_setup,
+    release_pin_from,
+    set_backend_env,
+    shared_stage_names,
+    shared_stage_prefixes,
+    slurm_job_id_from,
+    stage_completed,
+    stage_output_dir,
+    stage_output_dirs,
+    truth_delta_sigma_from,
+    truth_dict,
+    validate_config_name,
+    validate_stages_from,
+    validation_row_paths,
 )
-CHAIN_WALL_NOTE = (
-    "chain_wall_s is the sum of the sampler walls (wall_s) of the stages this "
-    "row's process fitted; a stage loaded from another config (shared_from_config) "
-    "is excluded and listed in chain_wall_excludes"
-)
+
+#: The setups the imaging chain has: a dense or sparse inversion, no transformer.
+IMAGING_INVERSIONS = ("dense", "sparse")
+
 
 #: What a v1/v2 row's ``lens_light_mode`` is when the field is absent: the only
 #: mode the chain had before v3.
@@ -248,128 +268,6 @@ REDSHIFT_SOURCE = 1.0
 OVER_SAMPLE_SUB_SIZE_LIST = [4, 2, 2]
 OVER_SAMPLE_RADIAL_LIST = [0.3, 0.6]
 
-LOG_EVIDENCE_ERR_NOTE = (
-    "nautilus 1.0.5 exposes no log_z_err; samples_info carries only "
-    "log_evidence, total_samples, time and number_live_points."
-)
-COMPILE_S_TEST_MODE_NOTE = (
-    "compile probe skipped under PYAUTO_TEST_MODE (the fit itself makes the "
-    "single likelihood call, so a probe would only double the run)."
-)
-
-
-# ---------------------------------------------------------------------------
-# Flag validation
-# ---------------------------------------------------------------------------
-
-
-def validate_config_name(cli: InferenceCLI) -> str | None:
-    """Return an error message if ``--config-name`` is absent, malformed, or disagrees
-    with the run flags; ``None`` when everything agrees.
-
-    The config name is the only thing that identifies a leg inside a parity row,
-    so a name that does not describe the run it labels is a silent data
-    corruption: two legs would sit side by side under one target claiming
-    backends they did not use.
-    """
-    if cli.config_name is None:
-        return (
-            "--config-name is required. Grammar: "
-            "{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
-        )
-
-    match = CONFIG_NAME_RE.match(cli.config_name)
-    if match is None:
-        return (
-            f"--config-name {cli.config_name!r} does not match the grammar "
-            "{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}"
-        )
-
-    _where, backend, inversion, precision = match.groups()
-    expected_precision = "mp" if cli.use_mixed_precision else "fp64"
-
-    mismatches = []
-    if backend != cli.backend:
-        mismatches.append(f"backend: name says {backend!r}, --backend says {cli.backend!r}")
-    if inversion != cli.inversion:
-        mismatches.append(f"inversion: name says {inversion!r}, --inversion says {cli.inversion!r}")
-    if precision != expected_precision:
-        mismatches.append(
-            f"precision: name says {precision!r}, "
-            f"--use-mixed-precision implies {expected_precision!r}"
-        )
-
-    if mismatches:
-        return (
-            f"--config-name {cli.config_name!r} disagrees with the run flags "
-            "(a config name that lies about its run makes the parity row a lie): "
-            + "; ".join(mismatches)
-        )
-    return None
-
-
-def config_name_precision(config_name: str) -> str:
-    """The ``fp64`` / ``mp`` tail of a validated config name."""
-    return CONFIG_NAME_RE.match(config_name).group(4)
-
-
-# ---------------------------------------------------------------------------
-# Backend environment — set BEFORE autolens is imported
-# ---------------------------------------------------------------------------
-
-
-#: The thread-pool variables a ``numba_cpu`` leg pins to ``"1"`` — see
-#: :func:`set_backend_env`. The same five autolens_profiling's
-#: ``_production_config.pin_thread_env`` sets.
-NUMBA_THREAD_ENV = {
-    "OPENBLAS_NUM_THREADS": "1",
-    "MKL_NUM_THREADS": "1",
-    "OMP_NUM_THREADS": "1",
-    "VECLIB_MAXIMUM_THREADS": "1",
-    "NUMEXPR_NUM_THREADS": "1",
-}
-
-
-def set_backend_env(backend: str, cores: int) -> dict:
-    """Export the environment the backend needs, returning what was set.
-
-    Must run before ``import autolens``: ``JAX_ENABLE_X64`` and ``JAX_PLATFORMS``
-    are read by JAX at import, and ``PYAUTO_DISABLE_JAX`` by the library's
-    ``jax_wrapper``. ``NPROC`` sizes XLA's CPU thread pool (an unset one lets a
-    job take the whole node; ``NPROC=1`` costs ~3x on JAX-CPU).
-
-    ``numba_cpu`` also pins the five BLAS / OpenMP pools
-    (:data:`NUMBA_THREAD_ENV`) to one thread. A numba leg parallelises by
-    forking ``cores`` Nautilus workers, and each worker that inherits an
-    unpinned OpenBLAS / MKL pool spawns one thread per core of the node: the
-    2026-10-17 RAL sparse rows ran 2.6 s wall per evaluation against the
-    ~0.06-0.08 s the autolens_profiling single-thread rates predict for eight
-    workers, and PyAutoFit warned about it every stage (autolens_inference#38).
-    The profiling cells pin the same five (``_production_config.pin_thread_env``).
-    """
-    env = {"JAX_ENABLE_X64": "True"}
-
-    if backend == "numba_cpu":
-        # Belt (process-wide) to `use_jax=False`'s braces (per Analysis).
-        env["PYAUTO_DISABLE_JAX"] = "1"
-        # One BLAS/OpenMP thread per forked worker. This only reaches libraries
-        # imported AFTER this call (numpy/scipy read these at import, and the
-        # runner may already have imported numpy), which is why the numba
-        # submits export the same five before `python3` as well.
-        env.update(NUMBA_THREAD_ENV)
-    elif backend == "jax_cpu":
-        env["JAX_PLATFORMS"] = "cpu"
-        env["NPROC"] = str(cores)
-    elif backend == "jax_gpu":
-        env["JAX_PLATFORMS"] = "cuda,cpu"
-        env["NPROC"] = str(cores)
-        env.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
-    else:  # pragma: no cover — argparse constrains the vocabulary
-        raise ValueError(f"Unknown backend {backend!r}")
-
-    os.environ.update(env)
-    return env
-
 
 # ---------------------------------------------------------------------------
 # Inversion path
@@ -396,382 +294,6 @@ def _apply_inversion(dataset, backend: str, inversion: str):
     if backend.startswith("jax"):
         return dataset.apply_sparse_operator()
     return dataset.apply_sparse_operator_cpu()
-
-
-# ---------------------------------------------------------------------------
-# Per-stage row capture
-# ---------------------------------------------------------------------------
-
-
-def _read_json(path: Path):
-    try:
-        return json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return None
-
-
-def _as_float(value):
-    """Coerce a numeric-looking value to ``float``, else ``None``.
-
-    ``samples_info["time"]`` is a **string** of seconds, not a number:
-    ``autofit.non_linear.timer.Timer.update`` writes
-    ``str(time.time() - start)``. Stored as it comes, ``wall_s`` is a JSON
-    string, which every numeric consumer downstream (``build_readme``'s
-    ``_format_time``, the stage plot, a rate calculation) silently renders as an
-    em dash or raises on. Coerced here, once, where the value enters the row.
-    """
-    if isinstance(value, bool) or value is None:
-        return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def stage_output_dirs(search_root: Path, search_name: str) -> list[Path]:
-    """Every identifier directory written for ``search_name`` under ``search_root``.
-
-    ``search_root`` is ``<output root>[/test_mode]/<path_prefix>``. The one
-    directory level this function cannot predict is the autofit identifier hash,
-    so it is globbed rather than derived — deriving it would mean recomputing
-    ``paths.identifier``, which needs the post-``modify_model`` model and creates
-    the output tree as a side effect.
-    """
-    base = search_root / search_name
-    if not base.is_dir():
-        return []
-    return sorted((p for p in base.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
-
-
-def stage_output_dir(search_root: Path, search_name: str) -> Path | None:
-    """The most recently touched identifier directory for ``search_name``."""
-    dirs = stage_output_dirs(search_root, search_name)
-    return dirs[-1] if dirs else None
-
-
-def checkpoint_exists(search_root: Path, search_name: str) -> bool:
-    """Is a Nautilus resume marker present for this stage *right now*?
-
-    ``files/search_internal/checkpoint.hdf5`` is deleted by
-    ``NautilusSearch.write_search_internal`` the moment a fit completes, so this
-    must be sampled **before** ``search.fit``, never after.
-    """
-    return any(
-        (d / "files" / "search_internal" / "checkpoint.hdf5").exists()
-        for d in stage_output_dirs(search_root, search_name)
-    )
-
-
-def stage_completed(search_root: Path, search_name: str) -> bool:
-    """Is ``search_name`` complete under ``search_root``: any identifier directory
-    holding PyAutoFit's ``.completed`` marker.
-
-    The same marker :func:`_stage_row` reads for ``completed``, and the test the
-    numba clean-slate submits poll (``python3 scripts/misc/slam/_runner.py
-    --stage-complete <seed_dir>``) before a ``--stages-from`` run starts.
-    ``.completed`` is written only after the fit's archive has landed, so a stage
-    carrying it is loadable.
-    """
-    return any((d / ".completed").exists() for d in stage_output_dirs(search_root, search_name))
-
-
-class SharedStageIncomplete(RuntimeError):
-    """A ``--stages-from`` stage is not complete in the other config's tree."""
-
-
-def validate_stages_from(cli: InferenceCLI) -> str | None:
-    """Return an error for a ``--stages-from`` that disagrees with this run.
-
-    The grammar and the shareable-stage rule are checked at parse time
-    (``parse_stages_from``); what needs this run's flags is checked here: a run
-    may not share from itself, and both chains must run at the same precision
-    (a fp64 stage is not the mp chain's stage 1).
-    """
-    if cli.stages_from is None:
-        return None
-    shared_config, _stages = cli.stages_from
-    if shared_config == cli.config_name:
-        return f"--stages-from names this run's own config {shared_config!r}"
-    own = CONFIG_NAME_RE.match(cli.config_name or "")
-    other = CONFIG_NAME_RE.match(shared_config)
-    if own is not None and other is not None and own.group(4) != other.group(4):
-        return (
-            f"--stages-from config {shared_config!r} runs at precision "
-            f"{other.group(4)!r}, this run at {own.group(4)!r}"
-        )
-    return None
-
-
-def shared_stage_names(cli: InferenceCLI) -> dict[str, str]:
-    """``{stage_key: shared_from_config}`` for the stages this run loads."""
-    if cli.stages_from is None:
-        return {}
-    shared_config, stages = cli.stages_from
-    return {stage: shared_config for stage in stages}
-
-
-def shared_stage_prefixes(
-    cli: InferenceCLI, dataset_class: str, instrument: str, variant: str, seed: int
-) -> dict[str, Path]:
-    """``{stage_key: path_prefix}`` for the shared stages: the OTHER config's prefix.
-
-    The same output root and seed as this run, the config level naming the chain
-    the stage is loaded from — and the variant level always
-    :data:`BASE_VARIANT`, whatever this run's ``variant``. Every shareable stage
-    (:data:`SHAREABLE_STAGES`, today only ``source_lp[1]``) is parametric: it
-    has no mesh and no light mode, so its model, search and identifier are the
-    same for ``slam_base``, ``rect_40`` and ``slam_delaunay``, and the one
-    completed copy lives in the base run's tree. Keying it by this run's
-    variant sent a ``slam_delaunay`` leg looking under
-    ``slam_delaunay/<shared_config>/`` for a stage only ever fitted under
-    ``slam_base/<shared_config>/`` (autolens_inference#38). ``variant`` is kept
-    in the signature so the call site does not change if a mesh-dependent
-    stage ever becomes shareable.
-    """
-    del variant  # every shareable stage is mesh-free: see the docstring
-    return {
-        stage: output_path_prefix(dataset_class, instrument, BASE_VARIANT, shared_config, seed)
-        for stage, shared_config in shared_stage_names(cli).items()
-    }
-
-
-def chain_wall_from(stages: list[dict]) -> dict:
-    """The row-level chain wall: fitted stages only.
-
-    ``chain_wall_s`` sums ``wall_s`` over the stages this process fitted and is
-    null when any of them lacks one (a partial sum would read as a chain wall).
-    Stages loaded from another config are never in the sum: their wall is that
-    config's, and counting it would make a shared chain look as slow as the
-    chain it borrowed from, or a parity row compare one stage twice.
-    """
-    fitted = [stage for stage in stages if not stage.get("shared_from_config")]
-    walls = [stage.get("wall_s") for stage in fitted]
-    total = None
-    if fitted and all(isinstance(w, (int, float)) for w in walls):
-        total = float(sum(walls))
-    return {
-        "chain_wall_s": total,
-        "chain_wall_excludes": [
-            stage.get("name") for stage in stages if stage.get("shared_from_config")
-        ],
-        "chain_wall_note": CHAIN_WALL_NOTE,
-    }
-
-
-def mark_shared_stage(row: dict, shared_from_config: str, load_s: float | None) -> dict:
-    """Turn a stage row built from a loaded fit into a declared shared stage."""
-    match = CONFIG_NAME_RE.match(shared_from_config)
-    fitted_backend = match.group(2) if match else None
-    row.update(
-        shared_from_config=shared_from_config,
-        shared_stage_note=SHARED_STAGE_NOTE,
-        # The process that FITTED this stage, read from the config name: a
-        # numba chain sharing a jax_cpu stage must not claim use_jax=False here.
-        fitted_backend=fitted_backend,
-        use_jax=None if fitted_backend is None else fitted_backend != "numba_cpu",
-        # This process only loaded it; its search.fit call is not a stage wall.
-        total_wall_s=None,
-        shared_load_s=_as_float(load_s),
-    )
-    return row
-
-
-def _stage_row(
-    name: str,
-    output_path: Path | None,
-    *,
-    n_live: int,
-    n_batch: int,
-    free_parameters: int | None,
-    total_wall_s: float | None,
-    compile_s: float | None,
-    resumed: bool,
-    inversion_applies: bool,
-    posterior: dict | None = None,
-    truth_delta_sigma: dict | None = None,
-    max_log_likelihood: float | None = None,
-    compile_s_note: str | None = None,
-) -> dict:
-    """Build one stage row from the search's on-disk artefacts plus the caller's timings.
-
-    Everything read from disk is read here, so the row can be rebuilt (and
-    unit-tested) from a search directory alone:
-
-    - ``files/samples_info.json`` -> ``wall_s`` (the sampler's own clock),
-      ``likelihood_evals`` (``total_samples``, which is nautilus's reject-inclusive
-      ``n_like``) and ``log_evidence``.
-    - ``positions.info`` -> ``positions_info_present``. A pixelized stage without
-      it is not citable.
-    - ``.completed`` -> ``completed``.
-
-    ``total_accepted_samples`` is deliberately not read: nautilus 1.0.5 sets it
-    to ``n_like`` as well, so it is a duplicate, not an acceptance count.
-    """
-    info = {}
-    if output_path is not None:
-        info = _read_json(output_path / "files" / "samples_info.json") or {}
-
-    likelihood_evals = info.get("total_samples")
-    row = {
-        "name": name,
-        "free_parameters": free_parameters,
-        "n_live": n_live,
-        "n_batch": n_batch,
-        "wall_s": _as_float(info.get("time")),
-        "total_wall_s": _as_float(total_wall_s),
-        "compile_s": _as_float(compile_s),
-        "likelihood_evals": int(likelihood_evals) if likelihood_evals is not None else None,
-        "log_evidence": _as_float(info.get("log_evidence")),
-        "log_evidence_err": None,
-        "log_evidence_err_note": LOG_EVIDENCE_ERR_NOTE,
-        "max_log_likelihood": max_log_likelihood,
-        "posterior": posterior or {},
-        "truth_delta_sigma": truth_delta_sigma or {},
-        "inversion_applies": inversion_applies,
-        "positions_info_present": bool(
-            output_path is not None and (output_path / "positions.info").exists()
-        ),
-        "completed": bool(output_path is not None and (output_path / ".completed").exists()),
-        "resumed": bool(resumed),
-        "output_path": str(output_path) if output_path is not None else None,
-    }
-    if compile_s_note:
-        row["compile_s_note"] = compile_s_note
-    return row
-
-
-# ---------------------------------------------------------------------------
-# Posterior + truth
-# ---------------------------------------------------------------------------
-
-
-def posterior_path(name) -> str:
-    """The one dotted path for an entry of ``samples.names``.
-
-    ``AbstractPriorModel.all_names`` returns, per prior, a **tuple of every name
-    that prior answers to** — ``('galaxies.lens.mass.einstein_radius',)`` for a
-    unique one, and more entries where a prior is reachable by several paths.
-    Each entry is already a dotted string, so indexing the tuple gives an alias,
-    not a leaf; the first alias is taken as canonical. A plain tuple of path
-    segments (what a hand-written test or an older autofit hands over) is joined
-    instead, so both shapes land on the same string.
-    """
-    if isinstance(name, str):
-        return name
-    parts = [str(part) for part in name]
-    if not parts:
-        return ""
-    if len(parts) == 1 or any("." in part for part in parts):
-        return parts[0]
-    return ".".join(parts)
-
-
-def posterior_keys(names) -> list[str]:
-    """Map ``samples.names`` onto result-row keys.
-
-    A leaf name that is unique across the model's free parameters becomes the
-    key on its own (``einstein_radius``, ``slope``, ``gamma_1``); anything that
-    repeats (``centre_0`` on twenty Gaussians) keeps its full dotted path. This
-    is what lets the parity view name a row ``einstein_radius``, and the derived
-    ``shear_magnitude`` find its ``gamma_1`` / ``gamma_2`` columns, without
-    inventing an alias table — while never silently merging two parameters that
-    happen to share a leaf.
-    """
-    paths = [posterior_path(name) for name in names]
-    leaves = [path.rsplit(".", 1)[-1] for path in paths]
-    counts: dict[str, int] = {}
-    for leaf in leaves:
-        counts[leaf] = counts.get(leaf, 0) + 1
-    return [leaf if counts[leaf] == 1 else path for leaf, path in zip(leaves, paths)]
-
-
-def posterior_from_result(af, result) -> dict:
-    """``{key: {median, sigma, lower_1, upper_1}}`` for every free parameter.
-
-    Marginalised with the library's own ``af.marginalize`` over the weighted
-    samples, rather than read off ``samples_summary.errors_at_sigma_1`` — the
-    same numbers, but computed through one code path that also serves the
-    derived quantities below (``shear_magnitude`` is not a free parameter and so
-    has no summary entry of its own).
-    """
-    samples = result.samples
-    names = list(samples.names)
-    keys = posterior_keys(names)
-    parameter_lists = samples.parameter_lists
-    weight_list = samples.weight_list
-
-    posterior: dict[str, dict] = {}
-    columns: dict[str, list[float]] = {}
-    for index, key in enumerate(keys):
-        column = [float(vector[index]) for vector in parameter_lists]
-        columns[key] = column
-        posterior[key] = _marginalized(af, column, weight_list)
-
-    # Derived: shear magnitude. Computed from the sampled (gamma_1, gamma_2)
-    # pairs and then marginalised, so it carries the pair's covariance rather
-    # than a first-order propagation of two independent errors.
-    if "gamma_1" in columns and "gamma_2" in columns:
-        magnitude = [
-            math.sqrt(g1 * g1 + g2 * g2) for g1, g2 in zip(columns["gamma_1"], columns["gamma_2"])
-        ]
-        posterior["shear_magnitude"] = _marginalized(af, magnitude, weight_list)
-
-    return posterior
-
-
-def _marginalized(af, column: list[float], weight_list) -> dict:
-    median, lower, upper = af.marginalize(parameter_list=column, sigma=1.0, weight_list=weight_list)
-    return {
-        "median": float(median),
-        "sigma": float(upper - lower) / 2.0,
-        "lower_1": float(lower),
-        "upper_1": float(upper),
-    }
-
-
-def truth_dict(tracer) -> dict:
-    """The truth values a stage row can be compared against, from ``tracer.json``.
-
-    Keyed to agree with :func:`posterior_keys`, so ``truth_delta_sigma`` is a
-    plain key intersection and never a name-matching heuristic.
-    """
-    truths: dict[str, float] = {}
-    for galaxy in getattr(tracer, "galaxies", []) or []:
-        mass = getattr(galaxy, "mass", None)
-        if mass is not None:
-            for attribute in ("einstein_radius", "slope"):
-                value = getattr(mass, attribute, None)
-                if isinstance(value, (int, float)):
-                    truths[attribute] = float(value)
-        shear = getattr(galaxy, "shear", None)
-        if shear is not None:
-            gamma_1 = getattr(shear, "gamma_1", None)
-            gamma_2 = getattr(shear, "gamma_2", None)
-            if isinstance(gamma_1, (int, float)) and isinstance(gamma_2, (int, float)):
-                truths["gamma_1"] = float(gamma_1)
-                truths["gamma_2"] = float(gamma_2)
-                truths["shear_magnitude"] = math.sqrt(gamma_1**2 + gamma_2**2)
-    return truths
-
-
-def truth_delta_sigma_from(posterior: dict, truths: dict) -> dict:
-    """``(median - truth) / sigma`` for every key the truth and the posterior share.
-
-    A key whose posterior has **zero width** maps to ``None`` rather than being
-    dropped. A degenerate posterior is a real outcome — a resumed test-mode fit
-    collapses every sample onto one point, and so does a real fit that never
-    moved — and "the parameter was compared and its σ was zero" is a different
-    statement from "the parameter was not in the truth", which is what a missing
-    key would say.
-    """
-    deltas = {}
-    for key, truth in truths.items():
-        entry = posterior.get(key)
-        if not entry:
-            continue
-        sigma = entry.get("sigma")
-        deltas[key] = None if not sigma else (entry["median"] - truth) / sigma
-    return deltas
 
 
 # ---------------------------------------------------------------------------
@@ -1026,8 +548,19 @@ def mesh_models(af, al, cli: InferenceCLI) -> MeshModels:
 
     Delaunay needs an adapt image, which :func:`_adapt_images` already builds at
     every pixelized stage, so nothing else has to be plumbed through.
+
+    ``delaunay_nn`` is the same recipe on ``al.mesh.DelaunayNN`` — a ``Delaunay``
+    subclass with the identical ``(pixels, zeroed_pixels, areas_factor)``
+    constructor, interpolating by Sibson natural-neighbour weights instead of the
+    containing triangle's barycentric ones — exactly as autolens_profiling's
+    ``imaging/delaunay_nn`` cell profiles it (``_production_config.standard_jax_cell``:
+    the HST Delaunay preset, 1250 Hilbert vertices at 3.5 / 0.01 plus the 30-point
+    zeroed ring, ``AdaptSplit``, with only the mesh class swapped). The two meshes
+    differ in nothing else, so a ``slam_delaunay_nn`` row against a
+    ``slam_delaunay`` row isolates the interpolation.
     """
-    if cli.mesh == "delaunay":
+    if cli.mesh in ("delaunay", "delaunay_nn"):
+        mesh_cls = al.mesh.DelaunayNN if cli.mesh == "delaunay_nn" else al.mesh.Delaunay
         # zeroed_pixels IS the edge ring: the mesh grid handed to the mapper is
         # `pixels` Hilbert-drawn interior vertices plus MESH_EDGE_POINTS appended
         # circle points, and `Delaunay.total_pixels` is pixels + zeroed_pixels.
@@ -1039,8 +572,8 @@ def mesh_models(af, al, cli: InferenceCLI) -> MeshModels:
             areas_factor=MESH_AREAS_FACTOR,
         )
         return MeshModels(
-            mesh_init=al.mesh.Delaunay(**kwargs),
-            mesh=al.mesh.Delaunay(**kwargs),
+            mesh_init=mesh_cls(**kwargs),
+            mesh=mesh_cls(**kwargs),
             regularization=al.reg.AdaptSplit,
             scheme="adapt_split",
             shape=None,
@@ -1428,7 +961,7 @@ def mass_total(
 
 
 # ---------------------------------------------------------------------------
-# Result writer
+# Result paths and identity
 # ---------------------------------------------------------------------------
 
 
@@ -1443,13 +976,15 @@ def results_paths(
 ):
     """``(json_path, png_path)`` for one ``(variant, config_name, seed)``.
 
-    ``results/<dataset_class>/<rectangular|delaunay>/<instrument>/validation/
+    ``results/<dataset_class>/<rectangular|delaunay|delaunay_nn>/<instrument>/validation/
     <model_variant>/<setup_id>/seed_<n>/stages.json`` — the mirrored layout of
     autolens_inference#41: the run variant splits into the likelihood variant and
     the model variant (``_inference_cli.validation_layout``), the config name into
     the ``setup_id`` folder and a ``host_class`` that is provenance only
     (``_inference_cli.split_config_name``; a ``local_*`` row's file is
-    ``stages_local_laptop.json``).
+    ``stages_local_laptop.json``). The path itself is the core's
+    (``_core.validation_row_paths``), which a family that names its likelihood
+    outright calls directly.
 
     A ``results_tag`` (``--results-tag``) suffixes the setup directory as
     ``<setup_id>__<tag>`` so a re-measurement of the same variant, config and
@@ -1460,51 +995,9 @@ def results_paths(
     overwrite itself, and one model variant per directory, so two models never
     read as backends of one run.
     """
-    setup_id, host_class = split_config_name(config_name)
     family, model_variant = validation_layout(variant)
-    setup_dir = f"{setup_id}__{results_tag}" if results_tag else setup_id
-    directory = (
-        root
-        / "results"
-        / dataset_class
-        / family
-        / instrument
-        / "validation"
-        / model_variant
-        / setup_dir
-        / f"seed_{seed}"
-    )
-    directory.mkdir(parents=True, exist_ok=True)
-    stem = row_stem("stages", host_class)
-    return directory / f"{stem}.json", directory / f"{stem}.png"
-
-
-def output_path_prefix(
-    dataset_class: str, instrument: str, variant: str, config_name: str, seed: int
-) -> Path:
-    """The PyAutoFit ``path_prefix`` for one leg:
-    ``autolens/<dataset_class>/<instrument>/slam/<variant>/<config_name>/seed_<n>``.
-
-    Under the output root this reads dataset class, instrument, then pipeline,
-    with the pipeline's variant and config as the innermost levels (#35 dropped
-    the dated ``cleanslate_2026_10_17/slam/<dataset_class>/<instrument>`` root).
-
-    ``config_name`` and ``seed_<n>`` live in the PATH, not only in the payload:
-    ``seed`` is an autofit identifier field but ``config_name`` is not, so two
-    backends run at one seed would otherwise hash to the same identifier and
-    resume each other's completed fit in seconds, re-stamping it as their own.
-    The same argument makes ``variant`` a path level — the mesh is not an
-    identifier field either, so a Delaunay leg and a rectangular leg of the same
-    config and seed would collide in exactly the same way.
-    """
-    return (
-        Path("autolens")
-        / dataset_class
-        / instrument
-        / "slam"
-        / variant
-        / config_name
-        / f"seed_{seed}"
+    return validation_row_paths(
+        root, dataset_class, family, instrument, model_variant, config_name, seed, results_tag
     )
 
 
@@ -1521,50 +1014,6 @@ def target_id(instrument: str, variant: str, seed: int) -> str:
     if variant == BASE_VARIANT:
         return f"{instrument}/slam5/seed{seed}"
     return f"{instrument}/slam5_{variant}/seed{seed}"
-
-
-def slurm_job_id_from(environ) -> str | None:
-    """The SLURM job a row was measured in, from the job's environment.
-
-    Inside an array task it is ``<SLURM_ARRAY_JOB_ID>_<SLURM_ARRAY_TASK_ID>`` —
-    the id ``sacct`` and the ``.out`` file name (``%A_%a``) use, and the one a
-    reader can look up. Outside an array it is ``SLURM_JOB_ID``; outside SLURM
-    (a laptop, a CI witness) it is ``None``, never an invented id.
-    """
-    array_job = environ.get("SLURM_ARRAY_JOB_ID")
-    array_task = environ.get("SLURM_ARRAY_TASK_ID")
-    if array_job and array_task:
-        return f"{array_job}_{array_task}"
-    return environ.get("SLURM_JOB_ID") or None
-
-
-def release_pin_from(environ) -> str | None:
-    """The PyAuto release a submit pinned its libraries to (``PYAUTO_RELEASE_PIN``).
-
-    A pinned submit exports it next to ``PYAUTO_LIB_BASE`` (see
-    ``hpc/README.md``, "Running against a pinned release"). It is a *claim*;
-    ``library_revisions`` is the evidence, and a reader checks one against the
-    other.
-    """
-    return environ.get("PYAUTO_RELEASE_PIN") or None
-
-
-def library_revisions_or_note(root: Path) -> tuple[dict | None, str | None]:
-    """``(library_revisions, note)`` for the row, never fatal.
-
-    ``experiments.prepared.library_revisions`` pins the five import-selected
-    PyAuto* checkouts' HEAD commits and refuses (``ValueError``) a library that
-    is not a clean tracked checkout. A prepared export must refuse — a frozen
-    problem bound to an unknown revision is unverifiable — but a SLaM leg must
-    not die for it: the row records ``null`` and says why, which is the honest
-    record of a run made against an unpinnable tree.
-    """
-    from experiments.prepared import library_revisions
-
-    try:
-        return library_revisions(root), None
-    except (ValueError, OSError) as exc:
-        return None, f"library revisions could not be pinned: {exc}"
 
 
 def lens_light_mode_of(payload: dict) -> str:
@@ -1586,47 +1035,34 @@ def prepared_export_dir(export_prepared: Path, modes: tuple[str, ...], variant: 
     return Path(export_prepared) / variant
 
 
-def _write_results(json_path: Path, payload: dict) -> None:
-    json_path.write_text(json.dumps(payload, indent=2))
+def mesh_fields(cli: InferenceCLI, meshes: MeshModels) -> dict:
+    """The payload fields that record the source pixelization, in the row's key order.
 
-
-def _plot_stages(png_path: Path, payload: dict) -> None:
-    """Wall-clock per stage, as a bar chart beside the JSON."""
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    stages = payload.get("stages") or []
-    labels = [stage["name"] for stage in stages]
-    walls = [stage.get("wall_s") or 0.0 for stage in stages]
-    if not labels:
-        return
-
-    fig, ax = plt.subplots(figsize=(9, max(3.0, len(labels) * 0.7)))
-    positions = range(len(labels))
-    bars = ax.barh(list(positions), walls, color=plt.cm.viridis(0.55), height=0.6)
-    for bar, wall in zip(bars, walls):
-        ax.text(
-            bar.get_width() + (max(walls) or 1.0) * 0.01,
-            bar.get_y() + bar.get_height() / 2,
-            f"{wall:.1f} s",
-            va="center",
-            fontsize=8,
-        )
-    ax.set_yticks(list(positions))
-    ax.set_yticklabels(labels, fontsize=9)
-    ax.invert_yaxis()
-    ax.set_xlabel("Sampler wall clock (s)", fontsize=11)
-    fig.suptitle(f"SLaM stages: {payload.get('target')}", fontsize=12, fontweight="bold")
-    ax.set_title(
-        f"{payload.get('config_name')}  |  AutoLens v{payload.get('version')}",
-        fontsize=9,
-    )
-    ax.margins(x=0.22)
-    fig.tight_layout()
-    fig.savefig(png_path, dpi=150)
-    plt.close(fig)
+    Without the image-mesh fields a row cannot be reproduced — "delaunay, 1250" says
+    nothing about where the 1250 went — and the exporter's size comparison reads
+    ``mesh`` / ``mesh_pixels`` / ``mesh_shape``. A family without a field says null
+    rather than borrowing a number.
+    """
+    return {
+        "rect_mesh": cli.rect_mesh,
+        "memo": cli.memo,
+        "mesh": cli.mesh,
+        "mesh_pixels": cli.mesh_pixels,
+        # The Delaunay split-step knob, recorded rather than inherited; a
+        # family without one says null rather than borrowing a number.
+        "mesh_areas_factor": meshes.areas_factor,
+        # The rest of the recipe: which image mesh placed the vertices and
+        # how. Null on the rectangular family, which draws no vertices.
+        "mesh_zeroed_pixels": meshes.zeroed_pixels,
+        "image_mesh": meshes.image_mesh,
+        "image_mesh_weight_power": meshes.weight_power,
+        "image_mesh_weight_floor": meshes.weight_floor,
+        "image_mesh_edge_points": meshes.edge_points,
+        "regularization": meshes.scheme,
+        # A mesh family with no shape (Delaunay takes a vertex count) says
+        # so rather than inventing one.
+        "mesh_shape": list(meshes.shape) if meshes.shape is not None else None,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1648,7 +1084,8 @@ def run_slam(
 
     Returns the process exit code: 0 on success, 2 on a flag / environment
     refusal (a malformed config name, a config name that disagrees with the
-    flags, or ``--backend jax_gpu`` on a host with no GPU).
+    flags, a setup the imaging chain does not have — ``--inversion na`` or a
+    ``--transformer`` — or ``--backend jax_gpu`` on a host with no GPU).
     """
     cli = parse_inference_cli(default_mesh=default_mesh, default_mesh_pixels=default_mesh_pixels)
     instrument = cli.instrument or default_instrument
@@ -1659,15 +1096,11 @@ def run_slam(
     variants = {mode: variant_name(cli, mode) for mode in modes}
     cores = cli.cores
 
-    error = validate_config_name(cli)
-    if error is not None:
-        print(f"ERROR: {error}", file=sys.stderr)
-        return 2
-
-    config_name = cli.config_name
-    precision = config_name_precision(config_name)
-
-    error = validate_stages_from(cli)
+    error = (
+        validate_config_name(cli)
+        or refuse_setup(cli, IMAGING_INVERSIONS)
+        or validate_stages_from(cli)
+    )
     if error is not None:
         print(f"ERROR: {error}", file=sys.stderr)
         return 2
@@ -1679,98 +1112,33 @@ def run_slam(
     env = set_backend_env(cli.backend, cores)
 
     # --- imports: everything below here sees the backend environment above ---
-    import autofit as af
-    import autolens as al
-    from autonerves import jax_wrapper  # noqa: F401 — sets the JAX env before autolens
-    from autonerves.test_mode import is_test_mode, with_test_mode_segment
-
-    if os.environ.get("AUTOLENS_INFERENCE_SMOKE") == "1":
-        print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
-        return 0
-
-    if cli.backend == "jax_gpu":
-        import jax
-
-        # Two different non-GPU outcomes, one refusal. On a host with a CUDA
-        # plugin that failed to find a device, `default_backend()` returns
-        # 'cpu'; on a host with no plugin at all it *raises* ("Backend 'cuda' is
-        # not in the list of known backends"). Both mean the same thing — this
-        # is not a GPU run — so both take the same exit rather than one of them
-        # surfacing as an unhandled traceback.
-        try:
-            backend_in_use = jax.default_backend()
-        except Exception as exc:
-            backend_in_use = f"unavailable ({type(exc).__name__}: {exc})"
-        if backend_in_use != "gpu":
-            print(
-                f"ERROR: --backend jax_gpu but jax.default_backend() == "
-                f"{backend_in_use!r}. Refusing to run: a 'GPU' leg that silently "
-                f"fell back to CPU reports a wall clock that is nothing of the "
-                f"kind, and would sit in a parity row as if it were an A100 "
-                f"measurement. Run this leg on a CUDA host (RAL --partition=gpu "
-                f"--gres=gpu:1) with JAX_PLATFORMS=cuda,cpu exported in the "
-                f"submit script.",
-                file=sys.stderr,
-            )
-            return 2
-
-    use_jax = cli.backend != "numba_cpu"
-    seed = cli.seed
-    root = _ROOT
-
-    output_root = cli.output_dir or Path(os.environ.get("PYAUTO_OUTPUT_DIR") or (root / "output"))
-    output_root = Path(output_root).resolve()
-    output_root.mkdir(parents=True, exist_ok=True)
-    af.conf.instance.push(new_path=root / "config", output_path=output_root)
-
-    print("=" * 78)
-    print(f"SLaM run — {dataset_class} / {instrument} / {variant} / {config_name} / seed {seed}")
-    print("=" * 78)
-    print(f"  variant:    {variant}  (mesh={cli.mesh}, mesh_pixels={cli.mesh_pixels})")
-    print(f"  lens light: {cli.lens_light}  (mass_total[1] variants: {list(variants.values())})")
-    print(f"  results tag: {cli.results_tag}")
-    print(f"  stages from: {cli.stages_from}")
-    print(f"  backend:    {cli.backend}  (use_jax={use_jax}, cores={cores})")
-    print(f"  inversion:  {cli.inversion}")
-    print(f"  precision:  {precision}")
-    print(f"  env set:    {env}")
-    print(f"  output:     {output_root}")
-    print(f"  test mode:  {is_test_mode()}")
+    leg = open_leg(
+        cli,
+        dataset_class=dataset_class,
+        instrument=instrument,
+        variant=variant,
+        env=env,
+        root=_ROOT,
+        details=(
+            f"mesh:       {cli.mesh}  (mesh_pixels={cli.mesh_pixels})",
+            f"lens light: {cli.lens_light}  (mass_total[1] variants: {list(variants.values())})",
+        ),
+    )
+    if isinstance(leg, int):
+        return leg
+    af, al = leg.af, leg.al
+    use_jax = leg.use_jax
+    seed = leg.seed
+    root = leg.root
+    config_name = leg.config_name
+    precision = leg.precision
 
     # `--stages-from`: a shared stage's prefix names the OTHER config, so its
     # completed fit is loaded (PyAutoFit resume), never refitted here.
     # Checked before the dataset is even loaded, so a refusal costs nothing.
-    shared_from = shared_stage_names(cli)
-    shared_prefixes = shared_stage_prefixes(cli, dataset_class, instrument, variant, seed)
-    stage_settings_search = {}
-    stage_search_roots = {}
-    for stage_key, shared_config in shared_from.items():
-        shared_prefix = shared_prefixes[stage_key]
-        stage_settings_search[stage_key] = af.SettingsSearch(
-            path_prefix=shared_prefix,
-            unique_tag=None,
-            info=None,
-            session=None,
-            number_of_cores=1 if use_jax else cores,
-        )
-        stage_search_roots[stage_key] = with_test_mode_segment(output_root) / shared_prefix
-        complete = stage_completed(stage_search_roots[stage_key], STAGE_SEARCH_NAMES[stage_key])
-        print(
-            f"  shared:     {STAGE_SEARCH_NAMES[stage_key]} from {shared_config} "
-            f"({stage_search_roots[stage_key]}) complete={complete}"
-        )
-        if not complete:
-            print(
-                f"ERROR: --stages-from {shared_config}:{stage_key} but "
-                f"{STAGE_SEARCH_NAMES[stage_key]} is not complete under "
-                f"{stage_search_roots[stage_key]} (no identifier directory holds "
-                f"`.completed`). Refusing to run: fitting it here would make this "
-                f"chain a different chain from the one it claims to share. Wait for "
-                f"that stage (the clean-slate submits poll `_runner.py "
-                f"--stage-complete`) or drop --stages-from. Nothing was fitted.",
-                file=sys.stderr,
-            )
-            return SHARED_STAGE_INCOMPLETE_EXIT
+    code = leg.share_stages(STAGE_SEARCH_NAMES, BASE_VARIANT)
+    if code is not None:
+        return code
 
     # --- dataset ----------------------------------------------------------
     from instruments.imaging import INSTRUMENTS
@@ -1786,7 +1154,7 @@ def run_slam(
     pixel_scale = preset["pixel_scale"]
     mask_radius = preset["mask_radius"]
 
-    dataset_path = root / "dataset" / dataset_class / instrument
+    dataset_path = leg.dataset_path
     auto_simulate_if_missing(
         dataset_path,
         dataset_type=dataset_class,
@@ -1832,31 +1200,10 @@ def run_slam(
     )
 
     # --- row provenance (schema v3) ----------------------------------------
-    # Sampled once, before any fit: the import-selected library checkouts, the
-    # release the submit says it pinned, and the SLURM job this process is.
-    library_revisions, library_revisions_note = library_revisions_or_note(root)
-    release_pin = release_pin_from(os.environ)
-    slurm_job_id = slurm_job_id_from(os.environ)
-    print(f"  libraries:  {library_revisions or library_revisions_note}")
-    print(f"  release pin: {release_pin}   slurm job: {slurm_job_id}")
+    leg.sample_provenance()
 
     # --- search settings --------------------------------------------------
-    # See `output_path_prefix`: config_name, variant and seed_<n> live in the
-    # PATH because `seed` is an autofit identifier field and the other two are
-    # not, so legs that differ only in those would hash to one identifier and
-    # resume each other's completed fit.
-    path_prefix = output_path_prefix(dataset_class, instrument, variant, config_name, seed)
-    settings_search = af.SettingsSearch(
-        path_prefix=path_prefix,
-        unique_tag=None,
-        info=None,
-        session=None,
-        # Nautilus routes on `analysis._use_jax`: under JAX it vmaps with
-        # `n_batch` and ignores the pool, under numba it forks
-        # `number_of_cores` workers. Never hand it a Pool object.
-        number_of_cores=1 if use_jax else cores,
-    )
-    search_root = with_test_mode_segment(output_root) / path_prefix
+    settings_search = leg.settings_search
 
     # The mass stage alone carries the light-mode variant in its path_prefix:
     # stages 1 to 4 above keep the mesh-only variant, so a `fixed` run resumes a
@@ -1866,17 +1213,7 @@ def run_slam(
     mass_settings_search = {}
     mass_search_root = {}
     for mode in modes:
-        mass_prefix = output_path_prefix(
-            dataset_class, instrument, variants[mode], config_name, seed
-        )
-        mass_settings_search[mode] = af.SettingsSearch(
-            path_prefix=mass_prefix,
-            unique_tag=None,
-            info=None,
-            session=None,
-            number_of_cores=1 if use_jax else cores,
-        )
-        mass_search_root[mode] = with_test_mode_segment(output_root) / mass_prefix
+        mass_settings_search[mode], mass_search_root[mode] = leg.settings_search_for(variants[mode])
 
     meshes = mesh_models(af, al, cli)
 
@@ -1889,41 +1226,13 @@ def run_slam(
     # fixed export's preparation_s must not include the linear mass fit.
     mass_fit_elapsed = [0.0]
 
-    def run_stage(
-        stage_key: str,
-        built,
-        *,
-        stage_search_root: Path | None = None,
-        mode: str | None = None,
-    ) -> tuple[object, dict]:
-        """Fit one stage and capture its row."""
-        model, analysis, search = built
-        n_live, n_batch = STAGE_SAMPLING[stage_key]
-        search_name = STAGE_SEARCH_NAMES[stage_key]
-        if stage_search_root is None:
-            stage_search_root = stage_search_roots.get(stage_key)
-        stage_root = stage_search_root if stage_search_root is not None else search_root
-        stage_started = time.perf_counter()
-        shared_config = shared_from.get(stage_key)
-        if shared_config is not None:
-            # The directory-level test passed before the chain started; this is
-            # the exact one. PyAutoFit loads a fit only when THIS model+search
-            # hashes to the completed identifier — anything else would be a
-            # fresh fit written into the other config's tree.
-            search.paths.model = analysis.modify_model(model)
-            search.paths.unique_tag = search.unique_tag
-            if not search.paths.is_complete:
-                raise SharedStageIncomplete(
-                    f"--stages-from {shared_config}:{stage_key}: this run's "
-                    f"{search_name} identifier {search.paths.identifier} is not a "
-                    f"completed fit under {stage_root} (the model or search settings "
-                    f"differ from the run that fitted it). Nothing was fitted."
-                )
+    def export_hooks(mode: str):
+        """The prepared-export hooks of one light mode's ``mass_total[1]``."""
+        if cli.export_prepared is None:
+            return None, None
+        search_name = STAGE_SEARCH_NAMES["mass_total"]
 
-        # Sampled BEFORE the fit: nautilus deletes checkpoint.hdf5 on completion.
-        resumed = checkpoint_exists(stage_root, search_name)
-        prepared_manifest = None
-        if stage_key == "mass_total" and cli.export_prepared is not None:
+        def before_fit(model, analysis):
             import hashlib
 
             from experiments.prepared import export_problem
@@ -1945,12 +1254,12 @@ def run_slam(
                 + hashlib.sha256(search_name.encode()).hexdigest()[:16]
             )
             export_dir = prepared_export_dir(cli.export_prepared, modes, mode_variant)
-            prepared_manifest = export_problem(
+            manifest = export_problem(
                 root,
                 export_dir,
                 model,
                 analysis,
-                setup_id=f"imaging/{'delaunay' if cli.mesh == 'delaunay' else 'rectangular'}/{instrument}",
+                setup_id=f"imaging/{validation_layout(variant)[0]}/{instrument}",
                 baseline_record_id=baseline_id,
                 controls=dict(
                     dataset_class=dataset_class,
@@ -1965,61 +1274,9 @@ def run_slam(
                 ),
                 preparation_s=(time.perf_counter() - preparation_started - mass_fit_elapsed[0]),
             )
+            return model, manifest
 
-        compile_s = None
-        compile_note = None
-        if shared_config is not None:
-            compile_note = "no compile probe: stage loaded from another config, not fitted"
-        elif use_jax and is_test_mode():
-            compile_note = COMPILE_S_TEST_MODE_NOTE
-        elif use_jax:
-            try:
-                instance = model.instance_from_prior_medians()
-                start = time.perf_counter()
-                analysis.log_likelihood_function(instance)
-                compile_s = time.perf_counter() - start
-            except Exception as exc:  # pragma: no cover — probe is best-effort
-                compile_note = f"compile probe failed: {type(exc).__name__}: {exc}"
-
-        print(f"\n--- {search_name} (n_live={n_live}, n_batch={n_batch}) ---")
-        start = time.perf_counter()
-        result = search.fit(model=model, analysis=analysis, **settings_search.fit_dict)
-        total_wall_s = time.perf_counter() - start
-
-        output_path = stage_output_dir(stage_root, search_name)
-
-        posterior: dict = {}
-        max_log_likelihood = None
-        free_parameters = None
-        try:
-            posterior = posterior_from_result(af, result)
-            max_log_likelihood = float(result.samples.max_log_likelihood_sample.log_likelihood)
-            free_parameters = len(list(result.samples.names))
-        except Exception as exc:
-            print(f"  WARNING [{search_name}]: posterior capture failed — {exc}")
-        if free_parameters is None:
-            free_parameters = getattr(model, "prior_count", None)
-
-        row = _stage_row(
-            search_name,
-            output_path,
-            n_live=n_live,
-            n_batch=n_batch,
-            free_parameters=free_parameters,
-            total_wall_s=total_wall_s,
-            compile_s=compile_s,
-            resumed=resumed,
-            inversion_applies=stage_key in PIXELIZED_STAGES,
-            posterior=posterior,
-            truth_delta_sigma=truth_delta_sigma_from(posterior, truths),
-            max_log_likelihood=max_log_likelihood,
-            compile_s_note=compile_note,
-        )
-        if shared_config is not None:
-            mark_shared_stage(row, shared_config, total_wall_s)
-        else:
-            row["use_jax"] = use_jax
-        if prepared_manifest is not None:
+        def after_row(row, result, posterior, resumed, prepared_manifest):
             from experiments.prepared import complete_baseline, verify_manifest
 
             complete_baseline(root, prepared_manifest, result, posterior)
@@ -2042,16 +1299,37 @@ def run_slam(
                 ],
                 library_revisions=manifest["dependency_revisions"],
             )
+
+        return before_fit, after_row
+
+    def run_stage(
+        stage_key: str,
+        built,
+        *,
+        stage_search_root: Path | None = None,
+        mode: str | None = None,
+    ) -> tuple[object, dict]:
+        """Fit one stage and capture its row."""
+        n_live, n_batch = STAGE_SAMPLING[stage_key]
+        stage_started = time.perf_counter()
+        before_fit, after_row = export_hooks(mode) if stage_key == "mass_total" else (None, None)
+        result, row = leg.run_stage(
+            stage_key,
+            STAGE_SEARCH_NAMES[stage_key],
+            built,
+            n_live=n_live,
+            n_batch=n_batch,
+            inversion_applies=stage_key in PIXELIZED_STAGES,
+            truths=truths,
+            stage_search_root=stage_search_root,
+            before_fit=before_fit,
+            after_row=after_row,
+        )
         if stage_key == "mass_total":
             mass_rows[mode] = row
             mass_fit_elapsed[0] += time.perf_counter() - stage_started
         else:
             shared_stages.append(row)
-        print(
-            f"  {search_name}: wall {row['wall_s']}s, evals {row['likelihood_evals']}, "
-            f"log Z {row['log_evidence']}, positions.info "
-            f"{row['positions_info_present']}, completed {row['completed']}"
-        )
         return result, row
 
     def write(status: str, mode: str) -> None:
@@ -2068,67 +1346,16 @@ def run_slam(
         json_path, png_path = results_paths(
             root, dataset_class, instrument, mode_variant, config_name, seed, cli.results_tag
         )
-        payload = {
-            "schema_version": SCHEMA_VERSION,
-            "target": target_id(instrument, mode_variant, seed),
-            "variant": mode_variant,
-            "lens_light_mode": mode,
-            "results_tag": cli.results_tag,
-            "library_revisions": library_revisions,
-            "release_pin": release_pin,
-            "slurm_job_id": slurm_job_id,
-            "config_name": config_name,
-            "backend": cli.backend,
-            "inversion": cli.inversion,
-            "precision": precision,
-            "instrument": instrument,
-            "dataset_class": dataset_class,
-            "seed": seed,
-            "sampler": "nautilus",
-            "version": al.__version__,
-            "device": _device_info(),
-            "cores": cores,
-            "use_jax": use_jax,
-            "rect_mesh": cli.rect_mesh,
-            "memo": cli.memo,
-            "mesh": cli.mesh,
-            "mesh_pixels": cli.mesh_pixels,
-            # The Delaunay split-step knob, recorded rather than inherited; a
-            # family without one says null rather than borrowing a number.
-            "mesh_areas_factor": meshes.areas_factor,
-            # The rest of the recipe: which image mesh placed the vertices and
-            # how. Without these a row cannot be reproduced — "delaunay, 1250"
-            # says nothing about where the 1250 went. Null on the rectangular
-            # family, which draws no vertices.
-            "mesh_zeroed_pixels": meshes.zeroed_pixels,
-            "image_mesh": meshes.image_mesh,
-            "image_mesh_weight_power": meshes.weight_power,
-            "image_mesh_weight_floor": meshes.weight_floor,
-            "image_mesh_edge_points": meshes.edge_points,
-            "regularization": meshes.scheme,
-            # A mesh family with no shape (Delaunay takes a vertex count) says
-            # so rather than inventing one.
-            "mesh_shape": list(meshes.shape) if meshes.shape is not None else None,
-            "stages_requested": stop_after,
-            "stages_from": (
-                {"config_name": cli.stages_from[0], "stages": list(cli.stages_from[1])}
-                if cli.stages_from is not None
-                else None
-            ),
-            **chain_wall_from(stages),
-            "test_mode": bool(is_test_mode()),
-            "status": status,
-            "stages": stages,
-        }
-        if library_revisions_note:
-            payload["library_revisions_note"] = library_revisions_note
-        _write_results(json_path, payload)
-        try:
-            _plot_stages(png_path, payload)
-        except Exception as exc:  # pragma: no cover — a plot must not kill a run
-            print(f"  WARNING: stage plot failed — {exc}")
+        payload = leg.payload(
+            target=target_id(instrument, mode_variant, seed),
+            variant=mode_variant,
+            stages=stages,
+            status=status,
+            identity={"lens_light_mode": mode},
+            model=mesh_fields(cli, meshes),
+        )
+        leg.write_row(json_path, png_path, payload)
         written.add(mode)
-        print(f"\n  Result row: {json_path}")
 
     def write_all(status: str) -> None:
         for mode in modes:
@@ -2149,7 +1376,7 @@ def run_slam(
             source_lp(
                 af,
                 al,
-                stage_settings_search.get("source_lp", settings_search),
+                leg.search_settings("source_lp"),
                 dataset,
                 mask_radius=mask_radius,
                 redshift_lens=REDSHIFT_LENS,
@@ -2303,19 +1530,6 @@ def run_slam(
     except BaseException as exc:
         write_all(f"failed: {type(exc).__name__}: {exc}")
         raise
-
-
-def _device_info() -> dict:
-    """``device_info_dict()``, never fatal.
-
-    A numba leg runs with ``PYAUTO_DISABLE_JAX=1`` but JAX is still importable,
-    so the dict is still the honest record of what the process was pointed at.
-    If JAX cannot be imported at all the row says so rather than losing the run.
-    """
-    try:
-        return device_info_dict()
-    except Exception as exc:
-        return {"backend": None, "error": f"{type(exc).__name__}: {exc}"}
 
 
 def main_stage_complete(argv: list[str] | None = None) -> int:

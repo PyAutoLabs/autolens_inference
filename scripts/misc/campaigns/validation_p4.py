@@ -77,6 +77,8 @@ for _path in (ROOT, ROOT / "scripts" / "misc", ROOT / "scripts" / "misc" / "tool
 
 import export_inference_summary as summary  # noqa: E402  (stdlib-only)
 
+from _inference_cli import config_name_for, parse_config_name  # noqa: E402  (stdlib-only)
+
 GENERATOR = "scripts/misc/campaigns/validation_p4.py"
 ISSUE = "autolens_inference#51"
 #: The day-zero tag every new phase-4 leg runs on, and its private checkout on RAL.
@@ -99,12 +101,21 @@ SWEEP_SEED = 0
 #: The chain's stages, in order (``_runner.STAGE_SEARCH_NAMES``).
 STAGES = ("source_lp[1]", "source_pix[1]", "source_pix[2]", "light[1]", "mass_total[1]")
 STAGE_FLAGS = {"source_pix[1]": "source_pix_1"}
+#: Every per-likelihood table below is keyed by ``(dataset_type, variant)``, the
+#: likelihood as the profiling catalogue names it, so a family's legs (4c) add rows
+#: here without touching the imaging ones.
+#:
 #: The run's source pixels, which picks the profiling size bin (28x28 rectangular mesh,
-#: 1250 Hilbert vertices).
-SOURCE_PIXELS = {"rectangular": 784, "delaunay": 1250}
-RUN_VARIANT = {"rectangular": "slam_base", "delaunay": "slam_delaunay"}
+#: 1250 Hilbert vertices); None for a likelihood without a mesh.
+SOURCE_PIXELS = {("imaging", "rectangular"): 784, ("imaging", "delaunay"): 1250}
+RUN_VARIANT = {("imaging", "rectangular"): "slam_base", ("imaging", "delaunay"): "slam_delaunay"}
 #: The wall gate's cell of each likelihood's leaf (``check_submits.LEGACY_CELLS``).
-CELL = {"rectangular": "imaging/slam/hst", "delaunay": "imaging/slam/hst_delaunay"}
+CELL = {
+    ("imaging", "rectangular"): "imaging/slam/hst",
+    ("imaging", "delaunay"): "imaging/slam/hst_delaunay",
+}
+#: The leaf each likelihood's legs run, below ``scripts/<dataset_type>/<variant>/validation/``.
+LEAF = {("imaging", "rectangular"): "baseline_slam.py", ("imaging", "delaunay"): "baseline_slam.py"}
 MEASURED_HEADROOM = 1.5
 UNMEASURED_HEADROOM = 3.0
 ROUND_S = 6 * 3600
@@ -113,7 +124,7 @@ MAX_TIME_S = 5 * 86400
 CHAIN_CORES = 8
 #: --mem (GB): the clean-slate requests for the same cells (Delaunay 96, rectangular
 #: jax_cpu sparse 64); a sweep leg asks 4 GB per Nautilus worker, at least 64.
-CHAIN_MEM_GB = {"delaunay": 96, "rectangular": 64}
+CHAIN_MEM_GB = {("imaging", "delaunay"): 96, ("imaging", "rectangular"): 64}
 
 
 @dataclass(frozen=True)
@@ -125,6 +136,7 @@ class Target:
     role: str
     model_variants: tuple[str, ...]
     share_source_lp: bool
+    dataset_type: str = "imaging"
 
     def __post_init__(self):
         if "light_fixed" in self.model_variants and not self.role.startswith("Optimal"):
@@ -144,6 +156,11 @@ def host_class_of(setup_id: str) -> str:
     return "hpc_a100" if setup_id.split("_")[1] == "gpu" else "hpc_ral_cpu"
 
 
+def where_of(setup_id: str) -> str:
+    """The config-name ``where`` of a setup's reference host."""
+    return "hpc_a100" if host_class_of(setup_id) == "hpc_a100" else "hpc_ral"
+
+
 @dataclass(frozen=True)
 class Leg:
     """One submit: a chain (an array over seeds) or one core count of the sweep."""
@@ -157,6 +174,12 @@ class Leg:
     cores: int = CHAIN_CORES
     stage: str | None = None
     results_tag: str | None = None
+    dataset_type: str = "imaging"
+
+    @property
+    def key(self) -> tuple[str, str]:
+        """The likelihood, ``(dataset_type, variant)``, every per-likelihood table is keyed by."""
+        return (self.dataset_type, self.likelihood)
 
     @property
     def host_class(self) -> str:
@@ -168,15 +191,19 @@ class Leg:
 
     @property
     def backend(self) -> str:
-        return "_".join(self.setup_id.split("_")[:2])
+        return parse_config_name(self.config_name).backend
 
     @property
     def inversion(self) -> str:
-        return self.setup_id.split("_")[2]
+        return parse_config_name(self.config_name).inversion
+
+    @property
+    def transformer(self) -> str | None:
+        return parse_config_name(self.config_name).transformer
 
     @property
     def config_name(self) -> str:
-        return f"{'hpc_a100' if self.on_gpu else 'hpc_ral'}_{self.setup_id}"
+        return config_name_for(where_of(self.setup_id), self.setup_id)
 
     @property
     def device(self) -> str:
@@ -184,11 +211,11 @@ class Leg:
 
     @property
     def cell(self) -> str:
-        return CELL[self.likelihood]
+        return CELL[self.key]
 
     @property
     def script(self) -> str:
-        return f"scripts/imaging/{self.likelihood}/validation/baseline_slam.py"
+        return f"scripts/{self.dataset_type}/{self.likelihood}/validation/{LEAF[self.key]}"
 
     @property
     def lens_light(self) -> str:
@@ -217,7 +244,7 @@ class Leg:
     def mem_gb(self) -> int:
         if self.results_tag:
             return max(64, 4 * self.cores)
-        return CHAIN_MEM_GB[self.likelihood]
+        return CHAIN_MEM_GB[self.key]
 
     def sampler(self, stage: str) -> str:
         suffix = f":{self.results_tag}" if self.results_tag else ""
@@ -286,10 +313,12 @@ def chain_key(record: dict, host: str | None = None) -> tuple:
 def planned_legs(records: list[dict] | None = None) -> list[Leg]:
     """Every phase-4 leg the adopted rows do not already cover."""
     records = adopted_records() if records is None else records
-    have = {chain_key(r) for r in records if not _is_sweep(r)}
-    swept = {(chain_key(r), r["sampler"]) for r in records if _is_sweep(r)}
     legs = []
     for t in TARGETS:
+        # chain_key names the likelihood by its variant alone, so the rows are first cut
+        # to the target's dataset type: interferometer/delaunay is not imaging/delaunay.
+        own = [r for r in records if r["likelihood"]["dataset_type"] == t.dataset_type]
+        have = {chain_key(r) for r in own if not _is_sweep(r)}
         host = host_class_of(t.setup_id)
         groups: dict[tuple[str, ...], list[int]] = {}
         for seed in SEEDS:
@@ -305,8 +334,21 @@ def planned_legs(records: list[dict] | None = None) -> list[Leg]:
             groups.setdefault(missing, []).append(seed)
         for variants, seeds in groups.items():
             legs.append(
-                Leg(t.likelihood, t.setup_id, t.role, variants, tuple(seeds), t.share_source_lp)
+                Leg(
+                    t.likelihood,
+                    t.setup_id,
+                    t.role,
+                    variants,
+                    tuple(seeds),
+                    t.share_source_lp,
+                    dataset_type=t.dataset_type,
+                )
             )
+    swept = {
+        (chain_key(r), r["sampler"])
+        for r in records
+        if _is_sweep(r) and r["likelihood"]["dataset_type"] == SWEEP.dataset_type
+    }
     stage = "source_pix[1]"
     for n in SWEEP_CORES:
         leg = Leg(
@@ -354,13 +396,13 @@ def per_call(leg: Leg, refs: list[dict]) -> tuple[float, str]:
     """Pulse's per-call time for the leg's likelihood and setup (the exporter's pairing).
     Profiling has no light_fixed record, so every stage is priced at the default model's."""
     item = {
-        "likelihood": {"dataset_type": "imaging", "variant": leg.likelihood},
+        "likelihood": {"dataset_type": leg.dataset_type, "variant": leg.likelihood},
         "instrument": INSTRUMENT,
         "setup_id": leg.setup_id,
         "host_class": leg.host_class,
         "model_variant": "default",
     }
-    ref, reason = summary.match_profiling(item, refs, SOURCE_PIXELS[leg.likelihood])
+    ref, reason = summary.match_profiling(item, refs, SOURCE_PIXELS.get(leg.key))
     if ref is None:
         raise SystemExit(f"{leg.name}: {reason}")
     return ref["per_call_s"], ref["id"]
@@ -368,7 +410,12 @@ def per_call(leg: Leg, refs: list[dict]) -> tuple[float, str]:
 
 def stage_walls(leg: Leg, records: list[dict], refs: list[dict]) -> list[StageWall]:
     """One estimate per (model variant, stage) the leg fits."""
-    rows = [r for r in records if not _is_sweep(r) and r["likelihood"]["variant"] == leg.likelihood]
+    rows = [
+        r
+        for r in records
+        if not _is_sweep(r)
+        and (r["likelihood"]["dataset_type"], r["likelihood"]["variant"]) == leg.key
+    ]
     call_s, call_ref = per_call(leg, refs)
     # numba's per-call time is one thread; Nautilus forks `cores` workers. A JAX per-call
     # (vmap.per_call) already prices one batched evaluation on the whole device.
@@ -544,7 +591,7 @@ def _describe(leg: Leg) -> list[str]:
     if leg.results_tag:
         return _para(
             f"Likelihood-lifecycle phase 4 ({ISSUE}): the RAL cores sweep at {leg.cores} "
-            f"core(s). `imaging/{leg.likelihood}/{INSTRUMENT}` under the {leg.role} setup "
+            f"core(s). `{leg.dataset_type}/{leg.likelihood}/{INSTRUMENT}` under the {leg.role} setup "
             f"`{leg.setup_id}` (`{leg.config_name}`), seed {seeds}, ONE pixelized stage: "
             f"`--stages source_pix_1` fits `{leg.stage}` and stops, with `source_lp[1]` loaded "
             f"from `{SHARED_CONFIG}` (`--stages-from`), the stage the adopted 8-core row loaded "
@@ -561,7 +608,7 @@ def _describe(leg: Leg) -> list[str]:
     )
     return _para(
         f"Likelihood-lifecycle phase 4 ({ISSUE}): a wall-time validation gap leg. "
-        f"`imaging/{leg.likelihood}/{INSTRUMENT}` under the {leg.role} setup `{leg.setup_id}` "
+        f"`{leg.dataset_type}/{leg.likelihood}/{INSTRUMENT}` under the {leg.role} setup `{leg.setup_id}` "
         f"(`{leg.config_name}`), seed(s) {seeds} as the array, model variant(s) "
         f"{', '.join(leg.model_variants)} (`--lens-light {leg.lens_light}`). The full SLaM "
         f"chain, {shared}."
@@ -694,7 +741,9 @@ def render(leg: Leg, records: list[dict], refs: list[dict]) -> str:
         f"SEED={seed_expr}",
         f"OUTPUT_ROOT=$AP_ROOT/{leg.output_dir}",
     ]
-    shared_prefix = f"autolens/imaging/{INSTRUMENT}/slam/slam_base/{SHARED_CONFIG}/seed_$SEED"
+    shared_prefix = (
+        f"autolens/{leg.dataset_type}/{INSTRUMENT}/slam/slam_base/{SHARED_CONFIG}/seed_$SEED"
+    )
     if leg.share_source_lp:
         lines += [
             f"SHARED_SEED_DIR=$AP_ROOT/output/{shared_prefix}",
@@ -736,7 +785,9 @@ def render(leg: Leg, records: list[dict], refs: list[dict]) -> str:
         f"--backend {leg.backend}",
         f"--inversion {leg.inversion}",
     ]
-    if leg.likelihood == "delaunay":
+    if leg.transformer:
+        flags.append(f"--transformer {leg.transformer}")
+    if leg.key == ("imaging", "delaunay"):
         flags.append("--mesh-pixels 1250")
     flags += [
         "--seed $SEED",
@@ -754,7 +805,7 @@ def render(leg: Leg, records: list[dict], refs: list[dict]) -> str:
         # A single-mode run exports into the directory given; a `both` run adds <variant>/.
         prepared = f"{leg.output_dir}/prepared/seed_$SEED"
         if leg.lens_light != "both":
-            prepared += f"/{RUN_VARIANT[leg.likelihood]}"
+            prepared += f"/{RUN_VARIANT[leg.key]}"
         flags.append(f"--export-prepared {prepared}")
     flags.append("--cores $SLURM_CPUS_PER_TASK")
     lines.append(f"python3 {leg.script} \\")
@@ -817,7 +868,7 @@ def main(argv: list[str] | None = None) -> int:
         for leg in legs:
             b, _ = budget(leg, records, refs)
             print(
-                f"{leg.path}: imaging/{leg.likelihood}/{INSTRUMENT} {leg.setup_id}@{leg.host_class}"
+                f"{leg.path}: {leg.dataset_type}/{leg.likelihood}/{INSTRUMENT} {leg.setup_id}@{leg.host_class}"
                 f" {'+'.join(leg.model_variants)} seeds {','.join(map(str, leg.seeds))}"
                 f" cores {leg.cores}{' ' + leg.results_tag if leg.results_tag else ''}"
                 f" -- {b.source}, estimate {b.estimate_s} s, --time {slurm_time(b.time_s)}"

@@ -24,8 +24,8 @@ from inference_catalogue import build_catalogue  # noqa: E402
 
 from _inference_cli import (  # noqa: E402  (stdlib-only module)
     BASE_VARIANT,
-    CONFIG_NAME_RE,
     SEARCH_LAYOUT,
+    parse_config_name,
     split_config_name,
     validation_layout,
 )
@@ -90,6 +90,12 @@ CONFIG = (
     "stages_from",
     "shared_from_config",
     "fitted_backend",
+    # Likelihood-lifecycle 4c: the visibility-space route of the setup (nufft /
+    # wtilde), and the likelihood a stage evaluates (``likelihood_evaluated``,
+    # null on a stage that evaluates none — see build_walltime). Written only by
+    # rows of the family drivers (slam._core); absent on every older row.
+    "transformer",
+    "likelihood_evaluated",
 )
 
 #: The timing definition a shared stage's record carries instead of the fitted
@@ -118,11 +124,25 @@ IMAGING_INSTRUMENTS = ("hst", "euclid", "jwst", "jwst_lw", "ao")
 PRECISIONS = {"fp64": "fp64", "mp": "mixed"}
 
 
+def declared_likelihood(value):
+    """``{dataset_type, variant}`` when ``value`` is a well-formed likelihood block, else None."""
+    if not isinstance(value, dict):
+        return None
+    dataset_type, variant = value.get("dataset_type"), value.get("variant")
+    if not (
+        isinstance(dataset_type, str) and dataset_type and isinstance(variant, str) and variant
+    ):
+        return None
+    return {"dataset_type": dataset_type, "variant": variant}
+
+
 def _family(row, is_pipeline):
-    """``rectangular`` / ``delaunay`` for a SLaM row, from its mesh or run variant."""
+    """``rectangular`` / ``delaunay`` / ``delaunay_nn`` for an imaging SLaM row that
+    declares no likelihood, from its mesh or run variant (the rows written before
+    likelihood-lifecycle 4c, whose resolution this keeps exactly)."""
     mesh = row.get("mesh")
-    if mesh == "delaunay":
-        return "delaunay"
+    if mesh in ("delaunay", "delaunay_nn"):
+        return mesh
     if mesh == "rect":
         return "rectangular"
     variant = row.get("variant")
@@ -133,6 +153,8 @@ def _family(row, is_pipeline):
         return None
     if variant.startswith((BASE_VARIANT, "rect_")):
         return "rectangular"
+    if variant.startswith(("slam_delaunay_nn", "delaunay_nn_")):
+        return "delaunay_nn"
     if variant.startswith(("slam_delaunay", "delaunay_")):
         return "delaunay"
     return None
@@ -144,7 +166,16 @@ def setup_fields(row, is_pipeline):
     ``setup_id`` follows the Pulse grammar ``<backend>_<device>_<operator>_<precision>``
     and ``host_class`` is provenance, both resolved from the config-name table
     (``_inference_cli.split_config_name``). Every existing row is ``explicit``: its
-    setup was named by flags, never chosen automatically.
+    setup was named by flags, never chosen automatically. A config name with a
+    transformer field (``..._dense_fp64_nufft``, ``..._sparse_fp64_wtilde``) carries
+    it as the setup id's suffix, as the Pulse ids do; without one it is ``na``. The
+    ``na`` operator (no linear inversion) is spelled the same way.
+
+    The likelihood is the row's own declaration when it makes one (a ``likelihood``
+    block ``{dataset_type, variant}`` and a ``model_variant``, written by every
+    family driver of ``slam._core``). A row without one is an imaging SLaM row, or a
+    search row, written before likelihood-lifecycle 4c, and keeps its old resolution:
+    the mesh or run variant (:func:`_family`) or :data:`SEARCH_LAYOUT`.
     """
     reasons = {}
     config = row.get("config_name")
@@ -152,13 +183,19 @@ def setup_fields(row, is_pipeline):
     resolved = dict(
         backend=None, device=None, operator=None, precision=None, transformer="na", threads=None
     )
-    if isinstance(config, str) and CONFIG_NAME_RE.match(config):
-        _, backend_device, operator, precision = CONFIG_NAME_RE.match(config).groups()
-        backend, device = backend_device.split("_")
+    fields = parse_config_name(config)
+    if fields is not None:
+        backend, device = fields.backend.split("_")
         resolved.update(
-            backend=backend, device=device, operator=operator, precision=PRECISIONS[precision]
+            backend=backend,
+            device=device,
+            operator=fields.inversion,
+            precision=PRECISIONS[fields.precision],
+            transformer=fields.transformer or "na",
         )
-        setup_id = f"{backend}_{device}_{operator}_{resolved['precision']}"
+        setup_id = f"{backend}_{device}_{fields.inversion}_{resolved['precision']}"
+        if fields.transformer:
+            setup_id += f"_{fields.transformer}"
         _, host_class = split_config_name(config)
         host = row.get("host")
         if host_class == "hpc_a100" and device == "cpu":
@@ -177,9 +214,13 @@ def setup_fields(row, is_pipeline):
         resolved["threads"] = int(threads)
     dataset_class = row.get("dataset_class")
     variant = row.get("variant")
-    likelihood = None
+    likelihood = declared_likelihood(row.get("likelihood"))
     model_variant = "default"
-    if is_pipeline or row.get("pipeline") == "slam":
+    if likelihood is not None:
+        declared = row.get("model_variant")
+        if isinstance(declared, str) and declared:
+            model_variant = declared
+    elif is_pipeline or row.get("pipeline") == "slam":
         family = _family(row, is_pipeline)
         if dataset_class and family:
             likelihood = {"dataset_type": dataset_class, "variant": family}
@@ -563,8 +604,41 @@ def refresh_pulse_reference(snapshot_path, root=ROOT):
 
 
 #: Why a stage that solves no inversion is never paired: every profiling runtime
-#: record of a pixelized likelihood times the inversion it would not run.
+#: record of a pixelized likelihood times the inversion it would not run. Applies
+#: only to a row that declares no per-stage likelihood (every row written before
+#: likelihood-lifecycle 4c), whose ``inversion_applies: false`` stage is the
+#: parametric ``source_lp[1]`` of a pixelized chain.
 NO_INVERSION_REASON = "stage has no inversion (parametric); no matching profiling likelihood"
+
+#: Why a stage that declares ``likelihood_evaluated: null`` is never paired: the
+#: runner says it evaluates none of the profiled likelihoods (the parametric stage
+#: of a pixelized chain, written by a family driver of ``slam._core``).
+NO_LIKELIHOOD_REASON = (
+    "stage declares it evaluates no profiled likelihood (likelihood_evaluated: null, a "
+    "parametric stage of a pixelized chain)"
+)
+
+
+def stage_likelihood(record):
+    """``(likelihood, reason)``: the likelihood a stage record is paired and filed under.
+
+    The per-stage declaration wins: a family-driver row writes
+    ``likelihood_evaluated`` on every stage — a ``{dataset_type, variant}`` block for
+    the likelihood its evaluations are (an MGE, point, cluster or weak stage names its
+    own likelihood, inversion or not), or ``null`` for a stage that evaluates none of
+    them. A stage without the field keeps the rule of the rows written before it: its
+    row's likelihood, unpaired (:data:`NO_INVERSION_REASON`) when
+    ``inversion_applies`` is false. ``reason`` is None when the stage is to be paired.
+    """
+    configuration = record["configuration"]
+    if "likelihood_evaluated" in configuration:
+        evaluated = declared_likelihood(configuration["likelihood_evaluated"])
+        if evaluated is None:
+            return record["likelihood"], NO_LIKELIHOOD_REASON
+        return evaluated, None
+    if record["diagnostics"]["values"].get("inversion_applies") is False:
+        return record["likelihood"], NO_INVERSION_REASON
+    return record["likelihood"], None
 
 
 def match_profiling(walltime, references, source_pixels=None):
@@ -598,7 +672,7 @@ def match_profiling(walltime, references, source_pixels=None):
 def source_pixels_of(configuration):
     """The inference run's source pixel count, when its row records one.
 
-    Rectangular: the product of ``mesh_shape``. Delaunay: ``mesh_pixels``, the
+    Rectangular: the product of ``mesh_shape``. Delaunay / DelaunayNN: ``mesh_pixels``, the
     Hilbert-drawn interior vertex count, which is how the profiling size bins count
     a Delaunay mesh (its zeroed edge ring is excluded on both sides). Else None.
     """
@@ -611,7 +685,7 @@ def source_pixels_of(configuration):
         return math.prod(shape)
     pixels = configuration.get("mesh_pixels")
     if (
-        configuration.get("mesh") == "delaunay"
+        configuration.get("mesh") in ("delaunay", "delaunay_nn")
         and isinstance(pixels, int)
         and not isinstance(pixels, bool)
     ):
@@ -731,7 +805,7 @@ def build_walltime(root, summary_doc, revision, references=None):
         evals = values.get("likelihood_evals")
         evals = evals if isinstance(evals, int) and not isinstance(evals, bool) else None
         implied = wall / evals * 1000.0 if wall is not None and evals else None
-        likelihood = r["likelihood"]
+        likelihood, unpaired = stage_likelihood(r)
         sweep_cores = cores_of_tag(r["configuration"].get("results_tag"))
         sampler = f"{r['sampler']}:{r['stage']}"
         if sweep_cores is not None:
@@ -746,8 +820,8 @@ def build_walltime(root, summary_doc, revision, references=None):
             "stage": r["stage"],
             "seed": r["seed"],
         }
-        if values.get("inversion_applies") is False:
-            ref, reason, pixels = None, NO_INVERSION_REASON, None
+        if unpaired is not None:
+            ref, reason, pixels = None, unpaired, None
         else:
             pixels = source_pixels_of(r["configuration"])
             ref, reason = match_profiling(item, references, pixels)
@@ -833,7 +907,10 @@ def build_walltime(root, summary_doc, revision, references=None):
         f"lens snapshot cached in {PULSE_REFERENCE} on an exact (likelihood, instrument, "
         "setup_id, host_class, model_variant) match, the current record first, then the "
         "one whose size bin equals the run's source pixels, then the newest "
-        "(profiling_status says which); stages that solve no inversion are never paired; "
+        "(profiling_status says which); a stage is paired under the likelihood it "
+        "evaluates: a row's likelihood_evaluated declaration when its stage makes one "
+        "(null = none, never paired), else the row's likelihood, with the stages that "
+        "solve no inversion never paired; "
         "profiling_per_call_s is Pulse's per-call "
         "time of that record, predicted_ms_per_eval the same in ms"
     )

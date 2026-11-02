@@ -146,6 +146,10 @@ jobs:
           python scripts/misc/simulators/imaging.py
           python scripts/misc/simulators/interferometer.py
           python scripts/misc/simulators/point_source.py
+          python scripts/misc/simulators/group.py
+          python scripts/misc/simulators/multi_galaxy.py
+          python scripts/misc/simulators/cluster.py
+          python scripts/misc/simulators/weak.py
           # The SLaM leaf short-circuits in the same place, AFTER argv parsing and
           # the backend environment block — so this also asserts that the flags,
           # the config-name grammar check and the `scripts/misc/` import path all
@@ -158,6 +162,10 @@ jobs:
           # separately. The mesh itself is witnessed by profile.yml, which is
           # the only place a jit trace actually happens.
           python scripts/imaging/delaunay/validation/baseline_slam.py \
+            --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
+          # The DelaunayNN mesh rides the same leaf by flag until its own leaf lands
+          # (4c-1); smoked here so the new mesh choice parses through the driver.
+          python scripts/imaging/delaunay/validation/baseline_slam.py --mesh delaunay_nn \
             --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
           # The first search leaf (point source, Nautilus, source-plane solved χ²).
           # Same short-circuit: after argv parsing, the config-name check and the

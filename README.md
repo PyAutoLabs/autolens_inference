@@ -30,7 +30,7 @@ search that may or may not find the right answer. This repo measures that arrang
 **Configurations covered.** Every run carries a `--config-name` from one grammar:
 
 ```
-{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
+{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse,na}_{fp64,mp}[_{nufft,wtilde}]
 ```
 
 A **parity row** is a set of runs sharing one target — same dataset, same model, same

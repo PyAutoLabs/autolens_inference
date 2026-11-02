@@ -69,6 +69,10 @@ venv/
 dataset/imaging/
 dataset/interferometer/
 dataset/point_source/
+dataset/group/
+dataset/multi_galaxy/
+dataset/cluster/
+dataset/weak/
 
 # Lensed-source adapt images — produced by the simulators and cached on demand beside the
 # dataset. Regeneratable from tracer.json on first run; kept out of git so different

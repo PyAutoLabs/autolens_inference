@@ -47,16 +47,21 @@ Every record carries five additive fields (no version bump):
   `--backend`, `--inversion` and `--config-name`, never chosen automatically.
 - `setup_resolved`: `{backend, device, operator, precision, transformer, threads}`
   from the config name (`jax`/`numba`, `cpu`/`gpu`, `dense`/`sparse`, `fp64`/`mixed`);
-  `transformer` is `na` for imaging and point source; `threads` is the row's pinned
+  `transformer` is `na` for imaging and point source, `nufft` / `wtilde` from a config
+  name's optional fifth field (interferometer, datacube); `threads` is the row's pinned
   `omp_num_threads`, else null.
-- `setup_id`: `<backend>_<device>_<operator>_<precision>`, the Pulse grammar.
+- `setup_id`: `<backend>_<device>_<operator>_<precision>[_<transformer>]`, the Pulse
+  grammar (`operator` may be `na`: `jax_cpu_na_fp64`, `jax_cpu_dense_fp64_nufft`).
 - `host_class`: provenance, from the config prefix (`hpc_a100`, `hpc_ral` ->
   `hpc_ral_cpu`, `local` -> `local_laptop`). An `hpc_a100_*` CPU-backend row is
   relabelled `hpc_ral_cpu` only when its own `host` names a RAL compute node;
   otherwise the prefix is kept and `unknown_reasons.host_class` says so.
-- `model_variant`: `default` or `light_fixed` (the run variant minus its base).
+- `model_variant`: `default` or `light_fixed` (the run variant minus its base), or the
+  row's own `model_variant` when it declares its likelihood.
 
-Records also carry `likelihood {dataset_type, variant}`. In `dashboard/catalogue.json`
+Records also carry `likelihood {dataset_type, variant}`: the row's own `likelihood` block
+when it has one (every family-driver row), else resolved from an imaging row's mesh or run
+variant (`rectangular`, `delaunay`, `delaunay_nn`) or a search row's layout. In `dashboard/catalogue.json`
 `setup_id` stays the stable family id (`imaging/rectangular/hst`, PyAutoInsight v2);
 the compute setup is `setup_resolved`. The family id is now read from `likelihood`
 and the instrument rather than guessed from paths.
@@ -84,8 +89,12 @@ Clocks and derived numbers, all computed here (Pulse computes nothing):
   (refresh with `--refresh-pulse-reference <PyAutoPulse>/snapshots/lens.json`) whose
   `likelihood`, `instrument`, `setup_id`, `host_class` and `model_variant` equal the
   record's exactly; the `current` record first, then the one whose size bin equals
-  the run's source pixels, then the newest. A stage that solves no inversion
-  (`inversion_applies: false`, e.g. `source_lp[1]`) is never paired. The per-call time is
+  the run's source pixels, then the newest. A stage is paired under the likelihood it
+  evaluates: a family-driver row (`scripts/misc/slam/_core.py`) declares it per stage
+  (`likelihood_evaluated`; `null` = none of the profiled likelihoods, never paired), so an
+  MGE, point, cluster or weak stage pairs with its own likelihood's record. A row
+  without the declaration (every imaging SLaM row) keeps the old rule: a stage that solves
+  no inversion (`inversion_applies: false`, e.g. `source_lp[1]`) is never paired. The per-call time is
   Pulse's own (`projected_node_throughput.per_call_s`, else the headline metric).
   `reference_runtime_record_id` and `predicted_ms_per_eval` (per-call in ms) repeat
   the same match for compatibility. No match leaves them null with the reason.
