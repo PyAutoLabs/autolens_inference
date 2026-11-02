@@ -22,6 +22,8 @@ RECORDS = p4.adopted_records()
 LEGS = p4.planned_legs(RECORDS)
 RENDERED = p4.submits()
 SWEEP = [leg for leg in LEGS if leg.results_tag]
+#: The 4a likelihoods; each 4c family tests its own legs (test_family_runners_4c*.py).
+LIKELIHOODS_4A = {("imaging", "rectangular"), ("imaging", "delaunay")}
 
 
 def _sbatch(text, key):
@@ -41,6 +43,7 @@ def test_the_manifest_is_the_ruled_gap_set():
             leg.results_tag,
         )
         for leg in LEGS
+        if leg.key in LIKELIHOODS_4A
     }
     gpu, cpu = "hpc/batch_gpu/submit_p4_", "hpc/batch_cpu/submit_p4_"
     expected = {
@@ -169,7 +172,8 @@ def test_every_submit_passes_the_wall_gate_and_says_what_it_runs(leg):
     (row,) = check_submits.parse_basis_rows(text)
     assert row["cell"] == leg.cell and row["device"] == leg.device
     # measured-wall only where this cell and device have an adopted sibling (no Delaunay A100).
-    assert row["source"] == ("unmeasured" if leg.on_gpu else "measured-wall")
+    if leg.key in LIKELIHOODS_4A:
+        assert row["source"] == ("unmeasured" if leg.on_gpu else "measured-wall")
     if row["source"] == "unmeasured":
         assert row["probe-first"] == "yes"
     assert _sbatch(text, "partition") == ("gpu" if leg.on_gpu else "ral")

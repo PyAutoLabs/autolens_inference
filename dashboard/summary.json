@@ -22,7 +22,7 @@
   },
   "evidence_updated_at": null,
   "evidence_updated_at_reason": "Legacy result rows do not record measurement timestamps",
-  "generated_at": "2026-11-02T16:29:05Z",
+  "generated_at": "2026-11-02T18:16:47Z",
   "generation_basis": "Source commit timestamp; not a measurement or check-in time",
   "limitations": [
     "No scientific acceptance or convergence inferred from process completion",
@@ -30,7 +30,7 @@
     "No evidence from the retired inference programme is imported",
     "Archived rows belong to this project's September 2026 runs and are historical, not current baselines"
   ],
-  "producer_revision": "0149eff8800d1ae1386a71ed6f455d36ef553a55",
+  "producer_revision": "2fafc75265b82aa23fedd14c7a27b1bf702244d7",
   "project": "autolens_inference",
   "records": [
     {
@@ -52716,7 +52716,7 @@
   ],
   "schema": "inference-summary",
   "scope": "inference",
-  "source_commit": "0149eff8800d1ae1386a71ed6f455d36ef553a55",
+  "source_commit": "2fafc75265b82aa23fedd14c7a27b1bf702244d7",
   "valid_until": null,
   "version": 1
 }

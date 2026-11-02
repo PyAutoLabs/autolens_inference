@@ -23,7 +23,13 @@ The legs:
   get the default legs too");
 - a cores sweep of ``source_pix[1]`` alone on ``imaging/rectangular/hst`` under the Optimal
   CPU setup ``numba_cpu_sparse_fp64``, seed 0, at :data:`SWEEP_CORES` cores, one submit per
-  core count (``--cpus-per-task`` cannot vary inside an array).
+  core count (``--cpus-per-task`` cannot vary inside an array);
+- 4c-1 (autolens_inference#54): the Optimal-setup legs of ``imaging/delaunay_nn`` and
+  ``imaging/mge`` (hst, default + light_fixed), ``interferometer/{rectangular,delaunay,mge}``
+  and ``datacube/delaunay`` (sma, default), seeds 0-1 (the 4c-1 block below the targets). A
+  family leaf (``slam._core.run_family``) takes no ``--stages-from`` or ``--export-prepared``.
+  A likelihood with no adopted row is ``unmeasured`` with no wall and the cap as --time, unless
+  :data:`EVALS_FROM` counts its evaluations on another likelihood's rows of the same chain.
 
 A chain leg is kept only for the seeds whose (likelihood, instrument, setup_id, host_class,
 model_variant, seed) has no adopted row, so the generator never re-runs one. A CPU-backend
@@ -116,6 +122,17 @@ CELL = {
 }
 #: The leaf each likelihood's legs run, below ``scripts/<dataset_type>/<variant>/validation/``.
 LEAF = {("imaging", "rectangular"): "baseline_slam.py", ("imaging", "delaunay"): "baseline_slam.py"}
+#: The reference instrument of each likelihood (default :data:`INSTRUMENT`).
+INSTRUMENT_OF: dict[tuple[str, str], str] = {}
+#: The search names of each likelihood's chain, in order (default :data:`STAGES`).
+STAGES_OF: dict[tuple[str, str], tuple[str, ...]] = {}
+#: The likelihoods whose leaf runs ``slam._core.run_family``: no ``--stages-from``, no
+#: ``--export-prepared``, and ``--lens-light`` only for a light_fixed leg (4c).
+FAMILY_KEYS: set[tuple[str, str]] = set()
+#: A likelihood with no adopted row of its own may count its evaluations on another
+#: likelihood's adopted rows of the SAME chain (never its walls: a sibling likelihood's
+#: measured wall is another cell's).
+EVALS_FROM: dict[tuple[str, str], tuple[str, str]] = {}
 MEASURED_HEADROOM = 1.5
 UNMEASURED_HEADROOM = 3.0
 ROUND_S = 6 * 3600
@@ -151,6 +168,90 @@ TARGETS = (
 )
 SWEEP = Target("rectangular", "numba_cpu_sparse_fp64", "Optimal CPU", ("default",), True)
 
+# ---------------------------------------------------------------------------
+# 4c-1 (autolens_inference#54): imaging mge / delaunay_nn, interferometer rectangular /
+# delaunay / mge, datacube delaunay. One reference instrument each, Optimal setups only
+# (autolens_profiling catalogue/runtime_estimates.yaml, role: optimal; the datacube A100
+# cells are held provisional and are not run), seeds 0-1. light_fixed only on imaging, the
+# datasets with lens light; no interferometer or datacube dataset carries any.
+# ---------------------------------------------------------------------------
+
+_4C1_DELAUNAY_NN = ("imaging", "delaunay_nn")
+_4C1_FAMILIES = (
+    ("imaging", "mge"),
+    ("interferometer", "rectangular"),
+    ("interferometer", "delaunay"),
+    ("interferometer", "mge"),
+    ("datacube", "delaunay"),
+)
+INSTRUMENT_OF.update(
+    {key: "sma" for key in _4C1_FAMILIES if key[0] != "imaging"} | {("imaging", "mge"): "hst"}
+)
+SOURCE_PIXELS.update(
+    {
+        _4C1_DELAUNAY_NN: 1250,
+        ("interferometer", "rectangular"): 1225,
+        ("interferometer", "delaunay"): 1250,
+        ("datacube", "delaunay"): 1250,
+    }
+)
+RUN_VARIANT[_4C1_DELAUNAY_NN] = "slam_delaunay_nn"
+CELL.update(
+    {
+        _4C1_DELAUNAY_NN: "imaging/slam/hst_delaunay_nn",
+        ("imaging", "mge"): "imaging/slam/hst_mge",
+        ("interferometer", "rectangular"): "interferometer/slam/sma_rectangular",
+        ("interferometer", "delaunay"): "interferometer/slam/sma_delaunay",
+        ("interferometer", "mge"): "interferometer/slam/sma_mge",
+        ("datacube", "delaunay"): "datacube/search/sma_delaunay",
+    }
+)
+LEAF.update({key: "baseline_slam.py" for key in (_4C1_DELAUNAY_NN, *_4C1_FAMILIES)})
+LEAF[("datacube", "delaunay")] = "baseline.py"
+CHAIN_MEM_GB.update(
+    {
+        _4C1_DELAUNAY_NN: 96,
+        ("imaging", "mge"): 64,
+        ("interferometer", "rectangular"): 32,
+        ("interferometer", "delaunay"): 32,
+        ("interferometer", "mge"): 32,
+        ("datacube", "delaunay"): 64,
+    }
+)
+_INTERFEROMETER_SLAM = ("source_lp[1]", "source_pix[1]", "source_pix[2]", "mass_total[1]")
+STAGES_OF.update(
+    {
+        ("imaging", "mge"): ("source_lp[1]", "light[1]", "mass_total[1]"),
+        ("interferometer", "rectangular"): _INTERFEROMETER_SLAM,
+        ("interferometer", "delaunay"): _INTERFEROMETER_SLAM,
+        ("interferometer", "mge"): ("source_lp[1]", "mass_total[1]"),
+        ("datacube", "delaunay"): ("delaunay",),
+    }
+)
+FAMILY_KEYS.update(_4C1_FAMILIES)
+#: DelaunayNN is the Delaunay chain with only the interpolation changed, on the same data.
+EVALS_FROM[_4C1_DELAUNAY_NN] = ("imaging", "delaunay")
+_LIGHT = ("default", "light_fixed")
+TARGETS += (
+    # The Delaunay recipe on the natural-neighbour mesh: shares source_lp[1] as Delaunay does.
+    Target("delaunay_nn", "jax_gpu_dense_fp64", "Optimal GPU", _LIGHT, True),
+    Target("delaunay_nn", "numba_cpu_sparse_fp64", "Optimal CPU", _LIGHT, True),
+    Target("mge", "jax_cpu_dense_fp64", "Optimal CPU", _LIGHT, False),
+    Target("mge", "jax_gpu_dense_fp64", "Optimal GPU", _LIGHT, False),
+    *(
+        Target(variant, setup, role, ("default",), False, dataset_type)
+        for dataset_type, variant, setup, role in (
+            ("interferometer", "rectangular", "numba_cpu_sparse_fp64_wtilde", "Optimal CPU"),
+            ("interferometer", "rectangular", "jax_gpu_sparse_fp64_wtilde", "Optimal GPU"),
+            ("interferometer", "delaunay", "numba_cpu_sparse_fp64_wtilde", "Optimal CPU"),
+            ("interferometer", "delaunay", "jax_gpu_sparse_fp64_wtilde", "Optimal GPU"),
+            ("interferometer", "mge", "jax_cpu_dense_fp64_nufft", "Optimal CPU"),
+            ("interferometer", "mge", "jax_gpu_dense_fp64_nufft", "Optimal GPU"),
+            ("datacube", "delaunay", "numba_cpu_sparse_fp64_wtilde", "Optimal CPU"),
+        )
+    ),
+)
+
 
 def host_class_of(setup_id: str) -> str:
     return "hpc_a100" if setup_id.split("_")[1] == "gpu" else "hpc_ral_cpu"
@@ -180,6 +281,15 @@ class Leg:
     def key(self) -> tuple[str, str]:
         """The likelihood, ``(dataset_type, variant)``, every per-likelihood table is keyed by."""
         return (self.dataset_type, self.likelihood)
+
+    @property
+    def instrument(self) -> str:
+        return INSTRUMENT_OF.get(self.key, INSTRUMENT)
+
+    @property
+    def family(self) -> bool:
+        """Run through ``slam._core.run_family`` (4c), not the imaging ``run_slam``."""
+        return self.key in FAMILY_KEYS
 
     @property
     def host_class(self) -> str:
@@ -223,14 +333,17 @@ class Leg:
 
     @property
     def short(self) -> str:
-        return self.setup_id.removesuffix("_fp64")
+        return self.setup_id.replace("_fp64", "")
 
     @property
     def name(self) -> str:
+        # A non-imaging likelihood names its dataset type: interferometer/delaunay and
+        # datacube/delaunay share a variant and an instrument.
+        like = self.likelihood if self.dataset_type == "imaging" else "_".join(self.key)
         if self.results_tag:
-            return f"submit_p4_cores_{self.likelihood}_{INSTRUMENT}_{self.short}_{self.results_tag}"
+            return f"submit_p4_cores_{like}_{self.instrument}_{self.short}_{self.results_tag}"
         seeds = "" if self.seeds == SEEDS else "_seed_" + "_".join(map(str, self.seeds))
-        return f"submit_p4_validation_{self.likelihood}_{INSTRUMENT}_{self.short}{seeds}"
+        return f"submit_p4_validation_{like}_{self.instrument}_{self.short}{seeds}"
 
     @property
     def path(self) -> str:
@@ -255,9 +368,10 @@ class Leg:
         own ``mass_total[1]``; stages 1-4 are the default chain's)."""
         if self.stage:
             return (self.stage,)
+        stages = STAGES_OF.get(self.key, STAGES)
         if model_variant != "default":
-            return ("mass_total[1]",)
-        return STAGES[1:] if self.share_source_lp else STAGES
+            return stages[-1:]
+        return stages[1:] if self.share_source_lp else stages
 
     def keys(self) -> list[tuple]:
         """Every walltime-validation key this leg writes, as (likelihood, instrument,
@@ -265,7 +379,7 @@ class Leg:
         return [
             (
                 self.likelihood,
-                INSTRUMENT,
+                self.instrument,
                 self.setup_id,
                 self.host_class,
                 variant,
@@ -320,16 +434,17 @@ def planned_legs(records: list[dict] | None = None) -> list[Leg]:
         own = [r for r in records if r["likelihood"]["dataset_type"] == t.dataset_type]
         have = {chain_key(r) for r in own if not _is_sweep(r)}
         host = host_class_of(t.setup_id)
+        instrument = INSTRUMENT_OF.get((t.dataset_type, t.likelihood), INSTRUMENT)
         groups: dict[tuple[str, ...], list[int]] = {}
         for seed in SEEDS:
             # A chain re-run re-writes the default stages, so a seed whose default exists
             # is never re-run (a missing light_fixed alone cannot be filled without one).
-            if (t.likelihood, INSTRUMENT, t.setup_id, host, "default", seed) in have:
+            if (t.likelihood, instrument, t.setup_id, host, "default", seed) in have:
                 continue
             missing = tuple(
                 v
                 for v in t.model_variants
-                if (t.likelihood, INSTRUMENT, t.setup_id, host, v, seed) not in have
+                if (t.likelihood, instrument, t.setup_id, host, v, seed) not in have
             )
             groups.setdefault(missing, []).append(seed)
         for variants, seeds in groups.items():
@@ -397,7 +512,7 @@ def per_call(leg: Leg, refs: list[dict]) -> tuple[float, str]:
     Profiling has no light_fixed record, so every stage is priced at the default model's."""
     item = {
         "likelihood": {"dataset_type": leg.dataset_type, "variant": leg.likelihood},
-        "instrument": INSTRUMENT,
+        "instrument": leg.instrument,
         "setup_id": leg.setup_id,
         "host_class": leg.host_class,
         "model_variant": "default",
@@ -409,13 +524,25 @@ def per_call(leg: Leg, refs: list[dict]) -> tuple[float, str]:
 
 
 def stage_walls(leg: Leg, records: list[dict], refs: list[dict]) -> list[StageWall]:
-    """One estimate per (model variant, stage) the leg fits."""
+    """One estimate per (model variant, stage) the leg fits; none when no adopted row of the
+    likelihood (or of its :data:`EVALS_FROM` chain) counts the evaluations."""
+    evals_key = leg.key
     rows = [
         r
         for r in records
         if not _is_sweep(r)
         and (r["likelihood"]["dataset_type"], r["likelihood"]["variant"]) == leg.key
     ]
+    if not rows and leg.key in EVALS_FROM:
+        evals_key = EVALS_FROM[leg.key]
+        rows = [
+            r
+            for r in records
+            if not _is_sweep(r)
+            and (r["likelihood"]["dataset_type"], r["likelihood"]["variant"]) == evals_key
+        ]
+    if not rows:
+        return []
     call_s, call_ref = per_call(leg, refs)
     # numba's per-call time is one thread; Nautilus forks `cores` workers. A JAX per-call
     # (vmap.per_call) already prices one batched evaluation on the whole device.
@@ -436,7 +563,8 @@ def stage_walls(leg: Leg, records: list[dict], refs: list[dict]) -> list[StageWa
             siblings = [
                 r
                 for r in same
-                if r["setup_id"] == leg.setup_id
+                if evals_key == leg.key
+                and r["setup_id"] == leg.setup_id
                 and host_of(r) == leg.host_class
                 and isinstance(r["wall_s"], (int, float))
             ]
@@ -475,6 +603,10 @@ class Budget:
 
 def budget(leg: Leg, records: list[dict], refs: list[dict]) -> tuple[Budget, list[StageWall]]:
     walls = stage_walls(leg, records, refs)
+    if not walls:
+        # Nothing counts the evaluations: no wall is derived, --time is the cap (containment).
+        per_call(leg, refs)  # the likelihood and setup must still have a profiling record
+        return Budget("unmeasured", None, 0, MAX_TIME_S, UNMEASURED_HEADROOM, ()), walls
     estimate = math.ceil(sum(w.wall_s for w in walls))
     measured = all(w.measured_s is not None for w in walls)
     if measured:
@@ -535,7 +667,19 @@ def _wall_block(leg: Leg, b: Budget, walls: list[StageWall]) -> list[str]:
         f"adopted row of this likelihood and model variant took, priced at {pricing} "
         "(catalogue/pulse_lens_runtime_reference.json)."
     )
-    if b.source == "measured-wall":
+    if leg.key in EVALS_FROM and walls:
+        prose += (
+            f" This likelihood has no adopted row, so the evaluations are counted on the adopted "
+            f"`{'/'.join(EVALS_FROM[leg.key])}` rows, the same chain on the same data."
+        )
+    if not walls:
+        prose = (
+            f"This submit runs ONE cell, `{leg.cell}`. No adopted row of this likelihood counts "
+            "its evaluations, so no wall is derived: the row is `unmeasured` and the first arm IS "
+            "the probe (read each stage's `wall_s / likelihood_evals` from its row; "
+            "catalogue/pulse_lens_runtime_reference.json prices one evaluation)."
+        )
+    elif b.source == "measured-wall":
         prose += (
             " An adopted sibling on this cell and device measured each stage, and each stage takes "
             "the larger of the two"
@@ -562,7 +706,11 @@ def _wall_block(leg: Leg, b: Budget, walls: list[StageWall]) -> list[str]:
         if w.measured_s is not None:
             parts.append(f"measured {w.measured_s:.0f} s ({w.measured_ref})")
         lines += _para(f"- {w.model_variant} {w.stage} = " + "; ".join(parts), "#   ", "#     ")
-    if b.wall_s is None:
+    if not walls:
+        closing = (
+            f"--time is the {slurm_time(MAX_TIME_S)} cap, a CONTAINMENT, not a derived budget."
+        )
+    elif b.wall_s is None:
         closing = (
             f"The estimate is {b.estimate_s} s ({b.estimate_s / 3600:.0f} h); 3x of it exceeds "
             f"the {slurm_time(MAX_TIME_S)} cap, so no wall is offered and --time is that cap, "
@@ -575,7 +723,11 @@ def _wall_block(leg: Leg, b: Budget, walls: list[StageWall]) -> list[str]:
         )
     lines += _para(closing, "#   ")
     evals = sum(w.evals for w in walls)
-    row = f"#   lanes: 1  steps: {evals}  source: {b.source}"
+    row = (
+        f"#   lanes: 1  steps: {evals}  source: {b.source}"
+        if walls
+        else "#   lanes: 1  source: unmeasured"
+    )
     if b.source == "measured-wall":
         row += f"  wall: {b.wall_s}  ref: {','.join(b.refs)}  headroom: {b.headroom:g}"
     else:
@@ -601,6 +753,16 @@ def _describe(leg: Leg) -> list[str]:
             "per count because an array cannot vary it. No `--export-prepared`: the leg never "
             "reaches mass_total[1]."
         )
+    if leg.family:
+        stages = STAGES_OF.get(leg.key, STAGES)
+        light = f" (`--lens-light {leg.lens_light}`)" if leg.lens_light != "linear" else ""
+        return _para(
+            f"Likelihood-lifecycle phase 4 ({ISSUE}): a wall-time validation gap leg. "
+            f"`{leg.dataset_type}/{leg.likelihood}/{leg.instrument}` under the {leg.role} setup "
+            f"`{leg.setup_id}` (`{leg.config_name}`), seed(s) {seeds} as the array, model "
+            f"variant(s) {', '.join(leg.model_variants)}{light}. The full chain of "
+            f"`{leg.script}` ({' -> '.join(stages)}), every stage fitted here."
+        )
     shared = (
         f"with `source_lp[1]` loaded from `{SHARED_CONFIG}` (`--stages-from`)"
         if leg.share_source_lp
@@ -608,7 +770,7 @@ def _describe(leg: Leg) -> list[str]:
     )
     return _para(
         f"Likelihood-lifecycle phase 4 ({ISSUE}): a wall-time validation gap leg. "
-        f"`{leg.dataset_type}/{leg.likelihood}/{INSTRUMENT}` under the {leg.role} setup `{leg.setup_id}` "
+        f"`{leg.dataset_type}/{leg.likelihood}/{leg.instrument}` under the {leg.role} setup `{leg.setup_id}` "
         f"(`{leg.config_name}`), seed(s) {seeds} as the array, model variant(s) "
         f"{', '.join(leg.model_variants)} (`--lens-light {leg.lens_light}`). The full SLaM "
         f"chain, {shared}."
@@ -742,7 +904,7 @@ def render(leg: Leg, records: list[dict], refs: list[dict]) -> str:
         f"OUTPUT_ROOT=$AP_ROOT/{leg.output_dir}",
     ]
     shared_prefix = (
-        f"autolens/{leg.dataset_type}/{INSTRUMENT}/slam/slam_base/{SHARED_CONFIG}/seed_$SEED"
+        f"autolens/{leg.dataset_type}/{leg.instrument}/slam/slam_base/{SHARED_CONFIG}/seed_$SEED"
     )
     if leg.share_source_lp:
         lines += [
@@ -754,10 +916,11 @@ def render(leg: Leg, records: list[dict], refs: list[dict]) -> str:
         'echo "=========================================="',
         "date",
         f'echo "Cell:       {leg.cell}"',
-        f'echo "Instrument: {INSTRUMENT}"',
+        f'echo "Instrument: {leg.instrument}"',
         f'echo "Config:     {leg.config_name}"',
-        f'echo "Light:      {leg.lens_light} ({", ".join(leg.model_variants)})"',
     ]
+    if not leg.family or leg.lens_light != "linear":
+        lines.append(f'echo "Light:      {leg.lens_light} ({", ".join(leg.model_variants)})"')
     if leg.results_tag:
         lines.append(f'echo "Sweep:      {leg.stage} only, {leg.results_tag}"')
     if leg.share_source_lp:
@@ -781,7 +944,7 @@ def render(leg: Leg, records: list[dict], refs: list[dict]) -> str:
             "",
         ]
     flags = [
-        f"--instrument {INSTRUMENT}",
+        f"--instrument {leg.instrument}",
         f"--backend {leg.backend}",
         f"--inversion {leg.inversion}",
     ]
@@ -792,8 +955,9 @@ def render(leg: Leg, records: list[dict], refs: list[dict]) -> str:
     flags += [
         "--seed $SEED",
         f"--config-name {leg.config_name}",
-        f"--lens-light {leg.lens_light}",
     ]
+    if not leg.family or leg.lens_light != "linear":
+        flags.append(f"--lens-light {leg.lens_light}")
     if leg.stage:
         flags.append(f"--stages {STAGE_FLAGS[leg.stage]}")
     if leg.share_source_lp:
@@ -801,7 +965,7 @@ def render(leg: Leg, records: list[dict], refs: list[dict]) -> str:
     if leg.results_tag:
         flags.append(f"--results-tag {leg.results_tag}")
     flags.append("--output-dir $OUTPUT_ROOT")
-    if not leg.stage:
+    if not leg.stage and not leg.family:
         # A single-mode run exports into the directory given; a `both` run adds <variant>/.
         prepared = f"{leg.output_dir}/prepared/seed_$SEED"
         if leg.lens_light != "both":
@@ -868,7 +1032,7 @@ def main(argv: list[str] | None = None) -> int:
         for leg in legs:
             b, _ = budget(leg, records, refs)
             print(
-                f"{leg.path}: {leg.dataset_type}/{leg.likelihood}/{INSTRUMENT} {leg.setup_id}@{leg.host_class}"
+                f"{leg.path}: {leg.dataset_type}/{leg.likelihood}/{leg.instrument} {leg.setup_id}@{leg.host_class}"
                 f" {'+'.join(leg.model_variants)} seeds {','.join(map(str, leg.seeds))}"
                 f" cores {leg.cores}{' ' + leg.results_tag if leg.results_tag else ''}"
                 f" -- {b.source}, estimate {b.estimate_s} s, --time {slurm_time(b.time_s)}"

@@ -228,6 +228,21 @@ LEGACY_CELLS.update(
     }
 )
 
+# 4c-1 (autolens_inference#54): the validation leaves of imaging mge / delaunay_nn,
+# interferometer rectangular / delaunay / mge and datacube delaunay. Each is its own cell (its
+# own cost profile), named `<dataset_class>/<task>/<instrument>_<likelihood>` so the
+# leaf-is-the-instrument check still reads the instrument they run.
+LEGACY_CELLS.update(
+    {
+        "imaging/delaunay_nn/validation/baseline_slam": "imaging/slam/hst_delaunay_nn",
+        "imaging/mge/validation/baseline_slam": "imaging/slam/hst_mge",
+        "interferometer/rectangular/validation/baseline_slam": "interferometer/slam/sma_rectangular",
+        "interferometer/delaunay/validation/baseline_slam": "interferometer/slam/sma_delaunay",
+        "interferometer/mge/validation/baseline_slam": "interferometer/slam/sma_mge",
+        "datacube/delaunay/validation/baseline": "datacube/search/sma_delaunay",
+    }
+)
+
 
 def cells_run(text: str) -> tuple[set[str], set[str]]:
     """The cell ids a submit actually runs, and its instruments.

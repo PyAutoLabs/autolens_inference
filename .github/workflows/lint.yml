@@ -163,10 +163,25 @@ jobs:
           # the only place a jit trace actually happens.
           python scripts/imaging/delaunay/validation/baseline_slam.py \
             --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
-          # The DelaunayNN mesh rides the same leaf by flag until its own leaf lands
-          # (4c-1); smoked here so the new mesh choice parses through the driver.
-          python scripts/imaging/delaunay/validation/baseline_slam.py --mesh delaunay_nn \
+          # 4c-1 (autolens_inference#54): the DelaunayNN leaf (run_slam), and the family
+          # leaves (run_family) of imaging mge, interferometer x3 and the datacube, each at an
+          # Optimal setup of its likelihood (the transformer flag is the interferometer route's).
+          python scripts/imaging/delaunay_nn/validation/baseline_slam.py \
             --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
+          python scripts/imaging/mge/validation/baseline_slam.py \
+            --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
+          python scripts/interferometer/rectangular/validation/baseline_slam.py \
+            --backend numba_cpu --inversion sparse --transformer wtilde \
+            --config-name local_numba_cpu_sparse_fp64_wtilde
+          python scripts/interferometer/delaunay/validation/baseline_slam.py \
+            --backend numba_cpu --inversion sparse --transformer wtilde \
+            --config-name local_numba_cpu_sparse_fp64_wtilde
+          python scripts/interferometer/mge/validation/baseline_slam.py \
+            --backend jax_cpu --inversion dense --transformer nufft \
+            --config-name local_jax_cpu_dense_fp64_nufft
+          python scripts/datacube/delaunay/validation/baseline.py \
+            --backend numba_cpu --inversion sparse --transformer wtilde \
+            --config-name local_numba_cpu_sparse_fp64_wtilde
           # The first search leaf (point source, Nautilus, source-plane solved χ²).
           # Same short-circuit: after argv parsing, the config-name check and the
           # backend environment, before the dataset or any jit.
