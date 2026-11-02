@@ -196,3 +196,12 @@ jobs:
           python scripts/point_source_source/source_plane/samplers/multi_start_adam_n3000.py \
             --instrument simple --backend jax_cpu --inversion dense \
             --config-name local_jax_cpu_dense_fp64
+          # 4c-3: the single-search validation leaves (point source, cluster, weak), same
+          # short-circuit, after the flags, the inversion refusal and the backend environment.
+          for leaf in point_source_source/source_plane point_source_image/image_plane \
+              cluster/source_plane cluster/image_plane; do
+            python scripts/$leaf/validation/modeling.py --instrument simple \
+              --backend jax_cpu --inversion na --config-name local_jax_cpu_na_fp64
+          done
+          python scripts/weak/isothermal/validation/modeling.py --instrument simple \
+            --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64

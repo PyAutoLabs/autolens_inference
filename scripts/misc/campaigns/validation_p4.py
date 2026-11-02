@@ -133,6 +133,10 @@ FAMILY_KEYS: set[tuple[str, str]] = set()
 #: likelihood's adopted rows of the SAME chain (never its walls: a sibling likelihood's
 #: measured wall is another cell's).
 EVALS_FROM: dict[tuple[str, str], tuple[str, str]] = {}
+#: ``(evaluations, reference)`` per stage for a likelihood no adopted row (nor EVALS_FROM
+#: chain) measures: a declared basis to price its wall on, instead of the cap (4c-3). Every
+#: such leg is still ``unmeasured``.
+EVALS_BASIS: dict[tuple[str, str], tuple[int, str]] = {}
 MEASURED_HEADROOM = 1.5
 UNMEASURED_HEADROOM = 3.0
 ROUND_S = 6 * 3600
@@ -251,6 +255,61 @@ TARGETS += (
         )
     ),
 )
+
+# ---------------------------------------------------------------------------
+# 4c-3 (autolens_inference#54): point source, cluster, weak. Five single-search families
+# (``scripts/misc/slam/_point.py``, ``_cluster.py``, ``_weak.py``), each ONE Nautilus search,
+# ``modeling[1]``, on the reference instrument ``simple``, under the two Optimal setups
+# profiling measured (``jax_cpu_*`` on a RAL CPU node, ``jax_gpu_*`` on an A100; ``na`` for
+# point and cluster, ``dense`` for weak). The wall-gate cell is the leaf's own
+# (``check_submits.LEGACY_CELLS``, the 4c-3 block).
+#
+# No adopted row measures any of them, so each prices its stage on EVALS_BASIS. Only the
+# source-plane point fit has a measured count: the committed Nautilus search rows of the same
+# model, sampler and n_live (scripts/point_source_source/source_plane/samplers/, 4700 to 4850
+# evaluations over five seeds). The others take a declared CEILING, never a measurement: 10x
+# that count for the two other 5-parameter fits (image-plane point, weak) and 200,000 for the
+# 13-parameter cluster. Every leg is `unmeasured` with `probe-first: yes`; at these per-call
+# costs each derivation is minutes, so --time is the 6 h floor (ROUND_S), which also covers the
+# sampler's own overhead (the source-plane search rows: ~55 s for 4850 evaluations).
+# ---------------------------------------------------------------------------
+
+_4C3_SEARCHES = {
+    ("point_source_source", "source_plane"): ("na", 4850, "point_source_samplers"),
+    ("point_source_image", "image_plane"): ("na", 48500, "declared"),
+    ("cluster", "source_plane"): ("na", 200_000, "declared"),
+    ("cluster", "image_plane"): ("na", 200_000, "declared"),
+    ("weak", "isothermal"): ("dense", 48500, "declared"),
+}
+#: The committed search row the source-plane count is the most of (seeds 0 and 1 took 4850).
+POINT_SOURCE_SAMPLERS = (
+    "results/point_source_source/source_plane/simple/samplers/default/nautilus/explicit/"
+    "jax_cpu_dense_fp64/seed_0/search.json"
+)
+for _key, (_inversion, _evals, _basis) in _4C3_SEARCHES.items():
+    INSTRUMENT_OF[_key] = "simple"
+    STAGES_OF[_key] = ("modeling[1]",)
+    FAMILY_KEYS.add(_key)
+    EVALS_BASIS[_key] = (
+        _evals,
+        POINT_SOURCE_SAMPLERS
+        if _basis == "point_source_samplers"
+        else "declared-ceiling-4c3-unmeasured",
+    )
+    CELL[_key] = f"{_key[0]}/search/simple_{_key[1]}"
+    LEAF[_key] = "modeling.py"
+    CHAIN_MEM_GB[_key] = 16
+    TARGETS += tuple(
+        Target(
+            _key[1],
+            f"jax_{device}_{_inversion}_fp64",
+            f"Optimal {device.upper()}",
+            ("default",),
+            False,
+            _key[0],
+        )
+        for device in ("cpu", "gpu")
+    )
 
 
 def host_class_of(setup_id: str) -> str:
@@ -541,7 +600,7 @@ def stage_walls(leg: Leg, records: list[dict], refs: list[dict]) -> list[StageWa
             if not _is_sweep(r)
             and (r["likelihood"]["dataset_type"], r["likelihood"]["variant"]) == evals_key
         ]
-    if not rows:
+    if not rows and leg.key not in EVALS_BASIS:
         return []
     call_s, call_ref = per_call(leg, refs)
     # numba's per-call time is one thread; Nautilus forks `cores` workers. A JAX per-call
@@ -552,6 +611,9 @@ def stage_walls(leg: Leg, records: list[dict], refs: list[dict]) -> list[StageWa
         for stage in leg.fitted_stages(variant):
             same = [r for r in rows if r["model_variant"] == variant and r["stage"] == stage]
             counted = [r for r in same if r["likelihood_evals"]]
+            if not counted and leg.key in EVALS_BASIS:
+                evals, evals_ref = EVALS_BASIS[leg.key]
+                counted = [{"likelihood_evals": evals, "id": evals_ref}]
             if not counted:
                 raise SystemExit(f"{leg.name}: no adopted row counts the evaluations of {stage}")
             most = max(counted, key=lambda r: (r["likelihood_evals"], r["id"]))
@@ -667,6 +729,13 @@ def _wall_block(leg: Leg, b: Budget, walls: list[StageWall]) -> list[str]:
         f"adopted row of this likelihood and model variant took, priced at {pricing} "
         "(catalogue/pulse_lens_runtime_reference.json)."
     )
+    if leg.key in EVALS_BASIS and walls:
+        prose = (
+            f"This submit runs ONE cell, `{leg.cell}`. This likelihood has no adopted row, so per "
+            "stage the evaluations are its declared basis (EVALS_BASIS: a measured count or a "
+            f"declared ceiling, named below), priced at {pricing} "
+            "(catalogue/pulse_lens_runtime_reference.json)."
+        )
     if leg.key in EVALS_FROM and walls:
         prose += (
             f" This likelihood has no adopted row, so the evaluations are counted on the adopted "
