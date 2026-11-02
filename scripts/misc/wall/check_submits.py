@@ -243,6 +243,22 @@ LEGACY_CELLS.update(
     }
 )
 
+# 4c-3 (autolens_inference#54): the single-search validation leaves of point source, cluster
+# and weak lensing, named for the workspace pipeline they mirror (`modeling.py`). Each is its
+# own cell, named by the 4c-1 rule `<dataset_class>/search/<instrument>_<likelihood>`.
+LEGACY_CELLS.update(
+    {
+        f"{dataset_type}/{variant}/validation/modeling": f"{dataset_type}/search/simple_{variant}"
+        for dataset_type, variant in (
+            ("point_source_source", "source_plane"),
+            ("point_source_image", "image_plane"),
+            ("cluster", "source_plane"),
+            ("cluster", "image_plane"),
+            ("weak", "isothermal"),
+        )
+    }
+)
+
 
 def cells_run(text: str) -> tuple[set[str], set[str]]:
     """The cell ids a submit actually runs, and its instruments.

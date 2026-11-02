@@ -13,6 +13,9 @@ pairs, stage by stage, with the profiling runtime records in `walltime_validatio
 | [`_imaging_mge.py`](./_imaging_mge.py) | 4c-1: `imaging/mge`, the three-stage workspace MGE SLaM chain (`source_lp[1]` -> `light[1]` -> `mass_total[1]`), every stage the 20 + 20 Gaussian MGE; `--lens-light fixed\|both` refits `mass_total[1]` (`Family.light_fixed`). |
 | [`_interferometer.py`](./_interferometer.py) | 4c-1: `interferometer/{rectangular,delaunay,mge}` on `sma`. The 4-stage workspace interferometer SLaM chain with the profiled 35 x 35 rectangular or 1250-vertex Delaunay source in the three pixelized stages (`source_lp[1]` declares `null`), and the MGE chain (`source_lp[1]` -> `mass_total[1]`, a 20-Gaussian source). `--transformer nufft` (dense) / `wtilde` (sparse). |
 | [`_datacube.py`](./_datacube.py) | 4c-1: `datacube/delaunay` on `sma`, one Nautilus search over a factor graph of the profiled 34-channel cube, the interferometer Delaunay preset per channel. |
+| [`_point.py`](./_point.py) | 4c-3: `point_source_source/source_plane` and `point_source_image/image_plane`, the one `modeling[1]` search of `autolens_workspace/scripts/point_source/modeling.py` with the profiled solved fit class; also the setup refusal the other single-search families share. |
+| [`_cluster.py`](./_cluster.py) | 4c-3: `cluster/source_plane` and `cluster/image_plane`, `scripts/cluster/modeling.py`'s one factor-graph search with the profiled 2 main + 10 scaling dPIE + NFW model (image plane: the nearest analogue, no workspace pipeline). |
+| [`_weak.py`](./_weak.py) | 4c-3: `weak/isothermal`, `scripts/weak/modeling.py`'s one search of a free elliptical `Isothermal`. |
 
 ## Adding a family
 
