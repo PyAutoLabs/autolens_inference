@@ -10,6 +10,9 @@ pairs, stage by stage, with the profiling runtime records in `walltime_validatio
 |--------|--------------|
 | [`_core.py`](./_core.py) | Everything that is not a dataset: the flag checks (config-name grammar, `--stages-from`), the backend environment, the stage-row readers, posterior and truth helpers, the PyAutoFit output prefix and the results path, row provenance, shared-stage loading, the `stages.json` writer — and `run_family`, the generic driver. |
 | [`_runner.py`](./_runner.py) | The imaging family: the five-stage SLaM chain (`rect`, `delaunay`, `delaunay_nn` meshes), its lens-light modes and prepared export, and `run_slam`. It re-exports the core under the names it always had. |
+| [`_imaging_mge.py`](./_imaging_mge.py) | 4c-1: `imaging/mge`, the three-stage workspace MGE SLaM chain (`source_lp[1]` -> `light[1]` -> `mass_total[1]`), every stage the 20 + 20 Gaussian MGE; `--lens-light fixed\|both` refits `mass_total[1]` (`Family.light_fixed`). |
+| [`_interferometer.py`](./_interferometer.py) | 4c-1: `interferometer/{rectangular,delaunay,mge}` on `sma`. The 4-stage workspace interferometer SLaM chain with the profiled 35 x 35 rectangular or 1250-vertex Delaunay source in the three pixelized stages (`source_lp[1]` declares `null`), and the MGE chain (`source_lp[1]` -> `mass_total[1]`, a 20-Gaussian source). `--transformer nufft` (dense) / `wtilde` (sparse). |
+| [`_datacube.py`](./_datacube.py) | 4c-1: `datacube/delaunay` on `sma`, one Nautilus search over a factor graph of the profiled 34-channel cube, the interferometer Delaunay preset per channel. |
 
 ## Adding a family
 
@@ -59,6 +62,9 @@ one `Stage` and writes the same `stages.json`, with that one stage.
   The exporter pairs each stage with the profiling record of the likelihood it declares, so an
   MGE, point, cluster or weak stage pairs although it solves no inversion.
 - `transformer` (`nufft` / `wtilde`, else `null`), the fifth field of the config name.
+- `lens_light_mode` (`linear` / `fixed`), only on a family with lens light (`Family.light_fixed`):
+  its last stage is fitted once per `--lens-light` mode, and a `fixed` row is the `light_fixed`
+  model variant, as the imaging chain's `mass_total[1]`.
 
 The imaging rows write none of these and keep their old resolution: the likelihood from the
 mesh or variant name, and a stage with `inversion_applies: false` never paired.

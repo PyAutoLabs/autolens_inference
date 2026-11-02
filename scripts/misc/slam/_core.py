@@ -57,8 +57,9 @@ likelihood, ``null`` when they are none of the profiled likelihoods (a parametri
 The exporter files and pairs each stage by that declaration, so an MGE, point, cluster or
 weak stage — which solves no inversion — pairs with its own likelihood's profiling
 record. The imaging SLaM rows declare neither field and keep their old resolution (the
-mesh or variant name, and ``inversion_applies``). The fields are additive, so the schema
-stays at version 3.
+mesh or variant name, and ``inversion_applies``). A family with lens light
+(:attr:`Family.light_fixed`, 4c-1) also writes ``lens_light_mode``, and its ``fixed`` row is
+the ``light_fixed`` model variant. The fields are additive, so the schema stays at version 3.
 """
 
 from __future__ import annotations
@@ -79,9 +80,11 @@ if str(_ROOT) not in sys.path:
 from _inference_cli import (  # noqa: E402
     BASE_VARIANT,
     CONFIG_NAME_GRAMMAR,
+    LENS_LIGHT_FIXED_SUFFIX,
     InferenceCLI,
     auto_simulate_if_missing,
     device_info_dict,
+    lens_light_modes,
     parse_config_name,
     parse_inference_cli,
     row_stem,
@@ -897,6 +900,9 @@ class Leg:
         self.library_revisions_note = None
         self.release_pin = None
         self.slurm_job_id = None
+        #: The lens-light mode the stage being built is fitted under (``linear`` unless a
+        #: family with ``light_fixed`` is fitting its last stage under ``fixed``).
+        self.lens_light_mode = "linear"
         self.settings_search, self.search_root = self.settings_search_for(variant)
 
     # --- the output tree ------------------------------------------------------
@@ -1319,6 +1325,12 @@ class Family:
     ``inversions`` / ``transformers`` are the setups the likelihood has
     (:func:`refuse_setup`); ``shareable`` the stage keys ``--stages-from`` may load,
     from the ``shared_variant`` tree (default: this leg's own variant).
+
+    ``light_fixed`` (likelihood-lifecycle 4c-1) marks a family whose dataset has lens light:
+    ``--lens-light fixed|both`` then fits its LAST stage once per mode, as the imaging chain's
+    ``mass_total[1]`` is fitted, the earlier stages once. The stage builder reads the mode off
+    ``leg.lens_light_mode``; a ``fixed`` stage carries the ``_light_fixed`` variant in its
+    output prefix and its row is the ``light_fixed`` model variant, so ``both`` writes two rows.
     """
 
     dataset_type: str
@@ -1335,6 +1347,7 @@ class Family:
     model_variant: str = "default"
     model_fields: Callable | None = None
     title: str = field(default="Validation run")
+    light_fixed: bool = False
 
     @property
     def stage_keys(self) -> tuple[str, ...]:
@@ -1386,7 +1399,7 @@ def run_family(
         or refuse_setup(cli, family.inversions, family.transformers)
         or validate_stages_from(cli)
     )
-    if error is None and cli.lens_light != "linear":
+    if error is None and cli.lens_light != "linear" and not family.light_fixed:
         error = "--lens-light is the imaging SLaM chain's; this family has one light model"
     if error is None and cli.export_prepared is not None:
         error = "--export-prepared is the imaging SLaM chain's mass_total[1] export"
@@ -1421,60 +1434,95 @@ def run_family(
     leg.sample_provenance()
     truths = getattr(context, "truths", None) or {}
     model_fields = family.model_fields(leg, context) if family.model_fields else {}
+    # One row per lens-light mode: ``linear`` only, unless the family has lens light.
+    modes = lens_light_modes(cli) if family.light_fixed else ("linear",)
+    variants = {
+        mode: variant + LENS_LIGHT_FIXED_SUFFIX if mode == "fixed" else variant for mode in modes
+    }
+    model_variants = {
+        mode: LENS_LIGHT_FIXED_SUFFIX.lstrip("_") if mode == "fixed" else family.model_variant
+        for mode in modes
+    }
     rows: list[dict] = []
+    mode_rows: dict[str, dict] = {}
+    written: set[str] = set()
 
-    def write(status: str) -> None:
+    def write(status: str, mode: str) -> None:
         json_path, png_path = validation_row_paths(
             leg.root,
             family.dataset_type,
             family.likelihood_variant,
             instrument,
-            family.model_variant,
+            model_variants[mode],
             leg.config_name,
             leg.seed,
             cli.results_tag,
         )
+        identity = {
+            "likelihood": family.likelihood,
+            "model_variant": model_variants[mode],
+            "transformer": cli.transformer,
+        }
+        if family.light_fixed:
+            identity["lens_light_mode"] = mode
         payload = leg.payload(
-            target=family.target(instrument, variant, leg.seed),
-            variant=variant,
-            stages=list(rows),
+            target=family.target(instrument, variants[mode], leg.seed),
+            variant=variants[mode],
+            stages=[*rows, *([mode_rows[mode]] if mode in mode_rows else [])],
             status=status,
-            identity={
-                "likelihood": family.likelihood,
-                "model_variant": family.model_variant,
-                "transformer": cli.transformer,
-            },
+            identity=identity,
             model={"memo": cli.memo, **model_fields},
         )
         leg.write_row(json_path, png_path, payload)
+        written.add(mode)
+
+    def write_all(status: str) -> None:
+        for mode in modes:
+            if mode not in written:
+                write(status, mode)
 
     results: dict[str, object] = {}
     try:
-        for stage in family.stages:
-            result, row = leg.run_stage(
-                stage.key,
-                stage.search_name,
-                stage.build(leg, context, results),
-                n_live=stage.n_live,
-                n_batch=stage.n_batch,
-                inversion_applies=stage.inversion_applies,
-                truths=truths,
-                likelihood_evaluated=family.likelihood if stage.evaluates_likelihood else None,
-                declares_likelihood=True,
-            )
-            results[stage.key] = result
-            rows.append(row)
+        for index, stage in enumerate(family.stages):
+            per_mode = family.light_fixed and index == len(family.stages) - 1
+            for mode in modes if per_mode else (None,):
+                stage_search_root = None
+                if mode is not None:
+                    # The mode's own prefix, as the imaging chain's mass_total[1]: a fixed fit
+                    # never resumes the linear one, and a fixed-only run resumes the linear
+                    # chain's earlier stages.
+                    leg.lens_light_mode = mode
+                    settings_search, stage_search_root = leg.settings_search_for(variants[mode])
+                    leg.stage_settings_search[stage.key] = settings_search
+                result, row = leg.run_stage(
+                    stage.key,
+                    stage.search_name,
+                    stage.build(leg, context, results),
+                    n_live=stage.n_live,
+                    n_batch=stage.n_batch,
+                    inversion_applies=stage.inversion_applies,
+                    truths=truths,
+                    stage_search_root=stage_search_root,
+                    likelihood_evaluated=family.likelihood if stage.evaluates_likelihood else None,
+                    declares_likelihood=True,
+                )
+                results[stage.key] = result
+                if mode is None:
+                    rows.append(row)
+                else:
+                    mode_rows[mode] = row
+                    write("complete", mode)
             if cli.stages == stage.key:
-                write("stopped_early")
+                write_all("stopped_early")
                 return 0
             if stage.after is not None:
                 stage.after(leg, context, results)
-        write("complete")
+        write_all("complete")
         return 0
     except SharedStageIncomplete as exc:
         # A refusal, not a failure: nothing was fitted, so no row is written.
         print(f"ERROR: {exc}", file=sys.stderr)
         return SHARED_STAGE_INCOMPLETE_EXIT
     except BaseException as exc:
-        write(f"failed: {type(exc).__name__}: {exc}")
+        write_all(f"failed: {type(exc).__name__}: {exc}")
         raise
