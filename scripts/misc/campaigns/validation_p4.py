@@ -4,7 +4,9 @@ autolens_inference#51 (4a). Phase 4 checks the per-evaluation runtime estimates 
 Nautilus SLaM wall times on RAL, and measures CPU parallel efficiency. The human ruled on
 2026-11-02 that the 56 rows already in ``dashboard/walltime_validation.json`` (release pin
 2026.10.17.1, imaging/hst only) are adopted as day-zero evidence ("day zero may span
-versions"), and that each likelihood gets one reference instrument. This module lists only
+versions"), and that each likelihood gets one reference instrument; and that phase 4 runs
+inference only under the Optimal setups ("lets not do these inference runs on Secondary
+setups", 2026-11-02 — the Secondary CPU legs 4a generated are dropped). This module lists only
 the GAPS around those rows, and renders one submit per leg::
 
     python scripts/misc/campaigns/validation_p4.py --list    # print the manifest
@@ -16,10 +18,9 @@ The legs:
 - ``imaging/delaunay/hst``, the Optimal GPU setup ``jax_gpu_dense_fp64`` on an A100, seeds
   0-1, ``--lens-light both`` (the default and light_fixed model variants from one chain;
   light_fixed is run only under an Optimal setup);
-- ``imaging/delaunay/hst``, the Secondary CPU setup ``jax_cpu_sparse_fp64`` on a RAL CPU node,
-  seeds 0-1, default only;
-- ``imaging/rectangular/hst``, the same Secondary CPU setup, the seeds the adopted rows lack
-  (seed 1), default only;
+- ``imaging/delaunay/hst``, the Optimal CPU setup ``numba_cpu_sparse_fp64`` on a RAL CPU node,
+  the default model variant the adopted light_fixed-only rows lack (human, 2026-11-02: "yes
+  get the default legs too");
 - a cores sweep of ``source_pix[1]`` alone on ``imaging/rectangular/hst`` under the Optimal
   CPU setup ``numba_cpu_sparse_fp64``, seed 0, at :data:`SWEEP_CORES` cores, one submit per
   core count (``--cpus-per-task`` cannot vary inside an array).
@@ -130,12 +131,11 @@ class Target:
             raise ValueError(f"{self}: light_fixed is run only under an Optimal setup")
 
 
-#: The chain gaps. The rectangular Secondary CPU leg fits its own ``source_lp[1]``, as its
-#: adopted seed-0 sibling did; the Delaunay legs share it, as every Delaunay leg has.
+#: The chain gaps, Optimal setups only (human, 2026-11-02). The Delaunay legs share
+#: ``source_lp[1]``, as every Delaunay leg has.
 TARGETS = (
     Target("delaunay", "jax_gpu_dense_fp64", "Optimal GPU", ("default", "light_fixed"), True),
-    Target("delaunay", "jax_cpu_sparse_fp64", "Secondary CPU", ("default",), True),
-    Target("rectangular", "jax_cpu_sparse_fp64", "Secondary CPU", ("default",), False),
+    Target("delaunay", "numba_cpu_sparse_fp64", "Optimal CPU", ("default", "light_fixed"), True),
 )
 SWEEP = Target("rectangular", "numba_cpu_sparse_fp64", "Optimal CPU", ("default",), True)
 
