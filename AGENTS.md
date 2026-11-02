@@ -42,7 +42,9 @@ scripts/
     <variant>/validation/   Full SLaM pipeline runs (the base-run tier)
     <variant>/samplers/     Single-search and sampler leaves
   misc/                     Dataset-agnostic material + each task's shared framework:
-                            misc/simulators/ (dataset simulators), misc/tooling/
+                            misc/simulators/ (dataset simulators), misc/slam/ (the
+                            validation drivers: _core + one stage builder per family,
+                            see its README), misc/tooling/
                             (build_readme.py), misc/wall/ (SLURM --time budget gate),
                             misc/test/ (the pytest suite the lint gate runs)
 _inference_cli.py           Shared CLI / JSON / auto-simulate helper imported by every leaf
@@ -100,7 +102,7 @@ importable by their top-level names with no per-file path math: `_inference_cli`
 Every run carries a `--config-name` built from a fixed grammar:
 
 ```
-{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse}_{fp64,mp}
+{local,hpc_a100,hpc_ral}_{jax_cpu,numba_cpu,jax_gpu}_{dense,sparse,na}_{fp64,mp}[_{nufft,wtilde}]
 ```
 
 - **where** — `local` (this laptop), `hpc_a100` (RAL, `gpu` partition — the A100 legs) or
@@ -108,8 +110,13 @@ Every run carries a `--config-name` built from a fixed grammar:
   CPU rows still carry `hpc_a100` because the prefix once meant "on RAL"; never read it as
   an A100 on a `numba_cpu` / `jax_cpu` row.
 - **backend** — `jax_cpu`, `numba_cpu`, or `jax_gpu`.
-- **inversion** — `dense` (mapping matrix) or `sparse` (w-tilde operator).
+- **inversion** — `dense` (mapping matrix), `sparse` (w-tilde operator) or `na` (a
+  likelihood with no linear inversion: point source, cluster).
 - **precision** — `fp64`, or `mp` for the targeted mixed-precision paths.
+- **transformer** (optional) — `nufft` (dense) or `wtilde` (sparse), only on a
+  visibility-space likelihood (`--transformer`). The setup id is the name less
+  `where`, as the Pulse reference spells it (`jax_cpu_na_fp64`,
+  `numba_cpu_sparse_fp64_wtilde`); each leaf accepts only its likelihood's setups.
 
 A **parity row** is the unit this repo reasons in: a set of runs that share one *target* —
 same dataset, same model, same pipeline, same seed — and differ **only** in the config
@@ -163,7 +170,7 @@ output:
 
 Budget roughly **150 MB per 5-stage lens per leg**. `output/` is gitignored: it is bulk
 run state, kept on disk and pulled from RAL, never committed. What *is* committed is the
-small result row under `results/<dataset_class>/<rectangular|delaunay>/<instrument>/validation/<model_variant>/<setup_id>/`
+small result row under `results/<dataset_type>/<variant>/<instrument>/validation/<model_variant>/<setup_id>/`
 or `results/<dataset_type>/<variant>/<instrument>/samplers/`.
 
 ## RAL, and getting runs back

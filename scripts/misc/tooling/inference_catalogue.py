@@ -10,6 +10,30 @@ SETUPS = (
     ("imaging/delaunay/hst", "HST Delaunay SLaM", "imaging", "delaunay", "hst"),
     ("point_source/simple/simple", "Simple point source", "point_source", "simple", "simple"),
 )
+
+#: The phase-4 reference setups (likelihood-lifecycle 4c, human ruling 2026-11-02:
+#: one reference instrument per likelihood): ``(dataset_type, variant, instrument,
+#: label)``. Appended after the setups above so their order, and every id already
+#: published, is unchanged.
+REFERENCE_SETUPS = (
+    ("imaging", "mge", "hst", "HST MGE SLaM"),
+    ("imaging", "delaunay_nn", "hst", "HST DelaunayNN SLaM"),
+    ("interferometer", "rectangular", "sma", "SMA rectangular SLaM"),
+    ("interferometer", "delaunay", "sma", "SMA Delaunay SLaM"),
+    ("interferometer", "mge", "sma", "SMA MGE SLaM"),
+    ("datacube", "delaunay", "sma", "SMA Delaunay datacube"),
+    ("group", "rectangular", "euclid", "Euclid rectangular group SLaM"),
+    ("group", "delaunay", "euclid", "Euclid Delaunay group SLaM"),
+    ("group", "mge", "euclid", "Euclid MGE group SLaM"),
+    ("multi_galaxy", "rectangular", "hst", "HST rectangular multi-galaxy SLaM"),
+    ("multi_galaxy", "delaunay", "hst", "HST Delaunay multi-galaxy SLaM"),
+    ("multi_galaxy", "mge", "hst", "HST MGE multi-galaxy SLaM"),
+    ("multi_dataset", "delaunay", "hst", "HST Delaunay multi-dataset SLaM"),
+    ("point_source_image", "image_plane", "simple", "Simple point source, image plane"),
+    ("cluster", "source_plane", "simple", "Simple cluster, source plane"),
+    ("cluster", "image_plane", "simple", "Simple cluster, image plane"),
+    ("weak", "isothermal", "simple", "Simple weak lensing, isothermal"),
+)
 WORK = (
     "likelihood_evaluations",
     "gradient_evaluations",
@@ -21,12 +45,21 @@ WORK = (
 
 #: ``(dataset_type, likelihood variant)`` -> the stable family id prefix. The
 #: point-source family keeps the id it was published under.
+#: Every other family's id is its likelihood, ``<dataset_type>/<variant>``.
 FAMILIES = {
     ("imaging", "rectangular"): "imaging/rectangular",
     ("imaging", "delaunay"): "imaging/delaunay",
     ("point_source_source", "source_plane"): "point_source/simple",
+    **{(d, v): f"{d}/{v}" for d, v, _, _ in REFERENCE_SETUPS},
 }
 IMAGING_INSTRUMENTS = ("hst", "euclid", "jwst", "jwst_lw", "ao")
+
+#: The instruments a family's rows bind to, beyond the imaging presets: its phase-4
+#: reference instrument. A row at any other instrument stays unbound (with its reason).
+FAMILY_INSTRUMENTS = {
+    "point_source/simple": ("simple",),
+    **{f"{d}/{v}": (i,) for d, v, i, _ in REFERENCE_SETUPS if d != "imaging"},
+}
 
 
 def setup_id(row):
@@ -42,7 +75,7 @@ def setup_id(row):
         if row["pipeline"] != "slam" or instrument not in IMAGING_INSTRUMENTS:
             return None
         return f"{family}/{instrument}"
-    return f"{family}/{instrument}" if instrument == "simple" else None
+    return f"{family}/{instrument}" if instrument in FAMILY_INSTRUMENTS[family] else None
 
 
 MIGRATION_MAP = "catalogue/migration_2026_10.json"
@@ -92,6 +125,18 @@ def build_catalogue(summary, root):
                     reference_record_id_reason="No explicitly accepted current baseline with frozen model/prior identities",
                 )
             )
+    for dataset_type, variant, instrument, label in REFERENCE_SETUPS:
+        doc["setups"].append(
+            dict(
+                id=f"{dataset_type}/{variant}/{instrument}",
+                label=label,
+                dataset_family=dataset_type,
+                model_family=variant,
+                instrument=instrument,
+                reference_record_id=None,
+                reference_record_id_reason="No explicitly accepted current baseline with frozen model/prior identities",
+            )
+        )
     doc["prepared_problems"] = []
     for row in doc["records"]:
         row["setup_id"] = setup_id(row)

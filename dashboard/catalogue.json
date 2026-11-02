@@ -65290,6 +65290,159 @@
       "model_family": "delaunay",
       "reference_record_id": null,
       "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "imaging",
+      "id": "imaging/mge/hst",
+      "instrument": "hst",
+      "label": "HST MGE SLaM",
+      "model_family": "mge",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "imaging",
+      "id": "imaging/delaunay_nn/hst",
+      "instrument": "hst",
+      "label": "HST DelaunayNN SLaM",
+      "model_family": "delaunay_nn",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "interferometer",
+      "id": "interferometer/rectangular/sma",
+      "instrument": "sma",
+      "label": "SMA rectangular SLaM",
+      "model_family": "rectangular",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "interferometer",
+      "id": "interferometer/delaunay/sma",
+      "instrument": "sma",
+      "label": "SMA Delaunay SLaM",
+      "model_family": "delaunay",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "interferometer",
+      "id": "interferometer/mge/sma",
+      "instrument": "sma",
+      "label": "SMA MGE SLaM",
+      "model_family": "mge",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "datacube",
+      "id": "datacube/delaunay/sma",
+      "instrument": "sma",
+      "label": "SMA Delaunay datacube",
+      "model_family": "delaunay",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "group",
+      "id": "group/rectangular/euclid",
+      "instrument": "euclid",
+      "label": "Euclid rectangular group SLaM",
+      "model_family": "rectangular",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "group",
+      "id": "group/delaunay/euclid",
+      "instrument": "euclid",
+      "label": "Euclid Delaunay group SLaM",
+      "model_family": "delaunay",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "group",
+      "id": "group/mge/euclid",
+      "instrument": "euclid",
+      "label": "Euclid MGE group SLaM",
+      "model_family": "mge",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "multi_galaxy",
+      "id": "multi_galaxy/rectangular/hst",
+      "instrument": "hst",
+      "label": "HST rectangular multi-galaxy SLaM",
+      "model_family": "rectangular",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "multi_galaxy",
+      "id": "multi_galaxy/delaunay/hst",
+      "instrument": "hst",
+      "label": "HST Delaunay multi-galaxy SLaM",
+      "model_family": "delaunay",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "multi_galaxy",
+      "id": "multi_galaxy/mge/hst",
+      "instrument": "hst",
+      "label": "HST MGE multi-galaxy SLaM",
+      "model_family": "mge",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "multi_dataset",
+      "id": "multi_dataset/delaunay/hst",
+      "instrument": "hst",
+      "label": "HST Delaunay multi-dataset SLaM",
+      "model_family": "delaunay",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "point_source_image",
+      "id": "point_source_image/image_plane/simple",
+      "instrument": "simple",
+      "label": "Simple point source, image plane",
+      "model_family": "image_plane",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "cluster",
+      "id": "cluster/source_plane/simple",
+      "instrument": "simple",
+      "label": "Simple cluster, source plane",
+      "model_family": "source_plane",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "cluster",
+      "id": "cluster/image_plane/simple",
+      "instrument": "simple",
+      "label": "Simple cluster, image plane",
+      "model_family": "image_plane",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
+    },
+    {
+      "dataset_family": "weak",
+      "id": "weak/isothermal/simple",
+      "instrument": "simple",
+      "label": "Simple weak lensing, isothermal",
+      "model_family": "isothermal",
+      "reference_record_id": null,
+      "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
     }
   ],
   "source_commit": "644160b919df63ea377bb2ada70ca6c753b36a51",
