@@ -16,6 +16,9 @@ pairs, stage by stage, with the profiling runtime records in `walltime_validatio
 | [`_point.py`](./_point.py) | 4c-3: `point_source_source/source_plane` and `point_source_image/image_plane`, the one `modeling[1]` search of `autolens_workspace/scripts/point_source/modeling.py` with the profiled solved fit class; also the setup refusal the other single-search families share. |
 | [`_cluster.py`](./_cluster.py) | 4c-3: `cluster/source_plane` and `cluster/image_plane`, `scripts/cluster/modeling.py`'s one factor-graph search with the profiled 2 main + 10 scaling dPIE + NFW model (image plane: the nearest analogue, no workspace pipeline). |
 | [`_weak.py`](./_weak.py) | 4c-3: `weak/isothermal`, `scripts/weak/modeling.py`'s one search of a free elliptical `Isothermal`. |
+| [`_group.py`](./_group.py) | 4c-2: `group/{rectangular,delaunay,mge}` on `euclid`. `group/slam.py` and its pixelization variant (six stages; the profiled 35 x 35 rectangular or 1250-vertex Delaunay source in the four pixelized stages, both `source_lp` stages declare `null`) and its MGE variant (three); `--lens-light fixed\|both` refits `mass_total[1]` (`Family.light_fixed`). Also the masked-dataset loader and stage helpers `_multi_galaxy.py` shares. |
+| [`_multi_galaxy.py`](./_multi_galaxy.py) | 4c-2: `multi_galaxy/{rectangular,delaunay,mge}` on `hst`. `multi_galaxy/slam.py`'s five stages on each mesh, and the three-stage MGE analogue; `Family.light_fixed`. |
+| [`_multi_dataset.py`](./_multi_dataset.py) | 4c-2: `multi_dataset/delaunay` on `hst`. `multi_dataset/features/slam/simultaneous.py` without its subhalo stages, a `FactorGraphModel` over the hst dataset and its 0.5-scaled copy; `Family.light_fixed`. |
 
 ## Adding a family
 

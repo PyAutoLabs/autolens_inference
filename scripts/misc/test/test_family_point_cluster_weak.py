@@ -77,7 +77,8 @@ FAMILIES = {
     ),
 }
 IDS = [f"{f.dataset_type}/{f.likelihood_variant}" for f in FAMILIES]
-LEGS = [leg for leg in p4.planned_legs() if leg.key in p4.EVALS_BASIS]
+# 4c-3's own searches (4c-2 also prices its chains on EVALS_BASIS).
+LEGS = [leg for leg in p4.planned_legs() if leg.key in p4._4C3_SEARCHES]
 RENDERED = p4.submits()
 
 
