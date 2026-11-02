@@ -52,10 +52,25 @@ def _stage(name, wall, evals, **extra):
 
 def _put_validation(root, row, model_variant="default"):
     setup = row["config_name"].split("_", 2)[2] if row["config_name"].startswith("hpc_") else ""
+    if row.get("results_tag"):
+        setup = f"{setup}__{row['results_tag']}"
     name = (
         f"imaging/rectangular/hst/validation/{model_variant}/{setup}/seed_{row['seed']}/stages.json"
     )
     put(root, row, name)
+
+
+def _sweep(root, walls, seed=0):
+    """One cores-sweep leg per ``{cores: wall_s}``: source_pix[1] only, tag cores_<n>."""
+    for n, wall in walls.items():
+        row = _row(
+            "hpc_ral_numba_cpu_sparse_fp64",
+            seed=seed,
+            stages=[_stage("source_pix[1]", wall, 1000)],
+            job=f"9_{n}",
+        )
+        row.update(cores=n, results_tag=f"cores_{n}")
+        _put_validation(root, row)
 
 
 def test_one_record_per_stage_with_declared_numbers(tmp_path):
@@ -235,12 +250,79 @@ def test_committed_artefact_is_current_and_keyed_uniquely():
     assert all(not r["host_class"].startswith("local") for r in doc["records"])
 
 
-@pytest.mark.skipif(not (PULSE / "pulse" / "walltime.py").exists(), reason="PyAutoPulse not beside")
-def test_pulse_validator_accepts_the_committed_artefact():
+def test_a_cores_sweep_row_folds_its_core_count_into_the_sampler(tmp_path):
+    _sweep(tmp_path, {1: 800.0, 8: 125.0})
+    untagged = _row("hpc_ral_numba_cpu_sparse_fp64", stages=[_stage("source_pix[1]", 150.0, 1000)])
+    _put_validation(tmp_path, untagged)
+    records = {r["sampler"]: r for r in _walltime(tmp_path)["records"]}
+    assert set(records) == {
+        "nautilus:source_pix[1]",
+        "nautilus:source_pix[1]:cores_1",
+        "nautilus:source_pix[1]:cores_8",
+    }
+    swept = records["nautilus:source_pix[1]:cores_8"]
+    assert swept["id"] == (
+        "imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/"
+        "nautilus:source_pix[1]:cores_8/seed_0"
+    )
+    assert swept["stage"] == "source_pix[1]" and swept["cores"] == 8
+    # Outside a sweep the efficiency stays null, even beside a 1-core sweep row.
+    assert records["nautilus:source_pix[1]"]["parallel_efficiency"] is None
+
+
+def test_parallel_efficiency_is_relative_to_the_one_core_row(tmp_path):
+    _sweep(tmp_path, {1: 800.0, 2: 500.0, 8: 125.0, 32: 50.0})
+    _sweep(tmp_path, {1: 900.0, 4: 300.0}, seed=1)
+    doc = _walltime(tmp_path)
+    got = {(r["seed"], r["cores"]): r["parallel_efficiency"] for r in doc["records"]}
+    assert got[(0, 1)] == pytest.approx(1.0)
+    assert got[(0, 2)] == pytest.approx(0.8)
+    assert got[(0, 8)] == pytest.approx(0.8)
+    assert got[(0, 32)] == pytest.approx(0.5)
+    # Each seed is its own group: seed 1 is relative to seed 1's 1-core row only.
+    assert got[(1, 4)] == pytest.approx(0.75)
+    assert any("6 of 6 records carry it" in x for x in doc["limitations"])
+
+
+def test_parallel_efficiency_stays_null_without_a_one_core_row(tmp_path):
+    _sweep(tmp_path, {2: 500.0, 8: 125.0})
+    doc = _walltime(tmp_path)
+    assert [r["parallel_efficiency"] for r in doc["records"]] == [None, None]
+    assert any("0 of 2 records carry it (2 cores-sweep record(s))" in x for x in doc["limitations"])
+
+
+def test_the_adopted_pin_is_recorded_in_the_limitations(tmp_path):
+    _put_validation(
+        tmp_path, _row("hpc_a100_jax_gpu_dense_fp64", stages=[_stage("mass_total[1]", 50.0, 500)])
+    )
+    (line,) = [x for x in _walltime(tmp_path)["limitations"] if "adopted as day-zero" in x]
+    assert line.startswith(f"1 record(s) at release pin {summary.ADOPTED_PIN}")
+    assert "2026-11-02" in line and "day zero may span versions" in line
+
+
+def _pulse_walltime():
     sys.path.insert(0, str(PULSE))
     try:
         from pulse import walltime
     finally:
         sys.path.remove(str(PULSE))
+    return walltime
+
+
+@pytest.mark.skipif(not (PULSE / "pulse" / "walltime.py").exists(), reason="PyAutoPulse not beside")
+def test_pulse_validator_accepts_the_committed_artefact():
     doc = json.loads((ROOT / "dashboard/walltime_validation.json").read_text())
-    assert walltime.validate(doc) == []
+    assert _pulse_walltime().validate(doc) == []
+
+
+@pytest.mark.skipif(not (PULSE / "pulse" / "walltime.py").exists(), reason="PyAutoPulse not beside")
+def test_pulse_validator_accepts_a_cores_sweep(tmp_path):
+    """The folded sampler keeps one record per Pulse key; the efficiency is a number."""
+    _sweep(tmp_path, {1: 800.0, 2: 500.0, 8: 125.0})
+    _put_validation(
+        tmp_path,
+        _row("hpc_ral_numba_cpu_sparse_fp64", stages=[_stage("source_pix[1]", 150.0, 1000)]),
+    )
+    doc = _walltime(tmp_path)
+    assert len(doc["records"]) == 4
+    assert _pulse_walltime().validate(doc) == []

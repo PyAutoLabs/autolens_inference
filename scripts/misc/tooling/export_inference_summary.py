@@ -619,14 +619,72 @@ def source_pixels_of(configuration):
     return None
 
 
+#: A cores-sweep row's ``--results-tag`` (likelihood-lifecycle phase 4,
+#: autolens_inference#51): one leg per core count, each in its own output root.
+CORES_TAG = re.compile(r"^cores_([1-9][0-9]*)$")
+
+#: The release pin whose rows phase 4 adopts as day-zero evidence instead of
+#: re-running them on the day-zero tag (human ruling, 2026-11-02).
+ADOPTED_PIN = "2026.10.17.1"
+
+
+def cores_of_tag(results_tag):
+    """The core count a ``cores_<n>`` results tag names, else None."""
+    match = CORES_TAG.match(results_tag) if isinstance(results_tag, str) else None
+    return int(match.group(1)) if match else None
+
+
+def assign_parallel_efficiency(records):
+    """``parallel_efficiency = wall_1 / (n * wall_n)`` on every cores-sweep record.
+
+    A sweep record's sampler ends ``:cores_<n>``; its group is every record
+    identical in key apart from that suffix, and the 1-core record of the group is
+    the reference. Without one (or without both walls) the value stays null, as it
+    does on every record outside a sweep. Returns the count of records given one.
+    """
+    groups = {}
+    for item in records:
+        n = item.get("_sweep_cores")
+        if n is None:
+            continue
+        base = item["sampler"].rsplit(":cores_", 1)[0]
+        group = json.dumps(
+            [
+                item["likelihood"],
+                item["instrument"],
+                item["setup_id"],
+                item["host_class"],
+                item["model_variant"],
+                base,
+                item["seed"],
+            ],
+            sort_keys=True,
+        )
+        groups.setdefault(group, []).append((n, item))
+    assigned = 0
+    for members in groups.values():
+        walls = {n: item["wall_s"] for n, item in members}
+        wall_1 = walls.get(1)
+        for n, item in members:
+            wall_n = item["wall_s"]
+            if isinstance(wall_1, (int, float)) and isinstance(wall_n, (int, float)) and wall_n:
+                item["parallel_efficiency"] = wall_1 / (n * wall_n)
+                assigned += 1
+    return assigned
+
+
 def build_walltime(root, summary_doc, revision, references=None):
     """``walltime-validation@1`` from the current SLaM validation rows.
 
     One record per (likelihood, instrument, setup_id, host_class, model_variant,
     sampler, seed) and stage. The Pulse key has no stage field, so the stage is
     folded into ``sampler`` as ``<sampler>:<stage>`` (``nautilus:source_pix[1]``) and
-    repeated in a ``stage`` field, which the validator tolerates. Every derived
-    number is computed here; Pulse computes nothing.
+    repeated in a ``stage`` field, which the validator tolerates. It has no cores
+    field either, so a cores-sweep row (results tag ``cores_<n>``) folds its core
+    count in the same way, ``nautilus:source_pix[1]:cores_<n>``, and its
+    ``parallel_efficiency`` is computed against the sweep's 1-core row
+    (:func:`assign_parallel_efficiency`). Every derived number is computed here;
+    Pulse computes nothing.
     """
     if references is None:
         path = root / PULSE_REFERENCE
@@ -674,13 +732,17 @@ def build_walltime(root, summary_doc, revision, references=None):
         evals = evals if isinstance(evals, int) and not isinstance(evals, bool) else None
         implied = wall / evals * 1000.0 if wall is not None and evals else None
         likelihood = r["likelihood"]
+        sweep_cores = cores_of_tag(r["configuration"].get("results_tag"))
+        sampler = f"{r['sampler']}:{r['stage']}"
+        if sweep_cores is not None:
+            sampler += f":cores_{sweep_cores}"
         item = {
             "likelihood": likelihood,
             "instrument": r["dataset"]["instrument"],
             "setup_id": r["setup_id"],
             "host_class": r["host_class"],
             "model_variant": r["model_variant"],
-            "sampler": f"{r['sampler']}:{r['stage']}",
+            "sampler": sampler,
             "stage": r["stage"],
             "seed": r["seed"],
         }
@@ -742,8 +804,12 @@ def build_walltime(root, summary_doc, revision, references=None):
             parity_status=status,
             parity_basis=basis,
             evidence_path=r["evidence_paths"][0],
+            _sweep_cores=sweep_cores,
         )
         records.append(item)
+    efficient = assign_parallel_efficiency(records)
+    swept = sum(1 for item in records if item.pop("_sweep_cores") is not None)
+    adopted = sum(1 for item in records if item["release_pin"] == ADOPTED_PIN)
     n = len(records)
     limitations = [
         "Full-fit measurements: one Nautilus stage of one SLaM chain per record, never a "
@@ -753,7 +819,11 @@ def build_walltime(root, summary_doc, revision, references=None):
         "number, on every hardware: it deliberately includes the sampler's overhead "
         "(Nautilus bookkeeping, batching), so it is the cost a fit actually pays per "
         "evaluation, an upper bound on the bare likelihood call",
-        "parallel_efficiency is null: no 1-core row of any key exists yet",
+        f"parallel_efficiency = wall_1 / (n x wall_n) among cores-sweep records (results "
+        f"tag cores_<n>, folded into sampler as <sampler>:<stage>:cores_<n>) identical in key "
+        f"apart from that suffix, relative to the group's 1-core record; null without a 1-core "
+        f"record and on every record outside a sweep: {efficient} of {n} records carry it "
+        f"({swept} cores-sweep record(s))",
         "parity_status is not_assessed unless a declared ruling of record names the run "
         "(parity_basis); the exporter computes no parity verdict",
     ]
@@ -772,6 +842,12 @@ def build_walltime(root, summary_doc, revision, references=None):
             f"{count} {reason}" for reason, count in sorted(unmatched.items())
         )
     limitations.append(match_line)
+    if adopted:
+        limitations.append(
+            f"{adopted} record(s) at release pin {ADOPTED_PIN} are adopted as day-zero "
+            'evidence by the human ruling of 2026-11-02 ("day zero may span versions where '
+            'the code changes do not affect run times"), not re-run on the day-zero tag'
+        )
     sized = Counter(item["size_match"] for item in records if item["profiling_record_id"])
     if matched:
         limitations.append(

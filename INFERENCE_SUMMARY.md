@@ -93,7 +93,10 @@ Clocks and derived numbers, all computed here (Pulse computes nothing):
   `mesh_shape` product, Delaunay `mesh_pixels` Hilbert vertices) against the profiling
   record's size bin; null when either side records no count.
 - `ratio_measured_over_predicted`: implied over predicted, null without a prediction.
-- `parallel_efficiency`: null until a 1-core row of the same key exists.
+- `parallel_efficiency`: `wall_1 / (n * wall_n)` on a cores-sweep record (results tag
+  `cores_<n>`, folded into `sampler` as `nautilus:<stage>:cores_<n>` because the key has no
+  cores field), against the 1-core record identical in key apart from that suffix; null
+  without one, and on every record outside a sweep.
 - `parity_status`: `not_assessed` unless `PARITY_RULINGS` in the exporter declares a
   ruling of record (`parity_basis` quotes it). The one ruling today is the
   2026-10-18 `jax_gpu_sparse_fp64` light_fixed `mass_total[1]` divergence.
@@ -101,7 +104,8 @@ Clocks and derived numbers, all computed here (Pulse computes nothing):
 Omitted, and counted in `limitations`: stages loaded from another config
 (`--stages-from`), light_fixed stages identical to the default run's (one
 `--lens-light both` job fits stages 1-4 once), incomplete stages and archived rows.
-`--check` covers both artefacts.
+The 2026.10.17.1 rows are adopted as day-zero evidence (human ruling 2026-11-02), and a
+limitation line says so. `--check` covers both artefacts.
 
 ## Samples and access
 
