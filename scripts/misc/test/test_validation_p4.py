@@ -54,24 +54,15 @@ def test_the_manifest_is_the_ruled_gap_set():
             8,
             None,
         ),
+        # Optimal setups only (human, 2026-11-02). The adopted Delaunay numba rows hold seed 1
+        # (default + light_fixed), so only seed 0 is generated.
         (
-            cpu + "validation_delaunay_hst_jax_cpu_sparse",
+            cpu + "validation_delaunay_hst_numba_cpu_sparse_seed_0",
             "delaunay",
-            "jax_cpu_sparse_fp64",
+            "numba_cpu_sparse_fp64",
             "hpc_ral_cpu",
-            ("default",),
-            (0, 1),
-            8,
-            None,
-        ),
-        # The adopted rows hold seed 0 of this cell, so only seed 1 is generated.
-        (
-            cpu + "validation_rectangular_hst_jax_cpu_sparse_seed_1",
-            "rectangular",
-            "jax_cpu_sparse_fp64",
-            "hpc_ral_cpu",
-            ("default",),
-            (1,),
+            ("default", "light_fixed"),
+            (0,),
             8,
             None,
         ),
@@ -177,8 +168,8 @@ def test_every_submit_passes_the_wall_gate_and_says_what_it_runs(leg):
     assert check_submits.check_text(text, leg.name) == []
     (row,) = check_submits.parse_basis_rows(text)
     assert row["cell"] == leg.cell and row["device"] == leg.device
-    # measured-wall only where this cell and device have an adopted sibling.
-    assert row["source"] == ("unmeasured" if leg.likelihood == "delaunay" else "measured-wall")
+    # measured-wall only where this cell and device have an adopted sibling (no Delaunay A100).
+    assert row["source"] == ("unmeasured" if leg.on_gpu else "measured-wall")
     if row["source"] == "unmeasured":
         assert row["probe-first"] == "yes"
     assert _sbatch(text, "partition") == ("gpu" if leg.on_gpu else "ral")
