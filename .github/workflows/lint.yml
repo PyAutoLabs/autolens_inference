@@ -205,3 +205,17 @@ jobs:
           done
           python scripts/weak/isothermal/validation/modeling.py --instrument simple \
             --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
+          # 4c-2 family leaves (group, multi_galaxy, multi_dataset): the same short-circuit,
+          # each at its Optimal CPU setup.
+          for leaf in group/rectangular group/delaunay; do
+            python scripts/$leaf/validation/euclid_slam.py \
+              --backend numba_cpu --inversion sparse --config-name local_numba_cpu_sparse_fp64
+          done
+          python scripts/group/mge/validation/euclid_slam.py \
+            --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64
+          for leaf in multi_galaxy/rectangular multi_galaxy/delaunay multi_dataset/delaunay; do
+            python scripts/$leaf/validation/hst_slam.py \
+              --backend numba_cpu --inversion sparse --config-name local_numba_cpu_sparse_fp64
+          done
+          python scripts/multi_galaxy/mge/validation/hst_slam.py \
+            --backend jax_cpu --inversion dense --config-name local_jax_cpu_dense_fp64

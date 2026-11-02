@@ -135,8 +135,10 @@ FAMILY_KEYS: set[tuple[str, str]] = set()
 EVALS_FROM: dict[tuple[str, str], tuple[str, str]] = {}
 #: ``(evaluations, reference)`` per stage for a likelihood no adopted row (nor EVALS_FROM
 #: chain) measures: a declared basis to price its wall on, instead of the cap (4c-3). Every
-#: such leg is still ``unmeasured``.
-EVALS_BASIS: dict[tuple[str, str], tuple[int, str]] = {}
+#: such leg is still ``unmeasured``. One pair serves every stage, or a ``{stage: pair}`` map
+#: declares each stage's own (4c-2); every stage of such a leg is priced, its parametric
+#: stages included, since no measured sibling exists to price them instead.
+EVALS_BASIS: dict[tuple[str, str], tuple[int, str] | dict[str, tuple[int, str]]] = {}
 MEASURED_HEADROOM = 1.5
 UNMEASURED_HEADROOM = 3.0
 ROUND_S = 6 * 3600
@@ -309,6 +311,81 @@ for _key, (_inversion, _evals, _basis) in _4C3_SEARCHES.items():
             _key[0],
         )
         for device in ("cpu", "gpu")
+    )
+
+# ---------------------------------------------------------------------------
+# 4c-2 (autolens_inference#54): group rectangular / delaunay / mge (euclid), multi_galaxy
+# rectangular / delaunay / mge (hst), multi_dataset delaunay (hst). The workspace-mirrored
+# chains of ``scripts/misc/slam/_group.py``, ``_multi_galaxy.py`` and ``_multi_dataset.py``,
+# under each likelihood's Optimal CPU and Optimal GPU setups, seeds 0-1, default + light_fixed
+# (every one of these datasets has lens light; the family's last stage is fitted per mode,
+# ``Family.light_fixed``). The leaf is named for its instrument, so its cell is its path below
+# ``scripts/`` (``group/delaunay/validation/euclid_slam``) with no LEGACY_CELLS entry.
+#
+# No adopted row measures any of them, so each prices its stages on EVALS_BASIS, per stage: a
+# PROXY count, the most any adopted imaging row took at the same-named stage of the imaging
+# SLaM chain (``source_lp[0]``, which that chain lacks, takes ``source_lp[1]``'s), pinned here
+# with its record id (``test_family_4c2`` checks it against the adopted rows). Every stage,
+# parametric ones included (an upper bound for those), is priced at the likelihood's own
+# profiling per-call time. --mem: the clean-slate requests for the imaging cells (96 GB
+# Delaunay, 64 GB rectangular / MGE), 128 GB for the two-dataset fit.
+# ---------------------------------------------------------------------------
+
+_4C2_IMAGING_EVALS = {
+    "source_lp[1]": (
+        92550,
+        "imaging/rectangular/hst/default/jax_gpu_sparse_fp64/hpc_a100/nautilus:source_lp[1]/seed_0",
+    ),
+    "source_pix[1]": (
+        53920,
+        "imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[1]/seed_1",
+    ),
+    "source_pix[2]": (
+        9460,
+        "imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[2]/seed_1",
+    ),
+    "light[1]": (
+        12000,
+        "imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:light[1]/seed_1",
+    ),
+    "mass_total[1]": (
+        38660,
+        "imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1",
+    ),
+}
+_4C2_PROXY_STAGE = {"source_lp[0]": "source_lp[1]"}
+_4C2_GROUP_PIXELIZED = ("source_lp[0]", *STAGES)
+_4C2_MGE = ("source_lp[1]", "light[1]", "mass_total[1]")
+#: (instrument, leaf, stages, source pixels, --mem GB, (Optimal CPU, Optimal GPU) setups).
+_4C2_FAMILIES = {
+    ("group", "rectangular"): ("euclid", _4C2_GROUP_PIXELIZED, 1225, 64, "numba_cpu_sparse"),
+    ("group", "delaunay"): ("euclid", _4C2_GROUP_PIXELIZED, 1250, 96, "numba_cpu_sparse"),
+    ("group", "mge"): ("euclid", _4C2_MGE, None, 64, "jax_cpu_dense"),
+    ("multi_galaxy", "rectangular"): ("hst", STAGES, 1225, 64, "numba_cpu_sparse"),
+    ("multi_galaxy", "delaunay"): ("hst", STAGES, 1250, 96, "numba_cpu_sparse"),
+    ("multi_galaxy", "mge"): ("hst", _4C2_MGE, None, 64, "jax_cpu_dense"),
+    ("multi_dataset", "delaunay"): ("hst", STAGES, 1250, 128, "numba_cpu_sparse"),
+}
+for _key, (_instrument, _stages, _pixels, _mem, _cpu) in _4C2_FAMILIES.items():
+    INSTRUMENT_OF[_key] = _instrument
+    STAGES_OF[_key] = _stages
+    FAMILY_KEYS.add(_key)
+    EVALS_BASIS[_key] = {
+        stage: (
+            _4C2_IMAGING_EVALS[_4C2_PROXY_STAGE.get(stage, stage)][0],
+            "proxy: max adopted imaging "
+            + _4C2_IMAGING_EVALS[_4C2_PROXY_STAGE.get(stage, stage)][1],
+        )
+        for stage in _stages
+    }
+    if _pixels is not None:
+        SOURCE_PIXELS[_key] = _pixels
+    CELL[_key] = f"{_key[0]}/{_key[1]}/validation/{_instrument}_slam"
+    LEAF[_key] = f"{_instrument}_slam.py"
+    CHAIN_MEM_GB[_key] = _mem
+    TARGETS += tuple(
+        Target(_key[1], f"{setup}_fp64", role, _LIGHT, False, _key[0])
+        for setup, role in ((_cpu, "Optimal CPU"), ("jax_gpu_dense", "Optimal GPU"))
     )
 
 
@@ -611,14 +688,17 @@ def stage_walls(leg: Leg, records: list[dict], refs: list[dict]) -> list[StageWa
         for stage in leg.fitted_stages(variant):
             same = [r for r in rows if r["model_variant"] == variant and r["stage"] == stage]
             counted = [r for r in same if r["likelihood_evals"]]
-            if not counted and leg.key in EVALS_BASIS:
-                evals, evals_ref = EVALS_BASIS[leg.key]
+            declared = not counted and leg.key in EVALS_BASIS
+            if declared:
+                basis = EVALS_BASIS[leg.key]
+                evals, evals_ref = basis[stage] if isinstance(basis, dict) else basis
                 counted = [{"likelihood_evals": evals, "id": evals_ref}]
             if not counted:
                 raise SystemExit(f"{leg.name}: no adopted row counts the evaluations of {stage}")
             most = max(counted, key=lambda r: (r["likelihood_evals"], r["id"]))
             derived = derived_ref = None
-            if stage != "source_lp[1]":  # no inversion: no profiling likelihood prices it
+            # No inversion: no profiling likelihood prices it, unless a declared basis does.
+            if stage != "source_lp[1]" or declared:
                 derived = call_s * most["likelihood_evals"] / parallel
                 derived_ref = call_ref
             measured = measured_ref = None

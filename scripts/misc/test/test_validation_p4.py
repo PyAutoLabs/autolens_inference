@@ -97,8 +97,10 @@ def test_light_fixed_is_run_only_under_an_optimal_setup():
 
 
 def test_no_leg_duplicates_an_adopted_row():
+    # Keyed by dataset type as well: a family's variant (multi_galaxy/rectangular) is not imaging's.
     literal = {
         (
+            r["likelihood"]["dataset_type"],
             r["likelihood"]["variant"],
             r["instrument"],
             r["setup_id"],
@@ -109,13 +111,16 @@ def test_no_leg_duplicates_an_adopted_row():
         for r in RECORDS
     }
     # The kept hpc_a100 prefix of a CPU row is read as the RAL CPU node it ran on.
-    normalised = {p4.chain_key(r) for r in RECORDS}
-    with_sampler = {(*p4.chain_key(r), r["sampler"]) for r in RECORDS}
+    normalised = {(r["likelihood"]["dataset_type"], *p4.chain_key(r)) for r in RECORDS}
+    with_sampler = {
+        (r["likelihood"]["dataset_type"], *p4.chain_key(r), r["sampler"]) for r in RECORDS
+    }
     for leg in LEGS:
         for key in leg.keys():
+            key = (leg.dataset_type, *key)
             assert key not in with_sampler, key
             if leg.results_tag is None:
-                assert key[:6] not in literal and key[:6] not in normalised, key
+                assert key[:7] not in literal and key[:7] not in normalised, key
 
 
 def test_an_adopted_seed_drops_out_of_the_manifest():
