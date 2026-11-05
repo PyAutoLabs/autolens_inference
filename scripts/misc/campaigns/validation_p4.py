@@ -534,7 +534,11 @@ class Leg:
 
 
 def adopted_records(root: Path = ROOT) -> list[dict]:
-    return json.loads((root / ADOPTED).read_text())["records"]
+    """The adopted day-zero rows only (release pin ``summary.ADOPTED_PIN``): the manifest is
+    the gap set around them, so phase 4's own rows, once ingested (4e), never shrink it or
+    re-price its submits."""
+    records = json.loads((root / ADOPTED).read_text())["records"]
+    return [r for r in records if r["release_pin"] == summary.ADOPTED_PIN]
 
 
 def host_of(record: dict) -> str:
