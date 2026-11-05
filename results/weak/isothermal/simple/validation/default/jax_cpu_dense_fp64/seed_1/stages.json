@@ -1,0 +1,114 @@
+{
+  "schema_version": 3,
+  "target": "weak/isothermal/simple/modeling_isothermal/seed1",
+  "variant": "modeling_isothermal",
+  "likelihood": {
+    "dataset_type": "weak",
+    "variant": "isothermal"
+  },
+  "model_variant": "default",
+  "transformer": null,
+  "results_tag": null,
+  "library_revisions": {
+    "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+    "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+    "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+    "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8",
+    "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6"
+  },
+  "release_pin": "2026.10.25.1",
+  "slurm_job_id": "414180_1",
+  "config_name": "hpc_ral_jax_cpu_dense_fp64",
+  "backend": "jax_cpu",
+  "inversion": "dense",
+  "precision": "fp64",
+  "instrument": "simple",
+  "dataset_class": "weak",
+  "seed": 1,
+  "sampler": "nautilus",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 236
+  },
+  "cores": 8,
+  "use_jax": true,
+  "memo": "off",
+  "n_galaxies": 1500,
+  "mass_profile": "Isothermal",
+  "stages_requested": null,
+  "stages_from": null,
+  "chain_wall_s": 12.029149532318115,
+  "chain_wall_excludes": [],
+  "chain_wall_note": "chain_wall_s is the sum of the sampler walls (wall_s) of the stages this row's process fitted; a stage loaded from another config (shared_from_config) is excluded and listed in chain_wall_excludes",
+  "test_mode": false,
+  "status": "complete",
+  "stages": [
+    {
+      "name": "modeling[1]",
+      "free_parameters": 5,
+      "n_live": 100,
+      "n_batch": 100,
+      "wall_s": 12.029149532318115,
+      "total_wall_s": 27.124296310000318,
+      "compile_s": 11.088256162000107,
+      "likelihood_evals": 2500,
+      "log_evidence": -93.00882657603722,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": -84.18667038919261,
+      "posterior": {
+        "ell_comps_0": {
+          "median": 0.030276063483556482,
+          "sigma": 0.08258242603420377,
+          "lower_1": -0.05247008012768638,
+          "upper_1": 0.11269477194072115
+        },
+        "ell_comps_1": {
+          "median": 0.049372600704974054,
+          "sigma": 0.08779674076079175,
+          "lower_1": -0.034568021087064,
+          "upper_1": 0.1410254604345195
+        },
+        "einstein_radius": {
+          "median": 24.300225475528627,
+          "sigma": 1.657989259057267,
+          "lower_1": 22.6998468912534,
+          "upper_1": 26.015825409367935
+        },
+        "centre_0": {
+          "median": 1.2503920518407123,
+          "sigma": 3.196189305204226,
+          "lower_1": -1.9288348623852067,
+          "upper_1": 4.463543748023245
+        },
+        "centre_1": {
+          "median": 0.7708920113664456,
+          "sigma": 3.3725881746063644,
+          "lower_1": -2.629147596540071,
+          "upper_1": 4.1160287526726576
+        }
+      },
+      "truth_delta_sigma": {
+        "centre_0": 0.3912133895838865,
+        "centre_1": 0.2285757914858434,
+        "ell_comps_0": -0.9788407959106766,
+        "ell_comps_1": 0.5623511792936948,
+        "einstein_radius": -0.4220621579112428
+      },
+      "inversion_applies": false,
+      "positions_info_present": false,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_weak_isothermal_simple_jax_cpu_dense/autolens/weak/simple/modeling/modeling_isothermal/hpc_ral_jax_cpu_dense_fp64/seed_1/modeling[1]/9152bfb35e5ed3ebc80507153aa821db",
+      "use_jax": true,
+      "likelihood_evaluated": {
+        "dataset_type": "weak",
+        "variant": "isothermal"
+      }
+    }
+  ]
+}
