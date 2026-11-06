@@ -615,3 +615,33 @@ judging.
 **Next.** Ingest the eight legs still running as they finish (same branch), re-export, then open
 the PR (human /prm). After the merge, dispatch the Pulse refresh so `lens-walltime` reads main.
 Parity rulings, if any, are the human's.
+
+### 2026-11-06 — more legs land; one resumed leg rerun; two legs stall and are cancelled
+
+**Landed (rows ingested):** group delaunay and rectangular numba (414151, 414153; 12.9–15.6 h) and
+multi_galaxy rectangular numba (414161; 21.7–22.6 h). The numba ratios at 8 cores are 0.18–0.49,
+consistent with the 1-core ratio of about 1.06 and a parallel efficiency of 0.55 at 8 cores.
+
+**Resumed walls are not measurements.** 414362 resumed the timed-out 414160 from its Nautilus
+checkpoints. The stage that straddled the restart recorded a `samples_info` time 3–4× too large
+(seed 0 `mass_total[1]` 108.8 ms/eval against 37.4 clean; seed 1 `light[1]` 185.5 against 44.0).
+Human ruling: rerun fresh. The old output was moved to
+`output/p4_validation/validation_multi_galaxy_mge_hst_jax_cpu_dense__resumed_414160_414362`, and
+the leg was resubmitted as **414392** (24 h). Its rows will replace 414362's.
+
+**Did not converge: cancelled (human ruling 2026-11-06).** Two numba CPU legs stopped making
+sampler progress and were cancelled through `hpc/sync cancel`. They have no rows; this is the result:
+
+| Leg | Stage | Calls at cancel | Stall | Best log L (frozen) | Reference |
+|---|---|---|---|---|---|
+| datacube/delaunay sma `numba_cpu_sparse_fp64_wtilde` seed 0 (414148_0) | the single `delaunay` search | 81,740 | bound count stuck at 20 from ~11k calls; N_eff ≈ 1, live fraction 1.0 | −103,833.4 | no other datacube validation leg |
+| … seed 1 (414148_1) | same | 80,080 | stuck at 19 bounds from ~15k calls | −103,903.4 | — |
+| interferometer/rectangular sma `numba_cpu_sparse_fp64_wtilde` seed 1 (414156_1) | `mass_total[1]` | ~99,700 | 11 bounds / 5 ellipses, N_eff frozen at 96 from ~57k calls, live fraction swinging 0.20–0.34 | −3158.37 | seed 0 finished this stage in 12,240 evals (log Z −3160.5); the A100 `jax_gpu_sparse_wtilde` legs (413974) finished in about 13 min |
+
+Hypothesis, not a verdict: the phase-6 gradient campaign flagged the interferometer rectangular
+likelihood as numerically noisy (autolens_profiling hazard D). A noisy likelihood stops Nautilus
+shrinking its bounds. Both stalled legs use the sparse W~ numba route. Filed for investigation in
+PyAutoMind.
+
+**Next.** Ingest multi_dataset numba (414158), multi_galaxy delaunay numba (414159) and the
+multi_galaxy MGE rerun (414392) as they finish, then open the PR.
