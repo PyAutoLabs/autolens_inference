@@ -638,10 +638,12 @@ sampler progress and were cancelled through `hpc/sync cancel`. They have no rows
 | … seed 1 (414148_1) | same | 80,080 | stuck at 19 bounds from ~15k calls | −103,903.4 | — |
 | interferometer/rectangular sma `numba_cpu_sparse_fp64_wtilde` seed 1 (414156_1) | `mass_total[1]` | ~99,700 | 11 bounds / 5 ellipses, N_eff frozen at 96 from ~57k calls, live fraction swinging 0.20–0.34 | −3158.37 | seed 0 finished this stage in 12,240 evals (log Z −3160.5); the A100 `jax_gpu_sparse_wtilde` legs (413974) finished in about 13 min |
 
-Hypothesis, not a verdict: the phase-6 gradient campaign flagged the interferometer rectangular
-likelihood as numerically noisy (autolens_profiling hazard D). A noisy likelihood stops Nautilus
-shrinking its bounds. Both stalled legs use the sparse W~ numba route. Filed for investigation in
-PyAutoMind.
+No mechanism yet. The phase-6 noisy-likelihood hazard (D) is not the explanation as measured: its noise is about
+1e-6 in log L, far below what moves a nested sampler. Candidates to test: plateaus in the likelihood
+(many points returning the same value, e.g. resample-replaced or solver-floored evaluations), and
+route-specific behaviour of the sparse W~ numba likelihood. The A100 JAX legs of the same
+interferometer likelihood converge. Filed for investigation in PyAutoMind
+(`draft/research/autolens_inference/numba_wtilde_validation_legs_stall_nautilus.md`).
 
 **Next.** Ingest multi_dataset numba (414158), multi_galaxy delaunay numba (414159) and the
 multi_galaxy MGE rerun (414392) as they finish, then open the PR.
