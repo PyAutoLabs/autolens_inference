@@ -483,25 +483,45 @@ seventh column. The ledger is [`wiki/project/state.md`](wiki/project/state.md).
 | `multi_galaxy/mge/hst/slam_mge_light_fixed/seed1` | `slam_mge_light_fixed` | fixed | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 1231.2 s | 132,420 | 11,848.18 | 2026.8.17.1 |
 | `multi_galaxy/mge/hst/slam_mge_light_fixed/seed1` | `slam_mge_light_fixed` | fixed | mass_total[1] | `hpc_ral_jax_cpu_dense_fp64` | 1 | 1.06 h | 131,640 | 11,845.86 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 1783.0 s | 249,950 | 7,984.56 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | source_lp[1] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 4.85 h | 245,300 | 7,984.57 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 2084.6 s | 68,240 | 11,660.07 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | source_pix[1] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 4.98 h | 69,680 | 11,661.67 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 174.1 s | 4,000 | 11,857.81 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | source_pix[2] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 732.8 s | 3,760 | 11,858.79 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 1359.3 s | 52,100 | 11,857.87 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | light[1] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 3.46 h | 47,840 | 11,860.56 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 2152.2 s | 66,960 | 11,844.66 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | `slam_rectangular` | linear | mass_total[1] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 4.90 h | 68,400 | 11,844.64 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 1884.7 s | 258,100 | 7,984.71 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | source_lp[1] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 5.64 h | 284,750 | 7,984.54 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 2183.5 s | 69,320 | 11,654.38 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | source_pix[1] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 4.81 h | 68,660 | 11,656.30 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 145.4 s | 3,540 | 11,859.32 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | source_pix[2] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 749.9 s | 3,840 | 11,853.63 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 1106.2 s | 42,000 | 11,860.67 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | light[1] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 3.84 h | 53,640 | 11,858.41 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 2053.2 s | 64,180 | 11,843.35 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | `slam_rectangular` | linear | mass_total[1] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 4.67 h | 65,860 | 11,842.98 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 1783.0 s | 249,950 | 7,984.56 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | source_lp[1] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 4.85 h | 245,300 | 7,984.57 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 2084.6 s | 68,240 | 11,660.07 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | source_pix[1] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 4.98 h | 69,680 | 11,661.67 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 174.1 s | 4,000 | 11,857.81 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | source_pix[2] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 732.8 s | 3,760 | 11,858.79 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 1359.3 s | 52,100 | 11,857.87 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | light[1] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 3.46 h | 47,840 | 11,860.56 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 0 | 1873.1 s | 65,460 | 11,841.73 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | `slam_rectangular_light_fixed` | fixed | mass_total[1] | `hpc_ral_numba_cpu_sparse_fp64` | 0 | 2.34 h | 64,640 | 11,842.64 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | source_lp[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 1884.7 s | 258,100 | 7,984.71 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | source_lp[1] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 5.64 h | 284,750 | 7,984.54 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | source_pix[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 2183.5 s | 69,320 | 11,654.38 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | source_pix[1] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 4.81 h | 68,660 | 11,656.30 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | source_pix[2] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 145.4 s | 3,540 | 11,859.32 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | source_pix[2] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 749.9 s | 3,840 | 11,853.63 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | light[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 1106.2 s | 42,000 | 11,860.67 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | light[1] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 3.84 h | 53,640 | 11,858.41 | 2026.8.17.1 |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | mass_total[1] | `hpc_a100_jax_gpu_dense_fp64` | 1 | 1867.5 s | 66,000 | 11,841.69 | 2026.8.17.1 |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | `slam_rectangular_light_fixed` | fixed | mass_total[1] | `hpc_ral_numba_cpu_sparse_fp64` | 1 | 2.41 h | 65,160 | 11,840.81 | 2026.8.17.1 |
 | `point_source_image/image_plane/simple/modeling_image_plane/seed0` | `modeling_image_plane` | linear | modeling[1] | `hpc_a100_jax_gpu_na_fp64` | 0 | 58.5 s | 5,250 | 4.29 | 2026.8.17.1 |
 | `point_source_image/image_plane/simple/modeling_image_plane/seed0` | `modeling_image_plane` | linear | modeling[1] | `hpc_ral_jax_cpu_na_fp64` | 0 | 55.5 s | 5,250 | 4.29 | 2026.8.17.1 |
 | `point_source_image/image_plane/simple/modeling_image_plane/seed1` | `modeling_image_plane` | linear | modeling[1] | `hpc_a100_jax_gpu_na_fp64` | 1 | 49.0 s | 5,000 | 4.31 | 2026.8.17.1 |
@@ -1175,19 +1195,83 @@ _Only one config has run for this target and seed — a parity view needs at lea
 
 **Parity — `multi_galaxy/rectangular/hst/slam_rectangular/seed0` (seed 0), `mass_total[1]`**
 
-_Only one config has run for this target and seed — a parity view needs at least two legs._
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_ral_numba_cpu_sparse_fp64` |
+|---|---|---|
+| `shear_magnitude` | 0.069 ± 0.0011 | -0.06σ |
+| `galaxies.lens_0.mass.centre_0` | 0.2994 ± 0.003 | -0.28σ |
+| `galaxies.lens_0.mass.centre_1` | 0.2837 ± 0.0033 | +0.28σ |
+| `galaxies.lens_0.mass.einstein_radius` | 0.9885 ± 0.0087 | -0.07σ |
+| `galaxies.lens_0.mass.ell_comps_0` | 0.08078 ± 0.0026 | +0.43σ |
+| `galaxies.lens_0.mass.ell_comps_1` | 0.0008899 ± 0.0026 | -0.33σ |
+| `galaxies.lens_0.mass.slope` | 1.984 ± 0.012 | +0.35σ |
+| `galaxies.lens_1.mass.centre_0` | -0.308 ± 0.0037 | +0.53σ |
+| `galaxies.lens_1.mass.centre_1` | -0.2229 ± 0.0036 | -0.10σ |
+| `galaxies.lens_1.mass.einstein_radius` | 0.7882 ± 0.0094 | +0.26σ |
+| `galaxies.lens_1.mass.ell_comps_0` | -0.09527 ± 0.0029 | +0.21σ |
+| `galaxies.lens_1.mass.ell_comps_1` | -0.05728 ± 0.0024 | -0.09σ |
+| `galaxies.lens_1.mass.slope` | 1.982 ± 0.01 | -0.15σ |
+| `gamma_1` | 0.04843 ± 0.001 | -0.20σ |
+| `gamma_2` | 0.04906 ± 0.0011 | +0.16σ |
 
 **Parity — `multi_galaxy/rectangular/hst/slam_rectangular/seed1` (seed 1), `mass_total[1]`**
 
-_Only one config has run for this target and seed — a parity view needs at least two legs._
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_ral_numba_cpu_sparse_fp64` |
+|---|---|---|
+| `shear_magnitude` | 0.06901 ± 0.001 | -0.25σ |
+| `galaxies.lens_0.mass.centre_0` | 0.2995 ± 0.0027 | -0.07σ |
+| `galaxies.lens_0.mass.centre_1` | 0.2849 ± 0.0031 | +0.16σ |
+| `galaxies.lens_0.mass.einstein_radius` | 0.9861 ± 0.009 | -0.23σ |
+| `galaxies.lens_0.mass.ell_comps_0` | 0.08174 ± 0.0024 | +0.02σ |
+| `galaxies.lens_0.mass.ell_comps_1` | 0.0005105 ± 0.0025 | -0.15σ |
+| `galaxies.lens_0.mass.slope` | 1.99 ± 0.011 | -0.24σ |
+| `galaxies.lens_1.mass.centre_0` | -0.3061 ± 0.0037 | +0.17σ |
+| `galaxies.lens_1.mass.centre_1` | -0.2223 ± 0.0033 | -0.13σ |
+| `galaxies.lens_1.mass.einstein_radius` | 0.7933 ± 0.0085 | -0.21σ |
+| `galaxies.lens_1.mass.ell_comps_0` | -0.09397 ± 0.003 | +0.08σ |
+| `galaxies.lens_1.mass.ell_comps_1` | -0.0569 ± 0.0022 | -0.05σ |
+| `galaxies.lens_1.mass.slope` | 1.98 ± 0.01 | -0.30σ |
+| `gamma_1` | 0.04842 ± 0.00097 | -0.34σ |
+| `gamma_2` | 0.04914 ± 0.00094 | -0.04σ |
 
 **Parity — `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` (seed 0), `mass_total[1]`**
 
-_Only one config has run for this target and seed — a parity view needs at least two legs._
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_ral_numba_cpu_sparse_fp64` |
+|---|---|---|
+| `shear_magnitude` | 0.06953 ± 0.00091 | -0.29σ |
+| `galaxies.lens_0.mass.centre_0` | 0.3003 ± 0.0025 | -0.57σ |
+| `galaxies.lens_0.mass.centre_1` | 0.2835 ± 0.0027 | +0.30σ |
+| `galaxies.lens_0.mass.einstein_radius` | 0.9916 ± 0.0075 | -0.11σ |
+| `galaxies.lens_0.mass.ell_comps_0` | 0.08111 ± 0.0023 | +0.33σ |
+| `galaxies.lens_0.mass.ell_comps_1` | 0.00131 ± 0.0025 | -0.41σ |
+| `galaxies.lens_0.mass.slope` | 1.995 ± 0.01 | -0.03σ |
+| `galaxies.lens_1.mass.centre_0` | -0.3081 ± 0.0036 | +0.53σ |
+| `galaxies.lens_1.mass.centre_1` | -0.222 ± 0.0034 | -0.26σ |
+| `galaxies.lens_1.mass.einstein_radius` | 0.7961 ± 0.0075 | -0.12σ |
+| `galaxies.lens_1.mass.ell_comps_0` | -0.09544 ± 0.0028 | +0.18σ |
+| `galaxies.lens_1.mass.ell_comps_1` | -0.05679 ± 0.0023 | -0.28σ |
+| `galaxies.lens_1.mass.slope` | 1.987 ± 0.0091 | -0.22σ |
+| `gamma_1` | 0.04921 ± 0.00099 | -0.53σ |
+| `gamma_2` | 0.04907 ± 0.00086 | +0.21σ |
 
 **Parity — `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` (seed 1), `mass_total[1]`**
 
-_Only one config has run for this target and seed — a parity view needs at least two legs._
+| Parameter | `hpc_a100_jax_gpu_dense_fp64` (ref) | `hpc_ral_numba_cpu_sparse_fp64` |
+|---|---|---|
+| `shear_magnitude` | 0.06916 ± 0.00087 | -0.14σ |
+| `galaxies.lens_0.mass.centre_0` | 0.2997 ± 0.0023 | -0.20σ |
+| `galaxies.lens_0.mass.centre_1` | 0.2851 ± 0.0025 | +0.01σ |
+| `galaxies.lens_0.mass.einstein_radius` | 0.9883 ± 0.0077 | -0.13σ |
+| `galaxies.lens_0.mass.ell_comps_0` | 0.08135 ± 0.0024 | +0.18σ |
+| `galaxies.lens_0.mass.ell_comps_1` | 0.0004321 ± 0.0023 | -0.06σ |
+| `galaxies.lens_0.mass.slope` | 1.996 ± 0.0097 | -0.29σ |
+| `galaxies.lens_1.mass.centre_0` | -0.3062 ± 0.0034 | +0.13σ |
+| `galaxies.lens_1.mass.centre_1` | -0.2223 ± 0.0032 | -0.09σ |
+| `galaxies.lens_1.mass.einstein_radius` | 0.797 ± 0.0073 | -0.29σ |
+| `galaxies.lens_1.mass.ell_comps_0` | -0.09433 ± 0.0028 | +0.03σ |
+| `galaxies.lens_1.mass.ell_comps_1` | -0.05673 ± 0.0021 | -0.19σ |
+| `galaxies.lens_1.mass.slope` | 1.983 ± 0.0089 | -0.23σ |
+| `gamma_1` | 0.04877 ± 0.0009 | -0.33σ |
+| `gamma_2` | 0.04902 ± 0.00084 | +0.12σ |
 
 **Chain walls (fitted stages only)**
 
@@ -1281,9 +1365,13 @@ _Only one config has run for this target and seed — a parity view needs at lea
 | `multi_galaxy/mge/hst/slam_mge_light_fixed/seed1` | 1 | `hpc_a100_jax_gpu_dense_fp64` | 1.07 h | all stages fitted |
 | `multi_galaxy/mge/hst/slam_mge_light_fixed/seed1` | 1 | `hpc_ral_jax_cpu_dense_fp64` | 9.18 h | all stages fitted |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | 0 | `hpc_a100_jax_gpu_dense_fp64` | 2.10 h | all stages fitted |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed0` | 0 | `hpc_ral_numba_cpu_sparse_fp64` | 18.39 h | all stages fitted |
 | `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | 1 | `hpc_a100_jax_gpu_dense_fp64` | 2.05 h | all stages fitted |
+| `multi_galaxy/rectangular/hst/slam_rectangular/seed1` | 1 | `hpc_ral_numba_cpu_sparse_fp64` | 19.17 h | all stages fitted |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | 0 | `hpc_a100_jax_gpu_dense_fp64` | 2.02 h | all stages fitted |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed0` | 0 | `hpc_ral_numba_cpu_sparse_fp64` | 15.83 h | all stages fitted |
 | `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | 1 | `hpc_a100_jax_gpu_dense_fp64` | 2.00 h | all stages fitted |
+| `multi_galaxy/rectangular/hst/slam_rectangular_light_fixed/seed1` | 1 | `hpc_ral_numba_cpu_sparse_fp64` | 16.92 h | all stages fitted |
 | `point_source_image/image_plane/simple/modeling_image_plane/seed0` | 0 | `hpc_a100_jax_gpu_na_fp64` | 58.5 s | all stages fitted |
 | `point_source_image/image_plane/simple/modeling_image_plane/seed0` | 0 | `hpc_ral_jax_cpu_na_fp64` | 55.5 s | all stages fitted |
 | `point_source_image/image_plane/simple/modeling_image_plane/seed1` | 1 | `hpc_a100_jax_gpu_na_fp64` | 49.0 s | all stages fitted |
