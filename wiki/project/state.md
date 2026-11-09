@@ -647,3 +647,25 @@ interferometer likelihood converge. Filed for investigation in PyAutoMind
 
 **Next.** Ingest multi_dataset numba (414158), multi_galaxy delaunay numba (414159) and the
 multi_galaxy MGE rerun (414392) as they finish, then open the PR.
+
+### 2026-11-09 — infrastructure failures; the PR ships without three legs
+
+**11-06, ~14:18–14:38: a RAL filesystem I/O fault and a NODE_FAIL** hit the running legs.
+- multi_dataset/delaunay numba (414158, both seeds) died after 25.5 h in `light[1]` with
+  `OSError: [Errno 5]` reading its Nautilus checkpoint.
+- The fresh multi_galaxy/mge JAX CPU rerun (414392) was **automatically requeued by SLURM** and
+  silently resumed from its checkpoints. Seed 0 then failed on a stale HDF5 lock. Seed 1 completed,
+  but its `light[1]` wall is a resumed one (invalid; see the 11-06 entry).
+- multi_galaxy/delaunay numba (414159, both seeds) hit its 24 h limit in the final `mass_total[1]`
+  stage, nearly converged (live fraction 0.04 at 102,880 calls).
+
+**Human ruling 2026-11-09: open the 4e PR now with the clean rows; rerun the three legs fresh as a
+follow-up ingest.** The multi_galaxy/mge JAX CPU rows (414362: resumed walls) are removed from this
+branch. The reruns were submitted with `--no-requeue` (a requeue resumes and corrupts the wall) and
+longer limits: **414639** multi_dataset (3-06:00:00), **414640** multi_galaxy delaunay (2-00:00:00),
+**414641** multi_galaxy mge (1-00:00:00). The old outputs were moved aside with
+`__eio_414158`, `__timeout_414159` and `__requeued_414392` suffixes.
+
+**Not measured in this PR:** multi_dataset/delaunay numba CPU, multi_galaxy/delaunay numba CPU and
+multi_galaxy/mge JAX CPU (reruns pending); datacube/delaunay numba CPU and interferometer/rectangular
+numba seed 1 (stalled, cancelled; see the 11-06 entry).
