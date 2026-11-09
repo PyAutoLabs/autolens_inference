@@ -10,10 +10,28 @@ def test_real_migration_preserves_records_and_archive():
     assert [
         (r["id"], r["parent_run_id"], r["archived"], r["evidence_paths"]) for r in new["records"]
     ] == [(r["id"], r["parent_run_id"], r["archived"], r["evidence_paths"]) for r in old["records"]]
+    # Every committed likelihood: the 2026.10.17.1 imaging rows, the point-source searches
+    # and the phase-4 validation rows of each family (likelihood-lifecycle 4e).
     assert {r["setup_id"] for r in new["records"] if r["setup_id"]} == {
-        "imaging/rectangular/hst",
+        "cluster/image_plane/simple",
+        "cluster/source_plane/simple",
+        "group/delaunay/euclid",
+        "group/mge/euclid",
+        "group/rectangular/euclid",
         "imaging/delaunay/hst",
+        "imaging/delaunay_nn/hst",
+        "imaging/mge/hst",
+        "imaging/rectangular/hst",
+        "interferometer/delaunay/sma",
+        "interferometer/mge/sma",
+        "interferometer/rectangular/sma",
+        "multi_dataset/delaunay/hst",
+        "multi_galaxy/delaunay/hst",
+        "multi_galaxy/mge/hst",
+        "multi_galaxy/rectangular/hst",
         "point_source/simple/simple",
+        "point_source_image/image_plane/simple",
+        "weak/isothermal/simple",
     }
     # The committed prepared/ manifests either resolve to a known setup or are
     # listed as excluded; none is silently dropped.

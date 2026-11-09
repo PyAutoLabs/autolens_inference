@@ -300,6 +300,49 @@ def test_the_adopted_pin_is_recorded_in_the_limitations(tmp_path):
     assert "2026-11-02" in line and "day zero may span versions" in line
 
 
+def test_a_patched_run_is_marked_per_record_and_in_the_limitations(tmp_path):
+    """PATCHED_RUNS keys the slurm array job: every task of it carries the note."""
+    (job,) = summary.PATCHED_RUNS
+    for seed in (0, 1):
+        _put_validation(
+            tmp_path,
+            _row(
+                "hpc_ral_numba_cpu_sparse_fp64",
+                seed=seed,
+                stages=[_stage("mass_total[1]", 50.0, 500)],
+                job=f"{job}_{seed}",
+            ),
+        )
+    _put_validation(
+        tmp_path, _row("hpc_a100_jax_gpu_dense_fp64", stages=[_stage("mass_total[1]", 5.0, 500)])
+    )
+    doc = _walltime(tmp_path)
+    patches = {r["slurm_job_id"]: r["library_patch"] for r in doc["records"]}
+    assert patches == {
+        f"{job}_0": summary.PATCHED_RUNS[job],
+        f"{job}_1": summary.PATCHED_RUNS[job],
+        "1_0": None,
+    }
+    (line,) = [x for x in doc["limitations"] if "library_patch" in x]
+    assert line.startswith(f"2 record(s) of slurm job {job} ran on release pin")
+    assert "PyAutoArray#677" in line
+
+
+def test_no_patch_line_without_a_patched_run(tmp_path):
+    _put_validation(
+        tmp_path, _row("hpc_a100_jax_gpu_dense_fp64", stages=[_stage("mass_total[1]", 50.0, 500)])
+    )
+    doc = _walltime(tmp_path)
+    assert [r["library_patch"] for r in doc["records"]] == [None]
+    assert not any("library_patch" in x for x in doc["limitations"])
+
+
+def test_array_job_of_strips_the_task_index():
+    assert summary.array_job_of("414189_1") == "414189"
+    assert summary.array_job_of("413911") == "413911"
+    assert summary.array_job_of(None) is None
+
+
 def _pulse_walltime():
     sys.path.insert(0, str(PULSE))
     try:

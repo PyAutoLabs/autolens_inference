@@ -1,0 +1,122 @@
+{
+  "schema_version": 3,
+  "target": "point_source_source/source_plane/simple/modeling_source_plane/seed1",
+  "variant": "modeling_source_plane",
+  "likelihood": {
+    "dataset_type": "point_source_source",
+    "variant": "source_plane"
+  },
+  "model_variant": "default",
+  "transformer": null,
+  "results_tag": null,
+  "library_revisions": {
+    "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+    "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+    "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+    "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8",
+    "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6"
+  },
+  "release_pin": "2026.10.25.1",
+  "slurm_job_id": "414163_1",
+  "config_name": "hpc_ral_jax_cpu_na_fp64",
+  "backend": "jax_cpu",
+  "inversion": "na",
+  "precision": "fp64",
+  "instrument": "simple",
+  "dataset_class": "point_source",
+  "seed": 1,
+  "sampler": "nautilus",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 236
+  },
+  "cores": 8,
+  "use_jax": true,
+  "memo": "off",
+  "fit_positions_cls": "FitPositionsSourceSolved",
+  "point_solver": {
+    "grid_shape_native": [
+      100,
+      100
+    ],
+    "grid_pixel_scales": 0.2,
+    "pixel_scale_precision": 0.001,
+    "magnification_threshold": 0.1
+  },
+  "stages_requested": null,
+  "stages_from": null,
+  "chain_wall_s": 42.82549786567688,
+  "chain_wall_excludes": [],
+  "chain_wall_note": "chain_wall_s is the sum of the sampler walls (wall_s) of the stages this row's process fitted; a stage loaded from another config (shared_from_config) is excluded and listed in chain_wall_excludes",
+  "test_mode": false,
+  "status": "complete",
+  "stages": [
+    {
+      "name": "modeling[1]",
+      "free_parameters": 5,
+      "n_live": 100,
+      "n_batch": 50,
+      "wall_s": 42.82549786567688,
+      "total_wall_s": 56.32418026600044,
+      "compile_s": 9.625629917999504,
+      "likelihood_evals": 4850,
+      "log_evidence": -7.158535322507012,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": 16.471893781327367,
+      "posterior": {
+        "centre_0": {
+          "median": -0.0173363799557845,
+          "sigma": 0.029935667787018682,
+          "lower_1": -0.04856968269008306,
+          "upper_1": 0.011301652883954303
+        },
+        "centre_1": {
+          "median": -0.018979064007821046,
+          "sigma": 0.0297238867312384,
+          "lower_1": -0.04927505984976779,
+          "upper_1": 0.010172713612709014
+        },
+        "ell_comps_0": {
+          "median": 0.06675156889337626,
+          "sigma": 0.019890513115889834,
+          "lower_1": 0.046381894403824765,
+          "upper_1": 0.08616292063560443
+        },
+        "ell_comps_1": {
+          "median": 2.461823886755336e-05,
+          "sigma": 0.00021290384569678795,
+          "lower_1": -0.00018779902916613825,
+          "upper_1": 0.00023800866222743763
+        },
+        "einstein_radius": {
+          "median": 1.6057645104275797,
+          "sigma": 0.01211810513453393,
+          "lower_1": 1.5948691041522585,
+          "upper_1": 1.6191053144213263
+        }
+      },
+      "truth_delta_sigma": {
+        "centre_0": -0.5791212034796249,
+        "centre_1": -0.6385121898568853,
+        "ell_comps_0": 0.7098856557263916,
+        "ell_comps_1": 0.11563078528234189,
+        "einstein_radius": 0.47569404321737185
+      },
+      "inversion_applies": false,
+      "positions_info_present": false,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_point_source_source_source_plane_simple_jax_cpu_na/autolens/point_source/simple/modeling/modeling_source_plane/hpc_ral_jax_cpu_na_fp64/seed_1/modeling[1]/08bb8d044c7b8ef96f88b433289c1945",
+      "use_jax": true,
+      "likelihood_evaluated": {
+        "dataset_type": "point_source_source",
+        "variant": "source_plane"
+      }
+    }
+  ]
+}

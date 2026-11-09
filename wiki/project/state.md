@@ -30,6 +30,16 @@ interferometer and point-source data.
 
 ## Where we are
 
+**2026-11-05: phase 4 of the likelihood-lifecycle epic is mostly in (4e ingest,
+autolens_inference#59).** The rows of every completed phase-4 leg are committed: GPU 413924 and
+413966–413982, the cores sweep 413911/413913/414141–414144, and the CPU legs 414145, 414147,
+414149, 414152, 414154–414157, 414162, 414163, 414180 and 414189. That is 91 stages.json files.
+`dashboard/walltime_validation.json` now holds 257 records: the 56 adopted 2026.10.17.1 records
+plus 201 on 2026.10.25.1. Still running: eight array jobs (414148, 414151, 414153, 414156_1,
+414158, 414159, 414161, 414362). The backend-parity layout for human rulings is
+[p4_backend_parity.md](p4_backend_parity.md). The findings are in the 2026-11-05 journal entry.
+The entries below this one are earlier history.
+
 **2026-10-17: all six 2026-09-24 re-runs completed and the 12 post-speedup SLaM HST rows are live.**
 RAL jobs 350674, 350675, 350678 and 350679 (A100, `jax_gpu` dense and sparse, both variants)
 and 350682 and 350684 (`ral`, `numba_cpu` sparse, both variants) all ended `COMPLETED 0:0`
@@ -500,3 +510,162 @@ Max abs Δσ is the largest |MAP − truth| over the five parameters, in units o
 **Limits.** The share is a timing estimate from a fixed vector (prior medians) and a fixed (48, 5) batch, after 10 warm-ups, as the median of 200 timed calls. It is not an instrumented decomposition of every step. The CPU legs shared their node with other users' jobs (8 of 236 CPUs, load 8–13). The A100 legs were exclusive. One simulated lens, five seeds. `MultiStartAdam` returns a MAP point, not a posterior, so correctness is MAP-vs-truth in reference-σ units. BlackJAX NUTS/SMC were not run: they do not honour `gradient_mode`, and the point-source setup names only Nautilus. The Nautilus reference rows are the 2026-09-28 rows (euclid-ral-gpu-2 CPU, source checkouts), not re-run on this stack. A same-config re-run would overwrite them.
 
 **Next.** A human judges whether this answers the campaign's gradient-sampler admission question, or whether a NUTS/SMC leaf is still wanted. If NUTS/SMC is wanted, the per-step overhead found here makes "the likelihood's share of a fit" the first thing to measure.
+
+### 2026-11-05 — likelihood-lifecycle phase 4: wall-time validation rows ingested (4e, partial)
+
+**What ran.** These are the phase-4 legs on RAL, on pin 2026.10.25.1 (private checkout
+`/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1`). Each was confirmed `COMPLETED` by
+`sacct -X` on 2026-11-05 before its rows were committed.
+
+- **A100:** 413924 (imaging/delaunay) and 413966–413982 (every Optimal GPU setup of the 4c
+  families). Seeds 0 and 1 each, `--lens-light both` where the family has a light_fixed variant.
+- **Cores sweep:** imaging/rectangular/hst, `numba_cpu_sparse_fp64`, `source_pix[1]` only, seed 0.
+  The jobs were 414141 (1 core), 413913 (2), 414142 (4), 413911 (8), 414143 (16) and 414144 (32).
+- **RAL CPU:** 414145 and 414147 (cluster), 414149_0 (imaging/delaunay numba, seed 0), 414152
+  (group/mge), 414154 (interferometer/delaunay numba), 414155 (interferometer/mge), 414156_0
+  (interferometer/rectangular numba, seed 0), 414157 (imaging/mge), 414162 and 414163 (point
+  source), and 414180 (weak).
+- **414150 failed** (imaging/delaunay_nn numba, both seeds, after 43 s) on a GNU OpenMP fork: a
+  numba `prange` kernel (Sibson interpolation) ran inside Nautilus's forked multiprocessing
+  workers. PyAutoArray#677 makes Sibson serial inside workers. The leg was rerun as **414189**
+  on the pin plus that fix: library commit d24c2477 (the tag with 56db9c0f cherry-picked),
+  library base `/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1_pr677`. Its rows' `release_pin`
+  still reads 2026.10.25.1, so the exporter marks them through `PATCHED_RUNS`: a limitations
+  line plus a per-record `library_patch`. 414150 left no rows.
+- **414160 timed out** (multi_galaxy/mge, `jax_cpu_dense_fp64`, 6 h). It was resubmitted as
+  414362 with 24 h, resuming from the saved samples, and is still running.
+- **Still running, not ingested:** 414148 (datacube/delaunay numba), 414151 and 414153
+  (group delaunay and rectangular numba), 414156_1 (interferometer/rectangular numba seed 1),
+  414158 (multi_dataset numba), 414159 and 414161 (multi_galaxy delaunay and rectangular numba)
+  and 414362.
+
+The rows are under `results/**/validation/**`. The two
+`imaging/delaunay/hst/validation/{default,light_fixed}/numba_cpu_sparse_fp64/seed_0` rows
+replace the failed 412624_0 rows (a missing shared `source_lp[1]`) with complete 414149_0 rows.
+
+**What we learned.** These are measurements only. The profiling conductor and the human do the
+judging.
+
+- **Measured over predicted per evaluation (`ratio_measured_over_predicted`).** The measured
+  cost is `wall_s / likelihood_evals`, sampler overhead included. The predicted cost is the
+  matched Pulse per-call time.
+  - *Pixelized imaging-type likelihoods on the A100* (`jax_gpu_dense_fp64`, the `source_pix[1]`
+    and `mass_total[1]` stages): imaging/delaunay 1.18–1.23, imaging/delaunay_nn 1.20–1.39,
+    group/delaunay 1.23–1.26, group/rectangular 1.30–1.32, multi_galaxy/delaunay 1.26–1.33 and
+    multi_galaxy/rectangular 1.40–1.47. `light[1]` runs 0.79–1.21. The short `source_pix[2]`
+    stage scatters from 0.54 to 1.99.
+  - *Interferometer on the A100* (`jax_gpu_sparse_fp64_wtilde`): rectangular 2.56–2.84 and
+    delaunay 1.70–2.45.
+  - *multi_dataset/delaunay on the A100* is the outlier at 0.35–0.45 (0.41 at `source_pix[1]`).
+    The cause is the prediction, not the run. The matched profiling record
+    (lifecycle/b5dea27fcaf8b14ec9bb, 2026-10-30, `vmap.per_call`) timed a vmap batch of only
+    3 ("fixed (3, OOM fallback 1)"). Its per-call time, 0.529 s / 3 = 176 ms, is slower than that
+    record's own single-jit median of 110 ms. imaging/delaunay and multi_galaxy/delaunay were
+    profiled at batch 16 (34 ms and 30.5 ms). The run's measured 73 ms per evaluation is about
+    twice imaging/delaunay's (about 40 ms), which fits two datasets. `size_match` is true (1250
+    against 1250), so the source pixel count is not the cause.
+  - *numba CPU at 8 cores* is 0.22–0.49. The exporter divides by a one-thread per-call time and
+    does not divide by the 8 Nautilus workers. Multiplied by 8, the ratios are about 1.8–3.9.
+    The 8-core cores-sweep record (0.24) matches the 1-core ratio (1.06) divided by 8 × its
+    parallel efficiency (0.55).
+  - *jax CPU MGE* is 1.36–2.15 (imaging), 0.92–1.43 (group) and 1.70–1.72 (interferometer
+    NUFFT).
+- **Sampler-overhead floor.** Cheap likelihoods all cost about 5–10 ms per evaluation in a fit,
+  whatever their per-call time:
+  - weak: 4.8–5.4 ms against a predicted 0.01–0.04 ms;
+  - point source: 7–11 ms against 0.1–1.0 ms;
+  - cluster source-plane: 6–7 ms;
+  - MGE on the A100: 7.6–11.8 ms against 0.4–0.8 ms;
+  - the parametric `source_lp` stages on the A100: 7–11 ms.
+
+  cluster/image_plane sits a little higher, at 15–29 ms. Their ratios (10–600) measure Nautilus
+  bookkeeping, not the likelihood.
+- **Cores sweep** (imaging/rectangular/hst, numba sparse, `source_pix[1]`, seed 0):
+
+  | cores | 1 | 2 | 4 | 8 | 16 | 32 |
+  |---|---:|---:|---:|---:|---:|---:|
+  | wall (s) | 20,245 | 14,886 | 8,193 | 4,635 | 3,482 | 2,268 |
+  | parallel efficiency | 1.00 | 0.68 | 0.62 | 0.55 | 0.36 | 0.28 |
+
+  At 1 core the implied cost is 601 ms per evaluation, against 566 ms profiled (ratio 1.06).
+  Every sweep row ended `stopped_early`, as the sweep design intends.
+- **Estimate miss on multi_galaxy/mge, jax CPU (414160).** The generator
+  (`validation_p4.py`) estimated 4,835 s for the whole chain and set `--time` to 6 h. Its
+  `source_lp[1]` share was 92,550 evaluations, a proxy count from the imaging/rectangular A100
+  row, at 26.6 ms each, 2,460 s in total. The run's `source_lp[1]` alone took 15,453 s (seed 0)
+  and 16,633 s (seed 1), 4.3–4.6 h on the sampler clock. It used 250,550 and 271,650 evaluations
+  at about 61–62 ms each, so the count was 2.7–2.9× the proxy and the per-evaluation cost 2.3×
+  the price. Seed 0 reached `mass_total[1]` and seed 1 reached `light[1]` before the 6 h
+  timeout.
+- **Backend parity** is laid out in [p4_backend_parity.md](p4_backend_parity.md), with no
+  verdicts. Its headline gaps:
+  - imaging/delaunay, seed 1: the adopted numba row (2026.10.17.1) is about 88 log L above the
+    A100 row (2026.10.25.1). At seed 0, with both on 2026.10.25.1, the A100 row is about 43
+    above numba.
+  - imaging/delaunay_nn: numba (pin + #677) is 49–79 above the A100.
+  - multi_dataset: its two seeds differ by about 175 log L.
+  - Every MGE, point, cluster and weak pair agrees to 0.7 log L or better.
+
+**Tooling.**
+- `export_inference_summary.py` gains `PATCHED_RUNS` and `library_patch`.
+- `validation_p4.adopted_records` now reads only the `ADOPTED_PIN` rows. Without that, the
+  ingested phase-4 rows changed its gap set and failed its pricing.
+- The real-catalogue test now lists every committed likelihood.
+
+**Next.** Ingest the eight legs still running as they finish (same branch), re-export, then open
+the PR (human /prm). After the merge, dispatch the Pulse refresh so `lens-walltime` reads main.
+Parity rulings, if any, are the human's.
+
+### 2026-11-06 — more legs land; one resumed leg rerun; two legs stall and are cancelled
+
+**Landed (rows ingested):** group delaunay and rectangular numba (414151, 414153; 12.9–15.6 h) and
+multi_galaxy rectangular numba (414161; 21.7–22.6 h). The numba ratios at 8 cores are 0.18–0.49,
+consistent with the 1-core ratio of about 1.06 and a parallel efficiency of 0.55 at 8 cores.
+
+**Resumed walls are not measurements.** 414362 resumed the timed-out 414160 from its Nautilus
+checkpoints. The stage that straddled the restart recorded a `samples_info` time 3–4× too large
+(seed 0 `mass_total[1]` 108.8 ms/eval against 37.4 clean; seed 1 `light[1]` 185.5 against 44.0).
+Human ruling: rerun fresh. The old output was moved to
+`output/p4_validation/validation_multi_galaxy_mge_hst_jax_cpu_dense__resumed_414160_414362`, and
+the leg was resubmitted as **414392** (24 h). Its rows will replace 414362's.
+
+**Did not converge: cancelled (human ruling 2026-11-06).** Two numba CPU legs stopped making
+sampler progress and were cancelled through `hpc/sync cancel`. They have no rows; this is the result:
+
+| Leg | Stage | Calls at cancel | Stall | Best log L (frozen) | Reference |
+|---|---|---|---|---|---|
+| datacube/delaunay sma `numba_cpu_sparse_fp64_wtilde` seed 0 (414148_0) | the single `delaunay` search | 81,740 | bound count stuck at 20 from ~11k calls; N_eff ≈ 1, live fraction 1.0 | −103,833.4 | no other datacube validation leg |
+| … seed 1 (414148_1) | same | 80,080 | stuck at 19 bounds from ~15k calls | −103,903.4 | — |
+| interferometer/rectangular sma `numba_cpu_sparse_fp64_wtilde` seed 1 (414156_1) | `mass_total[1]` | ~99,700 | 11 bounds / 5 ellipses, N_eff frozen at 96 from ~57k calls, live fraction swinging 0.20–0.34 | −3158.37 | seed 0 finished this stage in 12,240 evals (log Z −3160.5); the A100 `jax_gpu_sparse_wtilde` legs (413974) finished in about 13 min |
+
+No mechanism yet. The phase-6 noisy-likelihood hazard (D) is not the explanation as measured: its noise is about
+1e-6 in log L, far below what moves a nested sampler. Candidates to test: plateaus in the likelihood
+(many points returning the same value, e.g. resample-replaced or solver-floored evaluations), and
+route-specific behaviour of the sparse W~ numba likelihood. The A100 JAX legs of the same
+interferometer likelihood converge. Filed for investigation in PyAutoMind
+(`draft/research/autolens_inference/numba_wtilde_validation_legs_stall_nautilus.md`).
+
+**Next.** Ingest multi_dataset numba (414158), multi_galaxy delaunay numba (414159) and the
+multi_galaxy MGE rerun (414392) as they finish, then open the PR.
+
+### 2026-11-09 — infrastructure failures; the PR ships without three legs
+
+**11-06, ~14:18–14:38: a RAL filesystem I/O fault and a NODE_FAIL** hit the running legs.
+- multi_dataset/delaunay numba (414158, both seeds) died after 25.5 h in `light[1]` with
+  `OSError: [Errno 5]` reading its Nautilus checkpoint.
+- The fresh multi_galaxy/mge JAX CPU rerun (414392) was **automatically requeued by SLURM** and
+  silently resumed from its checkpoints. Seed 0 then failed on a stale HDF5 lock. Seed 1 completed,
+  but its `light[1]` wall is a resumed one (invalid; see the 11-06 entry).
+- multi_galaxy/delaunay numba (414159, both seeds) hit its 24 h limit in the final `mass_total[1]`
+  stage, nearly converged (live fraction 0.04 at 102,880 calls).
+
+**Human ruling 2026-11-09: open the 4e PR now with the clean rows; rerun the three legs fresh as a
+follow-up ingest.** The multi_galaxy/mge JAX CPU rows (414362: resumed walls) are removed from this
+branch. The reruns were submitted with `--no-requeue` (a requeue resumes and corrupts the wall) and
+longer limits: **414639** multi_dataset (3-06:00:00), **414640** multi_galaxy delaunay (2-00:00:00),
+**414641** multi_galaxy mge (1-00:00:00). The old outputs were moved aside with
+`__eio_414158`, `__timeout_414159` and `__requeued_414392` suffixes.
+
+**Not measured in this PR:** multi_dataset/delaunay numba CPU, multi_galaxy/delaunay numba CPU and
+multi_galaxy/mge JAX CPU (reruns pending); datacube/delaunay numba CPU and interferometer/rectangular
+numba seed 1 (stalled, cancelled; see the 11-06 entry).

@@ -701,11 +701,28 @@ CORES_TAG = re.compile(r"^cores_([1-9][0-9]*)$")
 #: re-running them on the day-zero tag (human ruling, 2026-11-02).
 ADOPTED_PIN = "2026.10.17.1"
 
+#: Runs whose library was the release pin plus a declared patch, keyed by slurm array
+#: job id. Their ``release_pin`` field still names the pin, so the patch is declared
+#: here: each record of the job carries the note as ``library_patch`` (null on every
+#: other record) and the limitations count them per job.
+PATCHED_RUNS = {
+    "414189": (
+        "release pin 2026.10.25.1 plus PyAutoArray#677 (library commit d24c2477 = the tag "
+        "with 56db9c0f cherry-picked: serial Sibson interpolation inside Nautilus "
+        "workers); the rerun of 414150, which failed on a GNU OpenMP fork"
+    ),
+}
+
 
 def cores_of_tag(results_tag):
     """The core count a ``cores_<n>`` results tag names, else None."""
     match = CORES_TAG.match(results_tag) if isinstance(results_tag, str) else None
     return int(match.group(1)) if match else None
+
+
+def array_job_of(slurm_job_id):
+    """The array job id of a ``<job>_<task>`` slurm id (the id itself when untasked)."""
+    return slurm_job_id.split("_", 1)[0] if isinstance(slurm_job_id, str) else None
 
 
 def assign_parallel_efficiency(records):
@@ -874,6 +891,7 @@ def build_walltime(root, summary_doc, revision, references=None):
             parallel_efficiency=None,
             release_pin=r["configuration"].get("release_pin"),
             slurm_job_id=r["hardware"].get("slurm_job_id"),
+            library_patch=PATCHED_RUNS.get(array_job_of(r["hardware"].get("slurm_job_id"))),
             max_log_likelihood=values.get("max_log_likelihood"),
             parity_status=status,
             parity_basis=basis,
@@ -924,6 +942,14 @@ def build_walltime(root, summary_doc, revision, references=None):
             f"{adopted} record(s) at release pin {ADOPTED_PIN} are adopted as day-zero "
             'evidence by the human ruling of 2026-11-02 ("day zero may span versions where '
             'the code changes do not affect run times"), not re-run on the day-zero tag'
+        )
+    patched = Counter(
+        array_job_of(item["slurm_job_id"]) for item in records if item["library_patch"]
+    )
+    for job, count in sorted(patched.items()):
+        limitations.append(
+            f"{count} record(s) of slurm job {job} ran on {PATCHED_RUNS[job]}; their "
+            "release_pin names the pin alone, library_patch carries the patch"
         )
     sized = Counter(item["size_match"] for item in records if item["profiling_record_id"])
     if matched:
