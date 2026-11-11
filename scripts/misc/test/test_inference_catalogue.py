@@ -240,8 +240,15 @@ def _families():
             sys.path.insert(0, path)
     core = importlib.import_module("slam._core")
     names = (
-        "_point", "_cluster", "_weak", "_datacube", "_group", "_multi_galaxy",
-        "_multi_dataset", "_imaging_mge", "_interferometer",
+        "_point",
+        "_cluster",
+        "_weak",
+        "_datacube",
+        "_group",
+        "_multi_galaxy",
+        "_multi_dataset",
+        "_imaging_mge",
+        "_interferometer",
     )
     found = []
     for name in names:
