@@ -228,3 +228,67 @@ def test_wave_1_experiment_rows_are_catalogued_under_their_problem_without_ranki
         assert r["comparison"]["group"] is None
     assert rows["emcee"]["execution"]["status"].startswith("failed")
     assert new["comparison_policy"]["ranking"] == "none" and new["comparisons"] == []
+
+
+def _families():
+    """Every validation ``Family`` the slam drivers define, by module attribute."""
+    import importlib
+    import sys
+
+    for path in (str(ROOT), str(ROOT / "scripts" / "misc")):
+        if path not in sys.path:
+            sys.path.insert(0, path)
+    core = importlib.import_module("slam._core")
+    names = (
+        "_point",
+        "_cluster",
+        "_weak",
+        "_datacube",
+        "_group",
+        "_multi_galaxy",
+        "_multi_dataset",
+        "_imaging_mge",
+        "_interferometer",
+    )
+    found = []
+    for name in names:
+        module = importlib.import_module(f"slam.{name}")
+        found += [v for v in vars(module).values() if isinstance(v, core.Family)]
+    return found
+
+
+def test_reference_setup_family_is_the_dataset_class_its_records_carry():
+    """A setup's ``dataset_family`` must be the class its records are filed under.
+
+    PyAutoInsight rejects a record whose ``dataset.class`` differs from its setup's
+    ``dataset_family``; records carry ``Family.data_class`` (the dataset directory),
+    which is not the likelihood's ``dataset_type`` for point-source image or datacube
+    families (autolens_inference#61).
+    """
+    from inference_catalogue import REFERENCE_SETUPS
+
+    built = {s["id"]: s for s in summary.build_catalogue(feed(ROOT), ROOT)["setups"]}
+    families = _families()
+    checked = set()
+    for dataset_type, variant, instrument, _ in REFERENCE_SETUPS:
+        setup = built[f"{dataset_type}/{variant}/{instrument}"]
+        for family in families:
+            if (family.dataset_type, family.likelihood_variant) == (dataset_type, variant):
+                assert setup["dataset_family"] == family.data_class, setup["id"]
+                checked.add(dataset_type)
+    # Both families whose class differs from their likelihood type are covered.
+    assert {"point_source_image", "datacube"} <= checked
+
+
+def test_every_catalogued_record_matches_its_setup_dataset_family():
+    """Insight's rule (``insight/catalogue.py``), applied to the real catalogue."""
+    new = summary.build_catalogue(feed(ROOT), ROOT)
+    setups = {s["id"]: s for s in new["setups"]}
+    bad = [
+        (r["id"], r["dataset"]["class"], setups[r["setup_id"]]["dataset_family"])
+        for r in new["records"]
+        if r.get("setup_id") in setups
+        and isinstance(r.get("dataset"), dict)
+        and r["dataset"].get("class") != setups[r["setup_id"]]["dataset_family"]
+    ]
+    assert bad == []

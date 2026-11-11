@@ -34,6 +34,16 @@ REFERENCE_SETUPS = (
     ("cluster", "image_plane", "simple", "Simple cluster, image plane"),
     ("weak", "isothermal", "simple", "Simple weak lensing, isothermal"),
 )
+#: ``dataset_type`` -> the dataset class its records carry (``Family.data_class``: the
+#: ``dataset/<class>/`` directory), where the two differ. A setup's ``dataset_family`` is
+#: that class, as for the published ``point_source/simple/simple`` setup, because
+#: PyAutoInsight checks every record's ``dataset.class`` against its setup's
+#: ``dataset_family`` (autolens_inference#61). Setup ids keep the ``dataset_type``.
+DATASET_CLASS = {
+    "point_source_image": "point_source",
+    "datacube": "interferometer",
+}
+
 WORK = (
     "likelihood_evaluations",
     "gradient_evaluations",
@@ -130,7 +140,7 @@ def build_catalogue(summary, root):
             dict(
                 id=f"{dataset_type}/{variant}/{instrument}",
                 label=label,
-                dataset_family=dataset_type,
+                dataset_family=DATASET_CLASS.get(dataset_type, dataset_type),
                 model_family=variant,
                 instrument=instrument,
                 reference_record_id=None,
