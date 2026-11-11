@@ -28,7 +28,7 @@
   },
   "evidence_updated_at": null,
   "evidence_updated_at_reason": "Legacy result rows do not record measurement timestamps",
-  "generated_at": "2026-11-09T17:28:52Z",
+  "generated_at": "2026-11-11T09:18:16Z",
   "generation_basis": "Source commit timestamp; not a measurement or check-in time",
   "limitations": [
     "No scientific acceptance or convergence inferred from process completion",
@@ -356,7 +356,7 @@
       "stage": "mass_total[1]"
     }
   ],
-  "producer_revision": "98a0547d44f7f3f9a59f29e495adf629bc99cc1d",
+  "producer_revision": "6443c8fc9cf71c1df3db825de385f949d2b78ea8",
   "project": "autolens_inference",
   "records": [
     {
@@ -178788,7 +178788,7 @@
       "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
     },
     {
-      "dataset_family": "datacube",
+      "dataset_family": "interferometer",
       "id": "datacube/delaunay/sma",
       "instrument": "sma",
       "label": "SMA Delaunay datacube",
@@ -178860,7 +178860,7 @@
       "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
     },
     {
-      "dataset_family": "point_source_image",
+      "dataset_family": "point_source",
       "id": "point_source_image/image_plane/simple",
       "instrument": "simple",
       "label": "Simple point source, image plane",
@@ -178896,7 +178896,7 @@
       "reference_record_id_reason": "No explicitly accepted current baseline with frozen model/prior identities"
     }
   ],
-  "source_commit": "98a0547d44f7f3f9a59f29e495adf629bc99cc1d",
+  "source_commit": "6443c8fc9cf71c1df3db825de385f949d2b78ea8",
   "valid_until": null,
   "version": 2
 }
