@@ -94,8 +94,12 @@ export JAX_COMPILATION_CACHE_DIR="${JAX_COMPILATION_CACHE_DIR-$PYAUTO_HPC_CACHE/
 export ASTROPY_CACHE_DIR="${ASTROPY_CACHE_DIR:-$PYAUTO_HPC_CACHE/astropy}"
 # Temp files too: Python's tempfile, JAX and numba default to /tmp, which on RAL
 # compute nodes sits on the same small local disk (RAL admin, 2026-11-12). Use a
-# `tmp/` next to the cache instead; a TMPDIR already set (e.g. by the job) wins.
-export TMPDIR="${TMPDIR:-$(dirname "$PYAUTO_HPC_CACHE")/tmp}"
+# `tmp/` next to the cache instead.
+# Slurm sets TMPDIR=/tmp itself when the job environment has none, so /tmp counts
+# as unset here; any other TMPDIR (e.g. a job's own scratch dir) wins.
+if [ -z "${TMPDIR:-}" ] || [ "$TMPDIR" = /tmp ]; then
+    export TMPDIR="$(dirname "$PYAUTO_HPC_CACHE")/tmp"
+fi
 mkdir -p "$TMPDIR" 2>/dev/null || true
 
 export PYTHONPATH=$BASE:\
