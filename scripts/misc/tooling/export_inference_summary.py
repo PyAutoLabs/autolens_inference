@@ -521,6 +521,174 @@ PARITY_RULINGS = {
     ),
 }
 
+#: Human parity rulings of 2026-11-12 (autolens_inference#67): every listed leg
+#: is ``match``. Keyed as ``PARITY_RULINGS``; the stage is ``PARITY_STAGE`` unless
+#: the likelihood fits one search (``modeling[1]``).
+_RULING_2026_11_12 = "human ruling 2026-11-12 (autolens_inference#67): "
+_CLOSE = _RULING_2026_11_12 + "backends agree to within 1 log L at this stage"
+_WTILDE = _RULING_2026_11_12 + "numba and A100 wtilde agree to within 0.2-4 log L"
+_STOCHASTIC = _RULING_2026_11_12 + (
+    "the tens-to-~120 log L gaps flip sign with seed: source_pix[1] settles on slightly "
+    "different regularization per seed, so later stages reach different likelihoods "
+    "(sampling stochasticity, likely removed by more Nautilus live points), not a backend "
+    "difference"
+)
+_FINE = _RULING_2026_11_12 + "numba and A100 differ by 20-45 log L, ruled consistent"
+_BOTH = ("default", "light_fixed")
+_MATCH_GROUPS = [
+    # (dataset_type, variant, instrument, model_variants, setup_ids, stage, basis)
+    (
+        "imaging",
+        "mge",
+        "hst",
+        _BOTH,
+        ("jax_cpu_dense_fp64", "jax_gpu_dense_fp64"),
+        PARITY_STAGE,
+        _CLOSE,
+    ),
+    (
+        "group",
+        "mge",
+        "euclid",
+        _BOTH,
+        ("jax_cpu_dense_fp64", "jax_gpu_dense_fp64"),
+        PARITY_STAGE,
+        _CLOSE,
+    ),
+    (
+        "interferometer",
+        "mge",
+        "sma",
+        ("default",),
+        ("jax_cpu_dense_fp64_nufft", "jax_gpu_dense_fp64_nufft"),
+        PARITY_STAGE,
+        _CLOSE,
+    ),
+    (
+        "multi_galaxy",
+        "mge",
+        "hst",
+        _BOTH,
+        ("jax_cpu_dense_fp64", "jax_gpu_dense_fp64"),
+        PARITY_STAGE,
+        _CLOSE,
+    ),
+    (
+        "multi_galaxy",
+        "rectangular",
+        "hst",
+        _BOTH,
+        ("jax_gpu_dense_fp64", "numba_cpu_sparse_fp64"),
+        PARITY_STAGE,
+        _CLOSE,
+    ),
+    (
+        "cluster",
+        "image_plane",
+        "simple",
+        ("default",),
+        ("jax_cpu_na_fp64", "jax_gpu_na_fp64"),
+        "modeling[1]",
+        _CLOSE,
+    ),
+    (
+        "cluster",
+        "source_plane",
+        "simple",
+        ("default",),
+        ("jax_cpu_na_fp64", "jax_gpu_na_fp64"),
+        "modeling[1]",
+        _CLOSE,
+    ),
+    (
+        "point_source_image",
+        "image_plane",
+        "simple",
+        ("default",),
+        ("jax_cpu_na_fp64", "jax_gpu_na_fp64"),
+        "modeling[1]",
+        _CLOSE,
+    ),
+    (
+        "point_source_source",
+        "source_plane",
+        "simple",
+        ("default",),
+        ("jax_cpu_na_fp64", "jax_gpu_na_fp64"),
+        "modeling[1]",
+        _CLOSE,
+    ),
+    (
+        "weak",
+        "isothermal",
+        "simple",
+        ("default",),
+        ("jax_cpu_dense_fp64", "jax_gpu_dense_fp64"),
+        "modeling[1]",
+        _CLOSE,
+    ),
+    (
+        "interferometer",
+        "delaunay",
+        "sma",
+        ("default",),
+        ("jax_gpu_sparse_fp64_wtilde", "numba_cpu_sparse_fp64_wtilde"),
+        PARITY_STAGE,
+        _WTILDE,
+    ),
+    (
+        "interferometer",
+        "rectangular",
+        "sma",
+        ("default",),
+        ("jax_gpu_sparse_fp64_wtilde", "numba_cpu_sparse_fp64_wtilde"),
+        PARITY_STAGE,
+        _WTILDE,
+    ),
+    (
+        "imaging",
+        "delaunay",
+        "hst",
+        _BOTH,
+        ("jax_gpu_dense_fp64", "numba_cpu_sparse_fp64"),
+        PARITY_STAGE,
+        _STOCHASTIC,
+    ),
+    (
+        "imaging",
+        "delaunay_nn",
+        "hst",
+        _BOTH,
+        ("jax_gpu_dense_fp64", "numba_cpu_sparse_fp64"),
+        PARITY_STAGE,
+        _STOCHASTIC,
+    ),
+    (
+        "multi_dataset",
+        "delaunay",
+        "hst",
+        _BOTH,
+        ("jax_gpu_dense_fp64", "numba_cpu_sparse_fp64"),
+        PARITY_STAGE,
+        _STOCHASTIC,
+    ),
+    (
+        "multi_galaxy",
+        "delaunay",
+        "hst",
+        _BOTH,
+        ("jax_gpu_dense_fp64", "numba_cpu_sparse_fp64"),
+        PARITY_STAGE,
+        _FINE,
+    ),
+]
+for _dt, _var, _inst, _mvs, _setups, _stage, _basis in _MATCH_GROUPS:
+    for _mv in _mvs:
+        for _setup in _setups:
+            _key = (_dt, _var, _inst, _mv, _setup, _stage)
+            assert _key not in PARITY_RULINGS, _key
+            PARITY_RULINGS[_key] = ("match", _basis)
+
 
 #: The fields an inference wall-time record and a profiling runtime record must
 #: share exactly to be paired. ``regime`` (the profiling size bin) is not a key:
