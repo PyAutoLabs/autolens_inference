@@ -92,6 +92,11 @@ export CUDA_CACHE_PATH="${CUDA_CACHE_PATH:-$PYAUTO_HPC_CACHE/nv}"
 export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$PYAUTO_HPC_CACHE/triton}"
 export JAX_COMPILATION_CACHE_DIR="${JAX_COMPILATION_CACHE_DIR-$PYAUTO_HPC_CACHE/pyauto_jax}"
 export ASTROPY_CACHE_DIR="${ASTROPY_CACHE_DIR:-$PYAUTO_HPC_CACHE/astropy}"
+# Temp files too: Python's tempfile, JAX and numba default to /tmp, which on RAL
+# compute nodes sits on the same small local disk (RAL admin, 2026-11-12). Use a
+# `tmp/` next to the cache instead; a TMPDIR already set (e.g. by the job) wins.
+export TMPDIR="${TMPDIR:-$(dirname "$PYAUTO_HPC_CACHE")/tmp}"
+mkdir -p "$TMPDIR" 2>/dev/null || true
 
 export PYTHONPATH=$BASE:\
 $BASE/PyAutoNerves:\
