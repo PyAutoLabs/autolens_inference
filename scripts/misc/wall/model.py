@@ -42,7 +42,7 @@ not a held-out prediction. Held out, it is weaker: with a dataset type's own ``E
 removed (factor 1.0), interferometer's legs read 0.19-0.45x and weak's 0.50-0.52x, and
 cluster/image_plane reads 2.2-3.6x without its :data:`PER_EVAL_OVERRIDE`, which is that leg's
 own measured cost. The one out-of-sample check is the source-plane point count against the
-committed sampler rows the fit never saw (4850 against ~4860). Expect a new dataset type or
+committed sampler rows the fit never saw (4850 against a modelled 4855). Expect a new dataset type or
 setup to miss by more than 2x until its first rows recalibrate it.
 
 What this model is not valid for
