@@ -381,3 +381,10 @@ def test_only_a_likelihood_with_no_phase4_stage_shapes_is_contained_at_the_cap()
         else:
             assert leg.key == ("datacube", "delaunay")
             assert walls == [] and budget.wall_s is None and budget.time_s == p4.MAX_TIME_S
+
+
+@pytest.mark.parametrize("name", sorted(LEAVES))
+def test_every_leaf_is_its_own_cell(name):
+    cell = check_submits.LEGACY_CELLS[LEAVES[name].removeprefix("scripts/").removesuffix(".py")]
+    assert cell == p4.CELL[tuple(name.split("/"))]
+    assert Path(ROOT / LEAVES[name]).is_file()

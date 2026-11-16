@@ -1183,7 +1183,10 @@ def actual_wall(leg: Leg, root: Path = ROOT) -> tuple[float, tuple[str, ...]] | 
     None when no seed qualifies.
 
     Checked against SLURM ElapsedRaw for the 23 legs sacct was read for on 2026-11-06: the
-    summed rows are 1.00-1.09x below it on every chain (the remainder is startup)."""
+    summed rows are 1.00-1.09x below it on every chain (the remainder is startup). The startup
+    added here is the model's own, so on the shortest legs it pulls the ratio toward 1: weak on
+    the A100 took 39 s by sacct against 59 s reconstructed (sacct / estimate 0.59x, still in
+    the band)."""
     prefix = f"results/{leg.dataset_type}/{leg.likelihood}/{leg.instrument}/validation/"
     seeds: dict[int, dict[str, float]] = {}
     jobs: set[str] = set()

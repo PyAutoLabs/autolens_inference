@@ -159,6 +159,12 @@ The constants are fitted to the completed, non-resumed phase-4 stages (release p
 it took, and `test_wall_model.py` fails if any leg falls outside 0.5-2x. On 2026-11-16 all 42
 legs sat at 0.56-1.59x; the derivation it replaced ranged 0.55-89.5x.
 
+**That band is in-sample**: the constants are fitted to the rows it checks, and the
+cluster/image_plane per-eval override is that leg's own measured cost. Held out, with a dataset
+type's own factor removed, interferometer reads 0.19-0.45x and weak 0.50-0.52x. Treat a new
+dataset type or setup as uncalibrated (a miss beyond 2x is possible) until its first rows refit
+the factor.
+
 **Phase 5 reuses this model.** The likelihood-lifecycle run-time estimator (5E,
 `al.Setup.estimate`) takes this law, floor, startup and efficiency curve instead of building
 its own. Its docstring says what it is not valid for: other samplers, uncalibrated dataset

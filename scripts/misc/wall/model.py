@@ -36,6 +36,15 @@ the phase-4 rows on release pin 2026.10.25.1 (completed, non-resumed stages only
 straddled a kill and resume reads its ``samples_info`` time 3-4x high, 414362), and checked
 against every completed phase-4 leg by ``validation_p4.py --validate``.
 
+**That check is in-sample.** The law, the per-type factors, the floor and the efficiency curve
+are fitted to the same rows ``--validate`` reads, so 0.56-1.59x on those legs is a calibration,
+not a held-out prediction. Held out, it is weaker: with a dataset type's own ``EVALS_FACTOR``
+removed (factor 1.0), interferometer's legs read 0.19-0.45x and weak's 0.50-0.52x, and
+cluster/image_plane reads 2.2-3.6x without its :data:`PER_EVAL_OVERRIDE`, which is that leg's
+own measured cost. The one out-of-sample check is the source-plane point count against the
+committed sampler rows the fit never saw (4850 against ~4860). Expect a new dataset type or
+setup to miss by more than 2x until its first rows recalibrate it.
+
 What this model is not valid for
 --------------------------------
 
@@ -107,6 +116,9 @@ PER_CALL_OVERRIDE: dict[str, tuple[float, str]] = {
 
 #: Whole per-evaluation costs (floor included) for a likelihood whose fit evaluates something
 #: its profiling does not, by ``(dataset_type, variant, host_class)``: ``(seconds, why)``.
+#: These two are FITTED TO THE LEGS THEY PRICE (413966, 414145): a measured-wall in
+#: per-evaluation form, not a prediction. Their profiling record (a 0.2 ms vmap per-call) does
+#: not time the image-plane PointSolver fit at all; the durable fix is upstream profiling.
 PER_EVAL_OVERRIDE: dict[tuple[str, str, str], tuple[float, str]] = {
     ("cluster", "image_plane", "hpc_a100"): (
         0.060,
