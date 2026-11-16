@@ -22,13 +22,24 @@
 # fit.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   This submit runs ONE cell, `interferometer/slam/sma_delaunay`. No adopted row of this
-#   likelihood counts its evaluations, so no wall is derived: the row is `unmeasured` and the
-#   first arm IS the probe (read each stage's `wall_s / likelihood_evals` from its row;
-#   catalogue/pulse_lens_runtime_reference.json prices one evaluation).
-#   --time is the 5-00:00:00 cap, a CONTAINMENT, not a derived budget.
+#   This submit runs ONE cell, `interferometer/slam/sma_delaunay`. The wall is the calibrated
+#   wall model (scripts/misc/wall/model.py, autolens_inference#69): per stage, evaluations
+#   from its free parameters and n_live, each costing the model's sampler floor plus Pulse's
+#   per-call time of one batched JAX evaluation (catalogue/pulse_lens_runtime_reference.json;
+#   a parametric source_lp stage of a pixelized chain pays the MGE per-call), plus the model's
+#   startup. No adopted row measured this cell on this device, so the row is `unmeasured` and
+#   the first arm IS the probe: read each stage's `wall_s / likelihood_evals` from its row.
+#   - default source_lp[1] = 14816 evals (model: d=11, n_live=200); derived 216 s
+#     (lifecycle/4c9e3b4239cc98b8a7ff (MGE per-call, parametric stage))
+#   - default source_pix[1] = 9507 evals (model: d=10, n_live=150); derived 241 s
+#     (lifecycle/742eaf1292ed737e591e)
+#   - default source_pix[2] = 662 evals (model: d=3, n_live=75); derived 17 s
+#     (lifecycle/742eaf1292ed737e591e)
+#   - default mass_total[1] = 6598 evals (model: d=8, n_live=150); derived 167 s
+#     (lifecycle/742eaf1292ed737e591e)
+#   The estimate is 672 s (0.2 h); --time clears 3x of it.
 #   cell: interferometer/slam/sma_delaunay  device: a100  precision: fp64
-#   lanes: 1  source: unmeasured  probe-first: yes
+#   lanes: 1  steps: 31583  source: unmeasured  probe-first: yes  wall: 672
 #
 #SBATCH -J p4_validation_interferometer_delaunay_sma_jax_gpu_sparse_wtilde
 #SBATCH --partition=gpu
@@ -36,7 +47,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32gb
-#SBATCH --time=5-00:00:00
+#SBATCH --time=06:00:00
 #SBATCH --array=0-1
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err

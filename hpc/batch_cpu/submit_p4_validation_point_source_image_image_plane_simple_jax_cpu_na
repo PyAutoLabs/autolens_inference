@@ -24,17 +24,19 @@
 # fit.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   This submit runs ONE cell, `point_source_image/search/simple_image_plane`. This likelihood
-#   has no adopted row, so per stage the evaluations are its declared basis (EVALS_BASIS: a
-#   measured count or a declared ceiling, named below), priced at Pulse's per-call time of one
-#   batched JAX evaluation (catalogue/pulse_lens_runtime_reference.json). No adopted row
-#   measured this cell on this device, so the row is `unmeasured` and the first arm IS the
-#   probe: read each stage's `wall_s / likelihood_evals` from its row.
-#   - default modeling[1] = 48500 evals (declared-ceiling-4c3-unmeasured); derived 46 s
+#   This submit runs ONE cell, `point_source_image/search/simple_image_plane`. The wall is the
+#   calibrated wall model (scripts/misc/wall/model.py, autolens_inference#69): per stage,
+#   evaluations from its free parameters and n_live, each costing the model's sampler floor
+#   plus Pulse's per-call time of one batched JAX evaluation
+#   (catalogue/pulse_lens_runtime_reference.json; a parametric source_lp stage of a pixelized
+#   chain pays the MGE per-call), plus the model's startup. No adopted row measured this cell
+#   on this device, so the row is `unmeasured` and the first arm IS the probe: read each
+#   stage's `wall_s / likelihood_evals` from its row.
+#   - default modeling[1] = 5274 evals (model: d=5, n_live=100); derived 79 s
 #     (lifecycle/6cbf08c848ae6cdb820f)
-#   The estimate is 47 s (0.0 h); --time clears 3x of it.
+#   The estimate is 109 s (0.0 h); --time clears 3x of it.
 #   cell: point_source_image/search/simple_image_plane  device: ral_jax_cpu  precision: fp64
-#   lanes: 1  steps: 48500  source: unmeasured  probe-first: yes  wall: 47
+#   lanes: 1  steps: 5274  source: unmeasured  probe-first: yes  wall: 109
 #
 #SBATCH -J p4_validation_point_source_image_image_plane_simple_jax_cpu_na
 #SBATCH --partition=ral

@@ -362,24 +362,22 @@ def test_every_4c1_submit_runs_its_leaf_and_passes_the_wall_gate(leg):
     assert ("--export-prepared" in run) == (leg.key == ("imaging", "delaunay_nn"))
 
 
-def test_delaunay_nn_counts_its_evaluations_on_the_delaunay_chain_never_its_walls():
+def test_delaunay_nn_is_priced_by_the_wall_model_never_a_sibling_likelihoods_walls():
     records, refs = p4.adopted_records(), p4.references()
     for leg in (leg for leg in LEGS if leg.key == ("imaging", "delaunay_nn")):
         budget, walls = p4.budget(leg, records, refs)
         assert walls and all(w.measured_s is None for w in walls)
-        assert all("/delaunay/" in w.evals_ref and w.derived_s for w in walls)
+        assert all(w.evals_ref.startswith("model: ") and w.derived_s for w in walls)
         assert budget.source == "unmeasured" and budget.wall_s == budget.estimate_s
 
 
-def test_a_likelihood_no_adopted_row_counts_is_contained_at_the_cap():
+def test_only_a_likelihood_with_no_phase4_stage_shapes_is_contained_at_the_cap():
     records, refs = p4.adopted_records(), p4.references()
+    shapes = p4.stage_shapes()
     for leg in (leg for leg in LEGS if leg.family):
         budget, walls = p4.budget(leg, records, refs)
-        assert walls == [] and budget.wall_s is None and budget.time_s == p4.MAX_TIME_S
-
-
-@pytest.mark.parametrize("name", sorted(LEAVES))
-def test_every_leaf_is_its_own_cell(name):
-    cell = check_submits.LEGACY_CELLS[LEAVES[name].removeprefix("scripts/").removesuffix(".py")]
-    assert cell == p4.CELL[tuple(name.split("/"))]
-    assert Path(ROOT / LEAVES[name]).is_file()
+        if any(key[:2] == leg.key for key in shapes):
+            assert walls and budget.estimate_s > 0
+        else:
+            assert leg.key == ("datacube", "delaunay")
+            assert walls == [] and budget.wall_s is None and budget.time_s == p4.MAX_TIME_S

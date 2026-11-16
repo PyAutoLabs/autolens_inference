@@ -285,29 +285,6 @@ def test_every_4c2_likelihood_has_its_two_optimal_legs_with_light_fixed():
     assert all(family.light_fixed for family, *_ in FAMILIES.values())
 
 
-def test_the_proxy_basis_is_the_most_any_adopted_imaging_row_took():
-    """The pinned EVALS_BASIS counts are the adopted imaging maxima per stage (a refresh of the
-    adopted rows that moves one must move the pin)."""
-    imaging = [
-        r
-        for r in RECORDS
-        if r["likelihood"]["dataset_type"] == "imaging"
-        and r["model_variant"] == "default"
-        and r["likelihood_evals"]
-        and ":cores_" not in r["sampler"]
-    ]
-    for stage, (evals, ref) in p4._4C2_IMAGING_EVALS.items():
-        most = max((r for r in imaging if r["stage"] == stage), key=lambda r: r["likelihood_evals"])
-        assert evals == most["likelihood_evals"]
-        assert ref in {
-            r["id"] for r in imaging if r["stage"] == stage and r["likelihood_evals"] == evals
-        }
-    for key in FAMILIES:
-        basis = p4.EVALS_BASIS[key]
-        assert set(basis) == set(p4.STAGES_OF[key])
-        assert all(ref.startswith("proxy: max adopted imaging ") for _, ref in basis.values())
-
-
 @pytest.mark.parametrize("leg", OURS, ids=lambda leg: leg.name)
 def test_a_family_submit_is_unmeasured_probe_first_and_runs_its_leaf(leg):
     text = p4.render(leg, RECORDS, p4.references())
@@ -318,19 +295,30 @@ def test_a_family_submit_is_unmeasured_probe_first_and_runs_its_leaf(leg):
         == leg.cell
         == f"{leg.dataset_type}/{leg.likelihood}/validation/{leg.instrument}_slam"
     )
-    assert row["source"] == "unmeasured" and row["probe-first"] == "yes" and "wall" in row
+    assert row["source"] == "unmeasured" and row["probe-first"] == "yes"
+    # A wall is offered unless 3x of it exceeds the cap (then --time is the cap).
+    budget, _ = p4.budget(leg, RECORDS, p4.references())
+    assert ("wall" in row) == (budget.wall_s is not None)
+    assert "wall" in row or budget.time_s == p4.MAX_TIME_S
     assert check_submits.cells_run(text) == ({leg.cell}, {leg.instrument})
     run = check_submits.strip_comments(text)
     assert f"--instrument {leg.instrument} " in run and f"--config-name {leg.config_name} " in run
     assert "--export-prepared" not in run and "--stages-from" not in run
     assert "--lens-light both" in run and "--array=0-1" in text
-    # Every stage priced (the parametric ones too), at this likelihood's own profiling record,
-    # plus the light_fixed mass_total[1].
+    # Every stage priced by the wall model, plus the light_fixed mass_total[1]: at this
+    # likelihood's own profiling record, except a parametric source_lp stage of a pixelized
+    # chain, which pays the dataset type's MGE per-call.
     walls = p4.stage_walls(leg, RECORDS, p4.references())
     stages = FAMILIES[leg.key][3]
     assert [(w.model_variant, w.stage) for w in walls] == [
         *(("default", s) for s in stages),
         ("light_fixed", "mass_total[1]"),
     ]
-    assert all(w.derived_s and w.evals_ref.startswith("proxy: ") for w in walls)
-    assert len({w.per_call_ref for w in walls}) == 1
+    assert all(w.derived_s and w.evals_ref.startswith("model: ") for w in walls)
+    own = {w.per_call_ref for w in walls if not w.stage.startswith("source_lp")}
+    assert len(own) == 1
+    parametric = {w.per_call_ref for w in walls if w.stage.startswith("source_lp")}
+    if leg.likelihood == "mge":
+        assert parametric == own
+    else:
+        assert all("MGE per-call" in ref for ref in parametric)

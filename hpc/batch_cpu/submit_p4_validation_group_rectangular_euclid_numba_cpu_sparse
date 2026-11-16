@@ -24,36 +24,31 @@
 # path omits the pin and the core count, so the shared tree would resume another run's fit.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   This submit runs ONE cell, `group/rectangular/validation/euclid_slam`. This likelihood has
-#   no adopted row, so per stage the evaluations are its declared basis (EVALS_BASIS: a
-#   measured count or a declared ceiling, named below), priced at Pulse's single-thread
-#   per-call time over 8 Nautilus worker(s) (catalogue/pulse_lens_runtime_reference.json). No
-#   adopted row measured this cell on this device, so the row is `unmeasured` and the first
-#   arm IS the probe: read each stage's `wall_s / likelihood_evals` from its row.
-#   - default source_lp[0] = 92550 evals (proxy: max adopted imaging
-#     imaging/rectangular/hst/default/jax_gpu_sparse_fp64/hpc_a100/nautilus:source_lp[1]/seed_0);
-#     derived 10407 s (lifecycle/a393fa2e139fd0560564)
-#   - default source_lp[1] = 92550 evals (proxy: max adopted imaging
-#     imaging/rectangular/hst/default/jax_gpu_sparse_fp64/hpc_a100/nautilus:source_lp[1]/seed_0);
-#     derived 10407 s (lifecycle/a393fa2e139fd0560564)
-#   - default source_pix[1] = 53920 evals (proxy: max adopted imaging
-#     imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[1]/seed_1);
-#     derived 6063 s (lifecycle/a393fa2e139fd0560564)
-#   - default source_pix[2] = 9460 evals (proxy: max adopted imaging
-#     imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[2]/seed_1);
-#     derived 1064 s (lifecycle/a393fa2e139fd0560564)
-#   - default light[1] = 12000 evals (proxy: max adopted imaging
-#     imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:light[1]/seed_1);
-#     derived 1349 s (lifecycle/a393fa2e139fd0560564)
-#   - default mass_total[1] = 38660 evals (proxy: max adopted imaging
-#     imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1);
-#     derived 4347 s (lifecycle/a393fa2e139fd0560564)
-#   - light_fixed mass_total[1] = 38660 evals (proxy: max adopted imaging
-#     imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1);
-#     derived 4347 s (lifecycle/a393fa2e139fd0560564)
-#   The estimate is 37985 s (10.6 h); --time clears 3x of it.
+#   This submit runs ONE cell, `group/rectangular/validation/euclid_slam`. The wall is the
+#   calibrated wall model (scripts/misc/wall/model.py, autolens_inference#69): per stage,
+#   evaluations from its free parameters and n_live, each costing the model's sampler floor
+#   plus Pulse's single-thread per-call time over 8 Nautilus worker(s) at the measured
+#   parallel efficiency (catalogue/pulse_lens_runtime_reference.json; a parametric source_lp
+#   stage of a pixelized chain pays the MGE per-call), plus the model's startup. No adopted
+#   row measured this cell on this device, so the row is `unmeasured` and the first arm IS the
+#   probe: read each stage's `wall_s / likelihood_evals` from its row.
+#   - default source_lp[0] = 48536 evals (model: d=14, n_live=190); derived 6121 s
+#     (lifecycle/eb438402eb57e940aa63 (MGE per-call, parametric stage))
+#   - default source_lp[1] = 41311 evals (model: d=11, n_live=240); derived 5209 s
+#     (lifecycle/eb438402eb57e940aa63 (MGE per-call, parametric stage))
+#   - default source_pix[1] = 29772 evals (model: d=12, n_live=150); derived 6504 s
+#     (lifecycle/a393fa2e139fd0560564)
+#   - default source_pix[2] = 3551 evals (model: d=5, n_live=75); derived 776 s
+#     (lifecycle/a393fa2e139fd0560564)
+#   - default light[1] = 38318 evals (model: d=14, n_live=150); derived 8371 s
+#     (lifecycle/a393fa2e139fd0560564)
+#   - default mass_total[1] = 22090 evals (model: d=10, n_live=150); derived 4826 s
+#     (lifecycle/a393fa2e139fd0560564)
+#   - light_fixed mass_total[1] = 22090 evals (model: d=10, n_live=150); derived 4826 s
+#     (lifecycle/a393fa2e139fd0560564)
+#   The estimate is 36662 s (10.2 h); --time clears 3x of it.
 #   cell: group/rectangular/validation/euclid_slam  device: ral_numba_cpu  precision: fp64
-#   lanes: 1  steps: 337800  source: unmeasured  probe-first: yes  wall: 37985
+#   lanes: 1  steps: 205668  source: unmeasured  probe-first: yes  wall: 36662
 #
 #SBATCH -J p4_validation_group_rectangular_euclid_numba_cpu_sparse
 #SBATCH --partition=ral

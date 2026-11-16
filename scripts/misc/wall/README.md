@@ -131,3 +131,35 @@ python scripts/misc/wall/check_submits.py --check   # exit non-zero on any viola
 respectable coat: it sits between two measured rows and was never measured, so a
 submit resting on one declares `measured-wall` against its observed runs, or
 `unmeasured`.
+
+## The wall model (`wall.model`)
+
+`rates.py` answers "how long does one step of this cell take?" and refuses to answer for a
+cell it has not measured. `model.py` answers the question a generated submit needs before
+anything has run: **how long will this whole job take?** (autolens_inference#69).
+
+```
+evals   = 4.30 * n_live * d ** 1.637 * EVALS_FACTOR[dataset_type]
+seconds = evals * (FLOOR_S + price)          # per stage
+job     = STARTUP_S + sum(stages)
+```
+
+- `d` and `n_live` are the stage's free parameters and live points: properties of the model,
+  known before a run.
+- `FLOOR_S` (14 ms) is what an evaluation costs outside the likelihood: Nautilus bookkeeping
+  plus the stage's own output writing. Without it, a likelihood profiled at microseconds was
+  estimated at 1 s and took 80 s.
+- `price` is the per-call the stage pays: Pulse's per-call, divided by `cores x efficiency`
+  for numba (the phase-4 cores sweep); the MGE per-call for a parametric `source_lp` stage of
+  a pixelized chain; or a declared, cited override where profiling does not price the fit's
+  evaluation (`PER_CALL_OVERRIDE`, `PER_EVAL_OVERRIDE`).
+
+The constants are fitted to the completed, non-resumed phase-4 stages (release pin
+2026.10.25.1). `validation_p4.py --validate` re-prices every completed phase-4 leg against what
+it took, and `test_wall_model.py` fails if any leg falls outside 0.5-2x. On 2026-11-16 all 42
+legs sat at 0.56-1.59x; the derivation it replaced ranged 0.55-89.5x.
+
+**Phase 5 reuses this model.** The likelihood-lifecycle run-time estimator (5E,
+`al.Setup.estimate`) takes this law, floor, startup and efficiency curve instead of building
+its own. Its docstring says what it is not valid for: other samplers, uncalibrated dataset
+types, single-stage accuracy, resumed jobs.

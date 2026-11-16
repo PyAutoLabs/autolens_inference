@@ -24,40 +24,36 @@
 # path omits the pin and the core count, so the shared tree would resume another run's fit.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   This submit runs ONE cell, `multi_galaxy/delaunay/validation/hst_slam`. This likelihood
-#   has no adopted row, so per stage the evaluations are its declared basis (EVALS_BASIS: a
-#   measured count or a declared ceiling, named below), priced at Pulse's single-thread
-#   per-call time over 8 Nautilus worker(s) (catalogue/pulse_lens_runtime_reference.json). No
-#   adopted row measured this cell on this device, so the row is `unmeasured` and the first
-#   arm IS the probe: read each stage's `wall_s / likelihood_evals` from its row.
-#   - default source_lp[1] = 92550 evals (proxy: max adopted imaging
-#     imaging/rectangular/hst/default/jax_gpu_sparse_fp64/hpc_a100/nautilus:source_lp[1]/seed_0);
-#     derived 9837 s (lifecycle/fc2096cb1c848e64b674)
-#   - default source_pix[1] = 53920 evals (proxy: max adopted imaging
-#     imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[1]/seed_1);
-#     derived 5731 s (lifecycle/fc2096cb1c848e64b674)
-#   - default source_pix[2] = 9460 evals (proxy: max adopted imaging
-#     imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[2]/seed_1);
-#     derived 1006 s (lifecycle/fc2096cb1c848e64b674)
-#   - default light[1] = 12000 evals (proxy: max adopted imaging
-#     imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:light[1]/seed_1);
-#     derived 1275 s (lifecycle/fc2096cb1c848e64b674)
-#   - default mass_total[1] = 38660 evals (proxy: max adopted imaging
-#     imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1);
-#     derived 4109 s (lifecycle/fc2096cb1c848e64b674)
-#   - light_fixed mass_total[1] = 38660 evals (proxy: max adopted imaging
-#     imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1);
-#     derived 4109 s (lifecycle/fc2096cb1c848e64b674)
-#   The estimate is 26068 s (7.2 h); --time clears 3x of it.
+#   This submit runs ONE cell, `multi_galaxy/delaunay/validation/hst_slam`. The wall is the
+#   calibrated wall model (scripts/misc/wall/model.py, autolens_inference#69): per stage,
+#   evaluations from its free parameters and n_live, each costing the model's sampler floor
+#   plus Pulse's single-thread per-call time over 8 Nautilus worker(s) at the measured
+#   parallel efficiency (catalogue/pulse_lens_runtime_reference.json; a parametric source_lp
+#   stage of a pixelized chain pays the MGE per-call), plus the model's startup. No adopted
+#   row measured this cell on this device, so the row is `unmeasured` and the first arm IS the
+#   probe: read each stage's `wall_s / likelihood_evals` from its row.
+#   - default source_lp[1] = 207071 evals (model: d=24, n_live=250); derived 19414 s
+#     (lifecycle/2ee75bc51ab781c2df4e (MGE per-call, parametric stage))
+#   - default source_pix[1] = 76748 evals (model: d=15, n_live=200); derived 15907 s
+#     (lifecycle/fc2096cb1c848e64b674)
+#   - default source_pix[2] = 2065 evals (model: d=3, n_live=75); derived 428 s
+#     (lifecycle/fc2096cb1c848e64b674)
+#   - default light[1] = 66579 evals (model: d=12, n_live=250); derived 13799 s
+#     (lifecycle/fc2096cb1c848e64b674)
+#   - default mass_total[1] = 85689 evals (model: d=14, n_live=250); derived 17760 s
+#     (lifecycle/fc2096cb1c848e64b674)
+#   - light_fixed mass_total[1] = 85689 evals (model: d=14, n_live=250); derived 17760 s
+#     (lifecycle/fc2096cb1c848e64b674)
+#   The estimate is 85097 s (23.6 h); --time clears 3x of it.
 #   cell: multi_galaxy/delaunay/validation/hst_slam  device: ral_numba_cpu  precision: fp64
-#   lanes: 1  steps: 245250  source: unmeasured  probe-first: yes  wall: 26068
+#   lanes: 1  steps: 523841  source: unmeasured  probe-first: yes  wall: 85097
 #
 #SBATCH -J p4_validation_multi_galaxy_delaunay_hst_numba_cpu_sparse
 #SBATCH --partition=ral
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=96gb
-#SBATCH --time=1-00:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH --array=0-1
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
