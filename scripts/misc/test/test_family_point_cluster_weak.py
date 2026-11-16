@@ -77,7 +77,7 @@ FAMILIES = {
     ),
 }
 IDS = [f"{f.dataset_type}/{f.likelihood_variant}" for f in FAMILIES]
-# 4c-3's own searches (4c-2 also prices its chains on EVALS_BASIS).
+# 4c-3's own searches.
 LEGS = [leg for leg in p4.planned_legs() if leg.key in p4._4C3_SEARCHES]
 RENDERED = p4.submits()
 
@@ -229,16 +229,18 @@ def test_every_family_gets_its_two_optimal_legs_over_seeds_0_and_1():
     assert len({leg.name for leg in LEGS}) == len(LEGS)
 
 
-def test_the_source_plane_evaluations_are_the_committed_search_rows():
+def test_the_modelled_source_plane_evaluations_match_the_committed_search_rows():
     rows = sorted(
         (ROOT / "results/point_source_source/source_plane/simple/samplers/default/nautilus").rglob(
             "search.json"
         )
     )
     most = max(json.loads(p.read_text())["likelihood_evals"] for p in rows)
-    evals, ref = p4.EVALS_BASIS[("point_source_source", "source_plane")]
-    assert evals == most
-    assert json.loads((ROOT / ref).read_text())["likelihood_evals"] == most
+    # The wall model's count (fitted to the phase-4 validation rows) against the committed
+    # sampler rows of the same model, sampler and n_live, which it never saw.
+    leg = next(leg for leg in LEGS if leg.key == ("point_source_source", "source_plane"))
+    (wall,) = p4.stage_walls(leg, p4.adopted_records(), p4.references())
+    assert 0.5 <= most / wall.evals <= 2.0
 
 
 @pytest.mark.parametrize("leg", LEGS, ids=lambda leg: leg.name)

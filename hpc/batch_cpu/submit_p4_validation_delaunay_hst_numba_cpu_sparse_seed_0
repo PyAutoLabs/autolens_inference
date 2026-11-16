@@ -27,41 +27,38 @@
 # day-zero libraries hash the copy to another identifier, the runner exits 3.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   This submit runs ONE cell, `imaging/slam/hst_delaunay`. Per stage, the evaluations are the
-#   most any adopted row of this likelihood and model variant took, priced at Pulse's
-#   single-thread per-call time over 8 Nautilus worker(s)
-#   (catalogue/pulse_lens_runtime_reference.json). An adopted sibling on this cell and device
-#   measured each stage, and each stage takes the larger of the two.
-#   - default source_pix[1] = 53920 evals
-#     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[1]/seed_1);
-#     derived 6414 s (lifecycle/321ec1f6f2a5955a9a20); measured 12609 s
+#   This submit runs ONE cell, `imaging/slam/hst_delaunay`. The wall is the calibrated wall
+#   model (scripts/misc/wall/model.py, autolens_inference#69): per stage, evaluations from its
+#   free parameters and n_live, each costing the model's sampler floor plus Pulse's
+#   single-thread per-call time over 8 Nautilus worker(s) at the measured parallel efficiency
+#   (catalogue/pulse_lens_runtime_reference.json; a parametric source_lp stage of a pixelized
+#   chain pays the MGE per-call), plus the model's startup. An adopted sibling on this cell
+#   and device measured each stage, and each stage takes the larger of the two.
+#   - default source_pix[1] = 31596 evals (model: d=10, n_live=150); derived 7276 s
+#     (lifecycle/321ec1f6f2a5955a9a20); measured 12609 s
 #     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[1]/seed_1)
-#   - default source_pix[2] = 2120 evals
-#     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[2]/seed_1);
-#     derived 252 s (lifecycle/321ec1f6f2a5955a9a20); measured 454 s
+#   - default source_pix[2] = 2201 evals (model: d=3, n_live=75); derived 507 s
+#     (lifecycle/321ec1f6f2a5955a9a20); measured 454 s
 #     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[2]/seed_1)
-#   - default light[1] = 10180 evals
-#     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:light[1]/seed_1);
-#     derived 1211 s (lifecycle/321ec1f6f2a5955a9a20); measured 2269 s
+#   - default light[1] = 13692 evals (model: d=6, n_live=150); derived 3153 s
+#     (lifecycle/321ec1f6f2a5955a9a20); measured 2269 s
 #     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:light[1]/seed_1)
-#   - default mass_total[1] = 38660 evals
-#     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1);
-#     derived 4599 s (lifecycle/321ec1f6f2a5955a9a20); measured 8648 s
+#   - default mass_total[1] = 21928 evals (model: d=8, n_live=150); derived 5050 s
+#     (lifecycle/321ec1f6f2a5955a9a20); measured 8648 s
 #     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1)
-#   - light_fixed mass_total[1] = 34060 evals
-#     (imaging/delaunay/hst/light_fixed/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1);
-#     derived 4052 s (lifecycle/321ec1f6f2a5955a9a20); measured 4564 s
+#   - light_fixed mass_total[1] = 21928 evals (model: d=8, n_live=150); derived 5050 s
+#     (lifecycle/321ec1f6f2a5955a9a20); measured 4564 s
 #     (imaging/delaunay/hst/light_fixed/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1)
-#   The estimate is 28545 s (7.9 h); --time clears 1.5x of it.
+#   The estimate is 29998 s (8.3 h); --time clears 1.5x of it.
 #   cell: imaging/slam/hst_delaunay  device: ral_numba_cpu  precision: fp64
-#   lanes: 1  steps: 138940  source: measured-wall  wall: 28545  ref: 412624_1  headroom: 1.5
+#   lanes: 1  steps: 91345  source: measured-wall  wall: 29998  ref: 412624_1  headroom: 1.5
 #
 #SBATCH -J p4_validation_delaunay_hst_numba_cpu_sparse_seed_0
 #SBATCH --partition=ral
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=96gb
-#SBATCH --time=12:00:00
+#SBATCH --time=18:00:00
 #SBATCH --array=0
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err

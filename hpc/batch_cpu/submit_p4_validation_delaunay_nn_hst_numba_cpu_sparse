@@ -27,31 +27,27 @@
 # day-zero libraries hash the copy to another identifier, the runner exits 3.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   This submit runs ONE cell, `imaging/slam/hst_delaunay_nn`. Per stage, the evaluations are
-#   the most any adopted row of this likelihood and model variant took, priced at Pulse's
-#   single-thread per-call time over 8 Nautilus worker(s)
-#   (catalogue/pulse_lens_runtime_reference.json). This likelihood has no adopted row, so the
-#   evaluations are counted on the adopted `imaging/delaunay` rows, the same chain on the same
-#   data. No adopted row measured this cell on this device, so the row is `unmeasured` and the
-#   first arm IS the probe: read each stage's `wall_s / likelihood_evals` from its row.
-#   - default source_pix[1] = 53920 evals
-#     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[1]/seed_1);
-#     derived 8727 s (lifecycle/05dde64a0eb7fdd0c4a1)
-#   - default source_pix[2] = 2120 evals
-#     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[2]/seed_1);
-#     derived 343 s (lifecycle/05dde64a0eb7fdd0c4a1)
-#   - default light[1] = 10180 evals
-#     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:light[1]/seed_1);
-#     derived 1648 s (lifecycle/05dde64a0eb7fdd0c4a1)
-#   - default mass_total[1] = 38660 evals
-#     (imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1);
-#     derived 6257 s (lifecycle/05dde64a0eb7fdd0c4a1)
-#   - light_fixed mass_total[1] = 34060 evals
-#     (imaging/delaunay/hst/light_fixed/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1);
-#     derived 5513 s (lifecycle/05dde64a0eb7fdd0c4a1)
-#   The estimate is 22488 s (6.2 h); --time clears 3x of it.
+#   This submit runs ONE cell, `imaging/slam/hst_delaunay_nn`. The wall is the calibrated wall
+#   model (scripts/misc/wall/model.py, autolens_inference#69): per stage, evaluations from its
+#   free parameters and n_live, each costing the model's sampler floor plus Pulse's
+#   single-thread per-call time over 8 Nautilus worker(s) at the measured parallel efficiency
+#   (catalogue/pulse_lens_runtime_reference.json; a parametric source_lp stage of a pixelized
+#   chain pays the MGE per-call), plus the model's startup. No adopted row measured this cell
+#   on this device, so the row is `unmeasured` and the first arm IS the probe: read each
+#   stage's `wall_s / likelihood_evals` from its row.
+#   - default source_pix[1] = 31596 evals (model: d=10, n_live=150); derived 9740 s
+#     (lifecycle/05dde64a0eb7fdd0c4a1)
+#   - default source_pix[2] = 2201 evals (model: d=3, n_live=75); derived 679 s
+#     (lifecycle/05dde64a0eb7fdd0c4a1)
+#   - default light[1] = 13692 evals (model: d=6, n_live=150); derived 4221 s
+#     (lifecycle/05dde64a0eb7fdd0c4a1)
+#   - default mass_total[1] = 21928 evals (model: d=8, n_live=150); derived 6760 s
+#     (lifecycle/05dde64a0eb7fdd0c4a1)
+#   - light_fixed mass_total[1] = 21928 evals (model: d=8, n_live=150); derived 6760 s
+#     (lifecycle/05dde64a0eb7fdd0c4a1)
+#   The estimate is 28190 s (7.8 h); --time clears 3x of it.
 #   cell: imaging/slam/hst_delaunay_nn  device: ral_numba_cpu  precision: fp64
-#   lanes: 1  steps: 138940  source: unmeasured  probe-first: yes  wall: 22488
+#   lanes: 1  steps: 91345  source: unmeasured  probe-first: yes  wall: 28190
 #
 #SBATCH -J p4_validation_delaunay_nn_hst_numba_cpu_sparse
 #SBATCH --partition=ral

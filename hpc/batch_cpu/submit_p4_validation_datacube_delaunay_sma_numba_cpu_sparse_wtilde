@@ -23,9 +23,9 @@
 # path omits the pin and the core count, so the shared tree would resume another run's fit.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   This submit runs ONE cell, `datacube/search/sma_delaunay`. No adopted row of this
-#   likelihood counts its evaluations, so no wall is derived: the row is `unmeasured` and the
-#   first arm IS the probe (read each stage's `wall_s / likelihood_evals` from its row;
+#   This submit runs ONE cell, `datacube/search/sma_delaunay`. No phase-4 row records this
+#   likelihood's stage shapes, so no wall is derived: the row is `unmeasured` and the first
+#   arm IS the probe (read each stage's `wall_s / likelihood_evals` from its row;
 #   catalogue/pulse_lens_runtime_reference.json prices one evaluation).
 #   --time is the 5-00:00:00 cap, a CONTAINMENT, not a derived budget.
 #   cell: datacube/search/sma_delaunay  device: ral_numba_cpu  precision: fp64

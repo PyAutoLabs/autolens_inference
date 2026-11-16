@@ -12,6 +12,7 @@ the GAPS around those rows, and renders one submit per leg::
     python scripts/misc/campaigns/validation_p4.py --list    # print the manifest
     python scripts/misc/campaigns/validation_p4.py --write   # (re)render the submits
     python scripts/misc/campaigns/validation_p4.py --check   # exit 1 if a submit is stale
+    python scripts/misc/campaigns/validation_p4.py --validate  # estimate vs actual, per leg
 
 The legs:
 
@@ -28,8 +29,8 @@ The legs:
   ``imaging/mge`` (hst, default + light_fixed), ``interferometer/{rectangular,delaunay,mge}``
   and ``datacube/delaunay`` (sma, default), seeds 0-1 (the 4c-1 block below the targets). A
   family leaf (``slam._core.run_family``) takes no ``--stages-from`` or ``--export-prepared``.
-  A likelihood with no adopted row is ``unmeasured`` with no wall and the cap as --time, unless
-  :data:`EVALS_FROM` counts its evaluations on another likelihood's rows of the same chain.
+  A likelihood with no phase-4 row to read its stage shapes from (datacube/delaunay) is
+  ``unmeasured`` with no wall and the cap as --time.
 
 A chain leg is kept only for the seeds whose (likelihood, instrument, setup_id, host_class,
 model_variant, seed) has no adopted row, so the generator never re-runs one. A CPU-backend
@@ -50,16 +51,20 @@ has its own PyAutoFit output root under :data:`OUTPUT_BASE`, never the shared
   starts. Each leg then loads its own copy, and two legs never race on one stage's
   ``search_internal/`` (412624_0, 2026-10-19).
 
-Walls (``WALL-BASIS``, ``scripts/misc/wall/README.md``). Per stage the evaluations are the
-most any adopted row of the same likelihood and model variant took (any setup, any seed),
-and the per-evaluation cost is Pulse's per-call time of the matching runtime record in
+Walls (``WALL-BASIS``, ``scripts/misc/wall/README.md``) come from the calibrated wall model,
+``scripts/misc/wall/model.py`` (autolens_inference#69). Per stage, the evaluations follow from
+the stage's free parameters and n_live (read from the phase-4 ``stages.json`` rows,
+:func:`stage_shapes`). Each evaluation costs the model's floor plus the per-call the stage
+pays: Pulse's per-call time of the matching runtime record in
 ``catalogue/pulse_lens_runtime_reference.json`` (the exporter's own pairing,
-``match_profiling``). A leg whose cell and device have an adopted sibling is
+``match_profiling``), or the MGE per-call for a parametric stage of a pixelized chain. Each job
+adds the model's startup. A leg whose cell and device have an adopted sibling is
 ``measured-wall``: each stage takes the larger of that derivation and the sibling's measured
 wall, and the leg carries :data:`MEASURED_HEADROOM`. A leg without one is ``unmeasured``
 (``probe-first: yes``) and offers the derivation as its wall at the gate's 3x floor, unless
 3x would exceed :data:`MAX_TIME_S`; then it offers no wall and asks for that cap as a
-containment. Refreshing either input changes the walls: rerun ``--write``.
+containment. Refreshing either input changes the walls: rerun ``--write``. ``--validate``
+re-prices every leg with completed, non-resumed phase-4 rows against what it actually took.
 
 Nothing here submits anything; a run needs the human's go.
 """
@@ -82,6 +87,7 @@ for _path in (ROOT, ROOT / "scripts" / "misc", ROOT / "scripts" / "misc" / "tool
         sys.path.insert(0, str(_path))
 
 import export_inference_summary as summary  # noqa: E402  (stdlib-only)
+from wall import model as wall_model  # noqa: E402  (stdlib-only)
 
 from _inference_cli import config_name_for, parse_config_name  # noqa: E402  (stdlib-only)
 
@@ -129,21 +135,16 @@ STAGES_OF: dict[tuple[str, str], tuple[str, ...]] = {}
 #: The likelihoods whose leaf runs ``slam._core.run_family``: no ``--stages-from``, no
 #: ``--export-prepared``, and ``--lens-light`` only for a light_fixed leg (4c).
 FAMILY_KEYS: set[tuple[str, str]] = set()
-#: A likelihood with no adopted row of its own may count its evaluations on another
-#: likelihood's adopted rows of the SAME chain (never its walls: a sibling likelihood's
-#: measured wall is another cell's).
-EVALS_FROM: dict[tuple[str, str], tuple[str, str]] = {}
-#: ``(evaluations, reference)`` per stage for a likelihood no adopted row (nor EVALS_FROM
-#: chain) measures: a declared basis to price its wall on, instead of the cap (4c-3). Every
-#: such leg is still ``unmeasured``. One pair serves every stage, or a ``{stage: pair}`` map
-#: declares each stage's own (4c-2); every stage of such a leg is priced, its parametric
-#: stages included, since no measured sibling exists to price them instead.
-EVALS_BASIS: dict[tuple[str, str], tuple[int, str] | dict[str, tuple[int, str]]] = {}
 MEASURED_HEADROOM = 1.5
 UNMEASURED_HEADROOM = 3.0
 ROUND_S = 6 * 3600
 #: The longest --time asked of RAL by any submit in this repo (five days).
 MAX_TIME_S = 5 * 86400
+#: The phase-4 rows' release pin (``PIN``): their ``stages.json`` give each stage's free
+#: parameters and n_live, and ``--validate`` reads their walls.
+P4_ROWS_GLOB = "results/*/*/*/validation/*/*/seed_*/stages.json"
+#: The witness band of ``--validate``: actual over estimate, per leg.
+VALIDATE_BAND = (0.5, 2.0)
 CHAIN_CORES = 8
 #: --mem (GB): the clean-slate requests for the same cells (Delaunay 96, rectangular
 #: jax_cpu sparse 64); a sweep leg asks 4 GB per Nautilus worker, at least 64.
@@ -235,8 +236,6 @@ STAGES_OF.update(
     }
 )
 FAMILY_KEYS.update(_4C1_FAMILIES)
-#: DelaunayNN is the Delaunay chain with only the interpolation changed, on the same data.
-EVALS_FROM[_4C1_DELAUNAY_NN] = ("imaging", "delaunay")
 _LIGHT = ("default", "light_fixed")
 TARGETS += (
     # The Delaunay recipe on the natural-neighbour mesh: shares source_lp[1] as Delaunay does.
@@ -266,38 +265,21 @@ TARGETS += (
 # point and cluster, ``dense`` for weak). The wall-gate cell is the leaf's own
 # (``check_submits.LEGACY_CELLS``, the 4c-3 block).
 #
-# No adopted row measures any of them, so each prices its stage on EVALS_BASIS. Only the
-# source-plane point fit has a measured count: the committed Nautilus search rows of the same
-# model, sampler and n_live (scripts/point_source_source/source_plane/samplers/, 4700 to 4850
-# evaluations over five seeds). The others take a declared CEILING, never a measurement: 10x
-# that count for the two other 5-parameter fits (image-plane point, weak) and 200,000 for the
-# 13-parameter cluster. Every leg is `unmeasured` with `probe-first: yes`; at these per-call
-# costs each derivation is minutes, so --time is the 6 h floor (ROUND_S), which also covers the
-# sampler's own overhead (the source-plane search rows: ~55 s for 4850 evaluations).
+# Every leg is `unmeasured` with `probe-first: yes`, priced by the wall model (sampler floor
+# and startup dominate at these per-call costs), so --time is the 6 h floor (ROUND_S).
 # ---------------------------------------------------------------------------
 
 _4C3_SEARCHES = {
-    ("point_source_source", "source_plane"): ("na", 4850, "point_source_samplers"),
-    ("point_source_image", "image_plane"): ("na", 48500, "declared"),
-    ("cluster", "source_plane"): ("na", 200_000, "declared"),
-    ("cluster", "image_plane"): ("na", 200_000, "declared"),
-    ("weak", "isothermal"): ("dense", 48500, "declared"),
+    ("point_source_source", "source_plane"): "na",
+    ("point_source_image", "image_plane"): "na",
+    ("cluster", "source_plane"): "na",
+    ("cluster", "image_plane"): "na",
+    ("weak", "isothermal"): "dense",
 }
-#: The committed search row the source-plane count is the most of (seeds 0 and 1 took 4850).
-POINT_SOURCE_SAMPLERS = (
-    "results/point_source_source/source_plane/simple/samplers/default/nautilus/explicit/"
-    "jax_cpu_dense_fp64/seed_0/search.json"
-)
-for _key, (_inversion, _evals, _basis) in _4C3_SEARCHES.items():
+for _key, _inversion in _4C3_SEARCHES.items():
     INSTRUMENT_OF[_key] = "simple"
     STAGES_OF[_key] = ("modeling[1]",)
     FAMILY_KEYS.add(_key)
-    EVALS_BASIS[_key] = (
-        _evals,
-        POINT_SOURCE_SAMPLERS
-        if _basis == "point_source_samplers"
-        else "declared-ceiling-4c3-unmeasured",
-    )
     CELL[_key] = f"{_key[0]}/search/simple_{_key[1]}"
     LEAF[_key] = "modeling.py"
     CHAIN_MEM_GB[_key] = 16
@@ -322,38 +304,13 @@ for _key, (_inversion, _evals, _basis) in _4C3_SEARCHES.items():
 # ``Family.light_fixed``). The leaf is named for its instrument, so its cell is its path below
 # ``scripts/`` (``group/delaunay/validation/euclid_slam``) with no LEGACY_CELLS entry.
 #
-# No adopted row measures any of them, so each prices its stages on EVALS_BASIS, per stage: a
-# PROXY count, the most any adopted imaging row took at the same-named stage of the imaging
-# SLaM chain (``source_lp[0]``, which that chain lacks, takes ``source_lp[1]``'s), pinned here
-# with its record id (``test_family_4c2`` checks it against the adopted rows). Every stage,
-# parametric ones included (an upper bound for those), is priced at the likelihood's own
-# profiling per-call time. --mem: the clean-slate requests for the imaging cells (96 GB
-# Delaunay, 64 GB rectangular / MGE), 128 GB for the two-dataset fit.
+# Every leg is `unmeasured` (``probe-first: yes``) and priced by the wall model, every stage at
+# the likelihood's own profiling per-call except a parametric ``source_lp`` stage of a
+# pixelized chain, which pays the dataset type's MGE per-call. --mem: the clean-slate requests
+# for the imaging cells (96 GB Delaunay, 64 GB rectangular / MGE), 128 GB for the two-dataset
+# fit.
 # ---------------------------------------------------------------------------
 
-_4C2_IMAGING_EVALS = {
-    "source_lp[1]": (
-        92550,
-        "imaging/rectangular/hst/default/jax_gpu_sparse_fp64/hpc_a100/nautilus:source_lp[1]/seed_0",
-    ),
-    "source_pix[1]": (
-        53920,
-        "imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[1]/seed_1",
-    ),
-    "source_pix[2]": (
-        9460,
-        "imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[2]/seed_1",
-    ),
-    "light[1]": (
-        12000,
-        "imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:light[1]/seed_1",
-    ),
-    "mass_total[1]": (
-        38660,
-        "imaging/delaunay/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:mass_total[1]/seed_1",
-    ),
-}
-_4C2_PROXY_STAGE = {"source_lp[0]": "source_lp[1]"}
 _4C2_GROUP_PIXELIZED = ("source_lp[0]", *STAGES)
 _4C2_MGE = ("source_lp[1]", "light[1]", "mass_total[1]")
 #: (instrument, leaf, stages, source pixels, --mem GB, (Optimal CPU, Optimal GPU) setups).
@@ -370,14 +327,6 @@ for _key, (_instrument, _stages, _pixels, _mem, _cpu) in _4C2_FAMILIES.items():
     INSTRUMENT_OF[_key] = _instrument
     STAGES_OF[_key] = _stages
     FAMILY_KEYS.add(_key)
-    EVALS_BASIS[_key] = {
-        stage: (
-            _4C2_IMAGING_EVALS[_4C2_PROXY_STAGE.get(stage, stage)][0],
-            "proxy: max adopted imaging "
-            + _4C2_IMAGING_EVALS[_4C2_PROXY_STAGE.get(stage, stage)][1],
-        )
-        for stage in _stages
-    }
     if _pixels is not None:
         SOURCE_PIXELS[_key] = _pixels
     CELL[_key] = f"{_key[0]}/{_key[1]}/validation/{_instrument}_slam"
@@ -647,6 +596,33 @@ def references(root: Path = ROOT) -> list[dict]:
     return json.loads((root / summary.PULSE_REFERENCE).read_text())["records"]
 
 
+def _match(
+    dataset_type: str,
+    variant: str,
+    instrument: str,
+    setup_id: str,
+    host_class: str,
+    refs: list[dict],
+    source_pixels: int | None,
+) -> dict | None:
+    item = {
+        "likelihood": {"dataset_type": dataset_type, "variant": variant},
+        "instrument": instrument,
+        "setup_id": setup_id,
+        "host_class": host_class,
+        "model_variant": "default",
+    }
+    ref, _ = summary.match_profiling(item, refs, source_pixels)
+    return ref
+
+
+def _priced(ref: dict) -> tuple[float, str]:
+    """A record's per-call, or its declared override (``wall_model.PER_CALL_OVERRIDE``)."""
+    if ref["id"] in wall_model.PER_CALL_OVERRIDE:
+        return wall_model.PER_CALL_OVERRIDE[ref["id"]][0], f"{ref['id']} (override)"
+    return ref["per_call_s"], ref["id"]
+
+
 def per_call(leg: Leg, refs: list[dict]) -> tuple[float, str]:
     """Pulse's per-call time for the leg's likelihood and setup (the exporter's pairing).
     Profiling has no light_fixed record, so every stage is priced at the default model's."""
@@ -660,80 +636,111 @@ def per_call(leg: Leg, refs: list[dict]) -> tuple[float, str]:
     ref, reason = summary.match_profiling(item, refs, SOURCE_PIXELS.get(leg.key))
     if ref is None:
         raise SystemExit(f"{leg.name}: {reason}")
-    return ref["per_call_s"], ref["id"]
+    return _priced(ref)
 
 
-def stage_walls(leg: Leg, records: list[dict], refs: list[dict]) -> list[StageWall]:
-    """One estimate per (model variant, stage) the leg fits; none when no adopted row of the
-    likelihood (or of its :data:`EVALS_FROM` chain) counts the evaluations."""
-    evals_key = leg.key
+def _parametric_price(leg: Leg, refs: list[dict]) -> tuple[float, str] | None:
+    """What a parametric ``source_lp`` stage of a pixelized chain pays per evaluation: the
+    dataset type's MGE per-call on the same device (multi_dataset: imaging's, twice; numba:
+    ``NUMBA_PARAMETRIC_FACTOR`` x the JAX CPU one). None when no MGE record exists."""
+    if leg.likelihood == "mge" or leg.dataset_type in wall_model.SINGLE_SEARCH:
+        return None
+    dataset_type, n = (
+        ("imaging", 2) if leg.dataset_type == "multi_dataset" else (leg.dataset_type, 1)
+    )
+    device = "gpu" if leg.on_gpu else "cpu"
+    for setup_id in (f"jax_{device}_dense_fp64", f"jax_{device}_dense_fp64_nufft"):
+        ref = _match(
+            dataset_type,
+            "mge",
+            INSTRUMENT_OF.get((dataset_type, "mge"), INSTRUMENT),
+            setup_id,
+            leg.host_class,
+            refs,
+            None,
+        )
+        if ref is not None:
+            factor = wall_model.NUMBA_PARAMETRIC_FACTOR if leg.backend == "numba_cpu" else 1.0
+            price, ref_id = _priced(ref)
+            return n * factor * price, f"{ref_id} (MGE per-call, parametric stage)"
+    return None
+
+
+def stage_shapes(root: Path = ROOT) -> dict[tuple[str, str, str, str], tuple[int, int]]:
+    """``(free_parameters, n_live)`` per ``(dataset_type, variant, model_variant, stage)``, read
+    from the phase-4 rows (release pin :data:`PIN`). The model's dimension and live points are
+    known before a run; the rows are only where this repo records them."""
+    shapes: dict[tuple[str, str, str, str], tuple[int, int]] = {}
+    for path in sorted(root.glob(P4_ROWS_GLOB)):
+        row = json.loads(path.read_text())
+        if row.get("release_pin") != PIN:
+            continue
+        parts = path.relative_to(root).parts
+        for stage in row["stages"]:
+            if stage.get("free_parameters") and stage.get("n_live"):
+                key = (parts[1], parts[2], parts[5], stage["name"])
+                shapes[key] = (stage["free_parameters"], stage["n_live"])
+    return shapes
+
+
+def stage_walls(
+    leg: Leg,
+    records: list[dict],
+    refs: list[dict],
+    shapes: dict[tuple[str, str, str, str], tuple[int, int]] | None = None,
+) -> list[StageWall]:
+    """One wall-model estimate per (model variant, stage) the leg fits; none when no phase-4
+    row records a stage's shape (free parameters, n_live)."""
+    shapes = stage_shapes() if shapes is None else shapes
+    fitted = [(v, stage) for v in leg.model_variants for stage in leg.fitted_stages(v)]
+
+    def shape(variant: str, stage: str) -> tuple[int, int] | None:
+        return shapes.get((*leg.key, variant, stage)) or shapes.get((*leg.key, "default", stage))
+
+    if any(shape(v, stage) is None for v, stage in fitted):
+        return []
+    call_s, call_ref = per_call(leg, refs)
+    own = (wall_model.effective_per_call(call_s, leg.backend, leg.cores), call_ref)
+    parametric = _parametric_price(leg, refs)
+    override = wall_model.PER_EVAL_OVERRIDE.get((*leg.key, leg.host_class))
     rows = [
         r
         for r in records
         if not _is_sweep(r)
         and (r["likelihood"]["dataset_type"], r["likelihood"]["variant"]) == leg.key
     ]
-    if not rows and leg.key in EVALS_FROM:
-        evals_key = EVALS_FROM[leg.key]
-        rows = [
-            r
-            for r in records
-            if not _is_sweep(r)
-            and (r["likelihood"]["dataset_type"], r["likelihood"]["variant"]) == evals_key
-        ]
-    if not rows and leg.key not in EVALS_BASIS:
-        return []
-    call_s, call_ref = per_call(leg, refs)
-    # numba's per-call time is one thread; Nautilus forks `cores` workers. A JAX per-call
-    # (vmap.per_call) already prices one batched evaluation on the whole device.
-    parallel = leg.cores if leg.backend == "numba_cpu" else 1
     out = []
-    for variant in leg.model_variants:
-        for stage in leg.fitted_stages(variant):
-            same = [r for r in rows if r["model_variant"] == variant and r["stage"] == stage]
-            counted = [r for r in same if r["likelihood_evals"]]
-            declared = not counted and leg.key in EVALS_BASIS
-            if declared:
-                basis = EVALS_BASIS[leg.key]
-                evals, evals_ref = basis[stage] if isinstance(basis, dict) else basis
-                counted = [{"likelihood_evals": evals, "id": evals_ref}]
-            if not counted:
-                raise SystemExit(f"{leg.name}: no adopted row counts the evaluations of {stage}")
-            most = max(counted, key=lambda r: (r["likelihood_evals"], r["id"]))
-            derived = derived_ref = None
-            # No inversion: no profiling likelihood prices it, unless a declared basis does.
-            if stage != "source_lp[1]" or declared:
-                derived = call_s * most["likelihood_evals"] / parallel
-                derived_ref = call_ref
-            measured = measured_ref = None
-            siblings = [
-                r
-                for r in same
-                if evals_key == leg.key
-                and r["setup_id"] == leg.setup_id
-                and host_of(r) == leg.host_class
-                and isinstance(r["wall_s"], (int, float))
-            ]
-            if siblings:
-                sib = max(siblings, key=lambda r: (r["wall_s"], r["id"]))
-                # A sibling at c cores bounds an n-core run from above at c/n of its wall
-                # when n < c (efficiency <= 1), and at its own wall when n >= c.
-                scale = max(1.0, (sib["cores"] or leg.cores) / leg.cores)
-                measured, measured_ref = sib["wall_s"] * scale, sib["id"]
-            if derived is None and measured is None:
-                raise SystemExit(f"{leg.name}: nothing prices {variant} {stage}")
-            out.append(
-                StageWall(
-                    variant,
-                    stage,
-                    most["likelihood_evals"],
-                    most["id"],
-                    derived,
-                    derived_ref,
-                    measured,
-                    measured_ref,
-                )
+    for variant, stage in fitted:
+        free_parameters, n_live = shape(variant, stage)
+        evals = wall_model.stage_evals(free_parameters, n_live, leg.dataset_type)
+        evals_ref = f"model: d={free_parameters}, n_live={n_live}"
+        if override is not None:
+            derived = evals * override[0]
+            derived_ref = "wall_model.PER_EVAL_OVERRIDE"
+        else:
+            price, derived_ref = parametric if parametric and stage.startswith("source_lp") else own
+            derived = wall_model.stage_seconds(evals, price)
+        measured = measured_ref = None
+        siblings = [
+            r
+            for r in rows
+            if r["model_variant"] == variant
+            and r["stage"] == stage
+            and r["setup_id"] == leg.setup_id
+            and host_of(r) == leg.host_class
+            and isinstance(r["wall_s"], (int, float))
+        ]
+        if siblings:
+            sib = max(siblings, key=lambda r: (r["wall_s"], r["id"]))
+            # A sibling at c cores bounds an n-core run from above at c/n of its wall
+            # when n < c (efficiency <= 1), and at its own wall when n >= c.
+            scale = max(1.0, (sib["cores"] or leg.cores) / leg.cores)
+            measured, measured_ref = sib["wall_s"] * scale, sib["id"]
+        out.append(
+            StageWall(
+                variant, stage, evals, evals_ref, derived, derived_ref, measured, measured_ref
             )
+        )
     return out
 
 
@@ -753,7 +760,7 @@ def budget(leg: Leg, records: list[dict], refs: list[dict]) -> tuple[Budget, lis
         # Nothing counts the evaluations: no wall is derived, --time is the cap (containment).
         per_call(leg, refs)  # the likelihood and setup must still have a profiling record
         return Budget("unmeasured", None, 0, MAX_TIME_S, UNMEASURED_HEADROOM, ()), walls
-    estimate = math.ceil(sum(w.wall_s for w in walls))
+    estimate = math.ceil(wall_model.job_seconds([w.wall_s for w in walls]))
     measured = all(w.measured_s is not None for w in walls)
     if measured:
         jobs = sorted({_job_of(w.measured_ref, records) for w in walls})
@@ -804,31 +811,22 @@ def _para(text: str, indent: str = "# ", hang: str | None = None) -> list[str]:
 
 def _wall_block(leg: Leg, b: Budget, walls: list[StageWall]) -> list[str]:
     pricing = (
-        f"Pulse's single-thread per-call time over {leg.cores} Nautilus worker(s)"
+        f"Pulse's single-thread per-call time over {leg.cores} Nautilus worker(s) at the "
+        "measured parallel efficiency"
         if leg.backend == "numba_cpu"
         else "Pulse's per-call time of one batched JAX evaluation"
     )
     prose = (
-        f"This submit runs ONE cell, `{leg.cell}`. Per stage, the evaluations are the most any "
-        f"adopted row of this likelihood and model variant took, priced at {pricing} "
-        "(catalogue/pulse_lens_runtime_reference.json)."
+        f"This submit runs ONE cell, `{leg.cell}`. The wall is the calibrated wall model "
+        "(scripts/misc/wall/model.py, autolens_inference#69): per stage, evaluations from its "
+        "free parameters and n_live, each costing the model's sampler floor plus "
+        f"{pricing} (catalogue/pulse_lens_runtime_reference.json; a parametric source_lp stage "
+        "of a pixelized chain pays the MGE per-call), plus the model's startup."
     )
-    if leg.key in EVALS_BASIS and walls:
-        prose = (
-            f"This submit runs ONE cell, `{leg.cell}`. This likelihood has no adopted row, so per "
-            "stage the evaluations are its declared basis (EVALS_BASIS: a measured count or a "
-            f"declared ceiling, named below), priced at {pricing} "
-            "(catalogue/pulse_lens_runtime_reference.json)."
-        )
-    if leg.key in EVALS_FROM and walls:
-        prose += (
-            f" This likelihood has no adopted row, so the evaluations are counted on the adopted "
-            f"`{'/'.join(EVALS_FROM[leg.key])}` rows, the same chain on the same data."
-        )
     if not walls:
         prose = (
-            f"This submit runs ONE cell, `{leg.cell}`. No adopted row of this likelihood counts "
-            "its evaluations, so no wall is derived: the row is `unmeasured` and the first arm IS "
+            f"This submit runs ONE cell, `{leg.cell}`. No phase-4 row records this likelihood's "
+            "stage shapes, so no wall is derived: the row is `unmeasured` and the first arm IS "
             "the probe (read each stage's `wall_s / likelihood_evals` from its row; "
             "catalogue/pulse_lens_runtime_reference.json prices one evaluation)."
         )
@@ -1172,13 +1170,96 @@ def write_or_check(rendered: dict[str, str], root: Path, *, write: bool) -> int:
     return 1 if stale else 0
 
 
+# ---------------------------------------------------------------------------
+# Validation: the wall model against what each phase-4 leg actually took
+# ---------------------------------------------------------------------------
+
+
+def actual_wall(leg: Leg, root: Path = ROOT) -> tuple[float, tuple[str, ...]] | None:
+    """What the leg took, from its own phase-4 rows: per seed, the summed ``total_wall_s`` of
+    the stages that process fitted (a stage shared by both model variants counted once), plus
+    the model's startup, which the rows do not record; the slowest seed. Only seeds whose every
+    stage is completed and not resumed count (a resumed wall is not a measurement, 414362).
+    None when no seed qualifies.
+
+    Checked against SLURM ElapsedRaw for the 23 legs sacct was read for on 2026-11-06: the
+    summed rows are 1.00-1.09x below it on every chain (the remainder is startup). The startup
+    added here is the model's own, so on the shortest legs it pulls the ratio toward 1: weak on
+    the A100 took 39 s by sacct against 59 s reconstructed (sacct / estimate 0.59x, still in
+    the band)."""
+    prefix = f"results/{leg.dataset_type}/{leg.likelihood}/{leg.instrument}/validation/"
+    seeds: dict[int, dict[str, float]] = {}
+    jobs: set[str] = set()
+    spoiled: set[int] = set()
+    for path in sorted(root.glob(P4_ROWS_GLOB)):
+        rel = path.relative_to(root).as_posix()
+        if not rel.startswith(prefix):
+            continue
+        row = json.loads(path.read_text())
+        if (
+            row.get("release_pin") != PIN
+            or row.get("config_name") != leg.config_name
+            or row.get("results_tag") != leg.results_tag
+            or row.get("seed") not in leg.seeds
+        ):
+            continue
+        seed = row["seed"]
+        for stage in row["stages"]:
+            if stage.get("shared_from_config"):
+                continue
+            if not stage.get("completed") or stage.get("resumed"):
+                spoiled.add(seed)
+                continue
+            key = stage.get("output_path") or f"{rel}:{stage['name']}"
+            seeds.setdefault(seed, {})[key] = stage.get("total_wall_s") or stage["wall_s"]
+        jobs.add(str(row["slurm_job_id"]).split("_")[0])
+    walls = [sum(v.values()) for seed, v in seeds.items() if seed not in spoiled]
+    if not walls:
+        return None
+    return wall_model.job_seconds([max(walls)]), tuple(sorted(jobs))
+
+
+def validate(root: Path = ROOT) -> list[tuple[Leg, int, float, tuple[str, ...]]]:
+    """``(leg, estimate_s, actual_s, jobs)`` for every leg with a completed phase-4 row."""
+    records, refs = adopted_records(root), references(root)
+    shapes = stage_shapes(root)
+    out = []
+    for leg in planned_legs(records):
+        actual = actual_wall(leg, root)
+        if actual is None:
+            continue
+        walls = stage_walls(leg, records, refs, shapes)
+        estimate = math.ceil(wall_model.job_seconds([w.derived_s for w in walls]))
+        out.append((leg, estimate, *actual))
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--list", action="store_true", help="print the manifest")
     group.add_argument("--write", action="store_true", help="(re)render the submits")
     group.add_argument("--check", action="store_true", help="exit 1 if a submit is stale")
+    group.add_argument(
+        "--validate",
+        action="store_true",
+        help="the wall model against every completed phase-4 leg; exit 1 outside the band",
+    )
     args = parser.parse_args(argv)
+    if args.validate:
+        low, high = VALIDATE_BAND
+        rows = validate()
+        bad = 0
+        for leg, estimate, actual, jobs in sorted(rows, key=lambda r: r[2] / r[1]):
+            ratio = actual / estimate
+            ok = low <= ratio <= high
+            bad += not ok
+            print(
+                f"{'ok ' if ok else 'OUT'} {ratio:5.2f}x  actual {actual:8.0f} s"
+                f"  estimate {estimate:8d} s  {leg.name}  ({','.join(jobs)})"
+            )
+        print(f"{len(rows)} legs; {bad} outside {low:g}-{high:g}x (actual / estimate)")
+        return 1 if bad else 0
     if args.list:
         records, refs = adopted_records(), references()
         legs = planned_legs(records)

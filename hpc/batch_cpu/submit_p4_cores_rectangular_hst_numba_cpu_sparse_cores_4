@@ -31,19 +31,20 @@
 # day-zero libraries hash the copy to another identifier, the runner exits 3.
 #
 # WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
-#   This submit runs ONE cell, `imaging/slam/hst`. Per stage, the evaluations are the most any
-#   adopted row of this likelihood and model variant took, priced at Pulse's single-thread
-#   per-call time over 4 Nautilus worker(s) (catalogue/pulse_lens_runtime_reference.json). An
-#   adopted sibling on this cell and device measured each stage, and each stage takes the
-#   larger of the two: the 8-core sibling's wall x 8/4 below 8 cores (efficiency <= 1), its
-#   own wall at or above.
-#   - default source_pix[1] = 34540 evals
-#     (imaging/rectangular/hst/default/jax_cpu_sparse_fp64/hpc_a100/nautilus:source_pix[1]/seed_0);
-#     derived 4892 s (lifecycle/5f82f2a2be617991560c); measured 9923 s
+#   This submit runs ONE cell, `imaging/slam/hst`. The wall is the calibrated wall model
+#   (scripts/misc/wall/model.py, autolens_inference#69): per stage, evaluations from its free
+#   parameters and n_live, each costing the model's sampler floor plus Pulse's single-thread
+#   per-call time over 4 Nautilus worker(s) at the measured parallel efficiency
+#   (catalogue/pulse_lens_runtime_reference.json; a parametric source_lp stage of a pixelized
+#   chain pays the MGE per-call), plus the model's startup. An adopted sibling on this cell
+#   and device measured each stage, and each stage takes the larger of the two: the 8-core
+#   sibling's wall x 8/4 below 8 cores (efficiency <= 1), its own wall at or above.
+#   - default source_pix[1] = 31596 evals (model: d=10, n_live=150); derived 7660 s
+#     (lifecycle/5f82f2a2be617991560c); measured 9923 s
 #     (imaging/rectangular/hst/default/numba_cpu_sparse_fp64/hpc_ral_cpu/nautilus:source_pix[1]/seed_0)
-#   The estimate is 9924 s (2.8 h); --time clears 1.5x of it.
+#   The estimate is 9954 s (2.8 h); --time clears 1.5x of it.
 #   cell: imaging/slam/hst  device: ral_numba_cpu  precision: fp64
-#   lanes: 1  steps: 34540  source: measured-wall  wall: 9924  ref: 412622_0  headroom: 1.5
+#   lanes: 1  steps: 31596  source: measured-wall  wall: 9954  ref: 412622_0  headroom: 1.5
 #
 #SBATCH -J p4_cores_rectangular_hst_numba_cpu_sparse_cores_4
 #SBATCH --partition=ral
