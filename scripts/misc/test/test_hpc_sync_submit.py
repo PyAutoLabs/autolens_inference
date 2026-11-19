@@ -244,6 +244,11 @@ def test_dry_run_touches_nothing(rig):
         ["--env", "1BAD=x"],
         ["--env", "NOEQUALS"],
         ["--env", "X=line1\nline2"],
+        ["--env", "SBATCH_PARTITION=gpu"],  # sbatch reads it as --partition
+        ["--env", "SBATCH_EXPORT=NONE"],
+        ["--env", "SLURM_TIMELIMIT=99:00:00"],
+        ["--env", "LD_PRELOAD=/tmp/x.so"],
+        ["--env", "PATH=/tmp"],
         ["--campaign", "../escape"],
         ["--time"],  # missing value
         ["other_script"],  # a second script
@@ -273,4 +278,26 @@ def test_cancel_is_logged(rig):
 def test_cancel_refuses_a_non_job_id(rig):
     result = rig("cancel", "414392;id")
     assert result.returncode != 0
+    assert rig.ssh_calls() == []
+
+
+def test_a_failed_log_append_after_sbatch_is_an_error(rig):
+    """The pre-check passes, the append fails (here: /dev/full), and the submit must not exit 0."""
+    log_dir = rig.remote_root / "campaign" / "adhoc"
+    log_dir.mkdir(parents=True)
+    (log_dir / "actions.log").symlink_to("/dev/full")
+    result = rig("submit", "--cpu", SCRIPT)
+    assert len(rig.sbatch_calls()) == 1
+    assert result.returncode == 3
+    assert "could not be appended" in result.stderr
+
+
+def test_a_broken_python_stops_the_submit_before_ssh(rig, tmp_path):
+    broken = tmp_path / "broken_bin"
+    broken.mkdir()
+    _executable(broken / "python3", "#!/bin/bash\nexit 1\n")
+    path = f"{broken}{os.pathsep}{tmp_path / 'bin'}{os.pathsep}{os.environ['PATH']}"
+    result = rig("submit", "--cpu", SCRIPT, extra_env={"PATH": path})
+    assert result.returncode != 0
+    assert "action-log line" in result.stderr
     assert rig.ssh_calls() == []

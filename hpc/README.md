@@ -209,6 +209,9 @@ is deliberately not on the list: it belongs to the submit script (CPU work only 
 `--env NAME=VALUE` (repeatable) is exported in the login-node shell before `sbatch`, shell
 quoted, and sbatch's default `--export=ALL` carries it into the job. A plain laptop `export`
 never reaches the job, because `ssh` starts a fresh shell on RAL.
+`SBATCH_*`, `SLURM_*`, `SALLOC_*`, `SRUN_*`, `LD_*`, `PATH`, `BASH_ENV`, `ENV` and `IFS` are
+refused: sbatch reads `SBATCH_*` as its own options (`SBATCH_PARTITION=gpu` would move a CPU
+job onto the GPUs), and the rest change which programs run.
 
 Every submit and `cancel` appends one JSON line to `campaign/<name>/actions.log` in the RAL
 checkout and prints it: `{"utc", "user", "campaign", "action", "args", "exit"}`, the line

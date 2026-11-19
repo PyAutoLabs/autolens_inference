@@ -415,7 +415,13 @@ logged_remote() {
     remote+="( ${command} ); rc=\$?; "
     remote+="line=\$(printf $(printf '%q' "${fmt}") \"\$(date -u +%Y-%m-%dT%H:%M:%SZ)\" \"\$(id -un)\" "
     remote+="$(printf '%q' "${name}") $(printf '%q' "${action}") $(printf '%q' "${json_args}") \"\$rc\"); "
-    remote+="echo \"\$line\" >> $(printf '%q' "${log}"); echo \"\$line\"; exit \$rc"
+    # The append is checked too: the pre-check can pass and the append still fail (quota,
+    # NFS), and then the action happened unrecorded. Say so and fail (3 if the action
+    # itself succeeded), rather than exit 0.
+    remote+="if ! echo \"\$line\" >> $(printf '%q' "${log}"); then "
+    remote+="echo \"ERROR: the action ran (exit \$rc) but this line could not be appended to ${log}: \$line\" >&2; "
+    remote+="[ \"\$rc\" -eq 0 ] && rc=3; exit \$rc; fi; "
+    remote+="echo \"\$line\"; exit \$rc"
 
     if [[ "$dryrun" -eq 1 ]]; then
         echo "    dry run: nothing submitted, nothing logged. On ${HPC_HOST} this would run:"
@@ -496,7 +502,14 @@ submit() {
                     --env)
                         [[ "$value" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] \
                             || submit_fail "--env wants NAME=VALUE (got '${value}')"
-                        [[ "$value" != *$'\n'* ]] || submit_fail "--env value must be one line" ;;
+                        [[ "$value" != *$'\n'* ]] || submit_fail "--env value must be one line"
+                        # sbatch reads SBATCH_* (and SLURM_*) variables as its own options,
+                        # beating the script's #SBATCH lines: `--env SBATCH_PARTITION=gpu`
+                        # would put a CPU job on the GPUs. Those, and the variables that
+                        # decide which programs run, are not passed.
+                        [[ ! "${value%%=*}" =~ ^(SBATCH_|SLURM_|SALLOC_|SRUN_|LD_) \
+                            && ! "${value%%=*}" =~ ^(PATH|BASH_ENV|ENV|IFS)$ ]] \
+                            || submit_fail "--env may not set ${value%%=*}: sbatch or the shell reads it, so it would get round the allow-list" ;;
                     --campaign)
                         [[ "$value" =~ ^[A-Za-z0-9_.-]+$ ]] \
                             || submit_fail "campaign name '${value}' may use only letters, digits, _ . -" ;;
@@ -540,10 +553,15 @@ submit() {
     done
     command+=" $(printf '%q' "$script_name")"
 
+    # Built before anything runs: a failure here must stop the submit, and inside the
+    # call's own argument list `set -e` would not see it.
+    local json_args
+    json_args="$(json_list "--${batch_type}" "${log_args[@]}" "${script_name}")" \
+        || submit_fail "could not build the action-log line (is python3 on PATH?)"
+
     echo "==> [submit] ${env_args[*]:+${env_args[*]} }sbatch ${sbatch_args[*]:+${sbatch_args[*]} }${script_name}  (from hpc/batch_${batch_type}/, campaign ${campaign})  @  ${HPC_HOST}"
     echo ""
-    logged_remote "${campaign}" submit "$(json_list "--${batch_type}" "${log_args[@]}" "${script_name}")" \
-        "${command}" "${dryrun}"
+    logged_remote "${campaign}" submit "${json_args}" "${command}" "${dryrun}"
 }
 
 jobs_cmd() {
@@ -574,7 +592,9 @@ cancel() {
     [[ "$campaign" =~ ^[A-Za-z0-9_.-]+$ ]] || { echo "cancel: bad CAMPAIGN '${campaign}'"; exit 1; }
     echo "==> [cancel] scancel ${job_id}  (campaign ${campaign})  @  ${HPC_HOST}"
     echo ""
-    logged_remote "${campaign}" cancel "$(json_list "${job_id}")" "scancel ${job_id}" 0
+    local json_args
+    json_args="$(json_list "${job_id}")" || { echo "cancel: could not build the action-log line"; exit 1; }
+    logged_remote "${campaign}" cancel "${json_args}" "scancel ${job_id}" 0
 }
 
 # ---------------------------------------------------------------------------
