@@ -27,13 +27,17 @@
 #
 # Jobs:
 #   hpc/sync submit <script>     sbatch a submit script from hpc/batch_gpu/ (or --cpu)
-#                                --dependency <spec> is passed to sbatch as
-#                                --dependency=<spec> (e.g. afterok:<job id>).
+#                                Allow-listed sbatch overrides pass through:
+#                                --time, --no-requeue, --mem, --array, --dependency.
+#                                --env NAME=VALUE is exported on RAL before sbatch,
+#                                so the job sees it. Logged in
+#                                campaign/<name>/actions.log on RAL (--campaign,
+#                                default adhoc); --dry-run prints the command only.
 #                                GPU jobs run on --partition=gpu; CPU jobs on
 #                                --partition=ral (RAL has NO `cpu` partition).
 #   hpc/sync jobs                Show queued/running jobs (squeue)
 #   hpc/sync sacct               Show job history and exit codes (sacct)
-#   hpc/sync cancel <job_id>     Cancel a job by ID
+#   hpc/sync cancel <job_id>     Cancel a job by ID (logged like submit)
 #
 # Inspect:
 #   hpc/sync tail [gpu|cpu]      Stream the newest live SLURM log (Ctrl+C to stop)
@@ -375,51 +379,171 @@ EOF
 
 # ---------------------------------------------------------------------------
 # Jobs
+#
+# The action log (AUTONOMY.md "Scheduler actions"). Every job this script starts or
+# changes, by `submit` or `cancel`, appends one JSON line
+#
+#   {"utc": "...", "user": "<cluster user>", "campaign": "<name>", "action": "submit",
+#    "args": [...], "exit": 0}
+#
+# to campaign/<name>/actions.log under the project on RAL, and prints it. The log is
+# checked first, and nothing is done if it cannot be written, so no job starts or changes
+# unrecorded. `exit` is sbatch's (or scancel's) own exit code, so a refused submit is
+# recorded too. It is the line the euclid pipeline's `hpc/sync act` writes. A job outside
+# a campaign is logged under the campaign name `adhoc`, or $CAMPAIGN, or `--campaign`.
 # ---------------------------------------------------------------------------
+
+# json_list <value>... — the values as one JSON array, escaped by Python's json module.
+json_list() {
+    python3 -c 'import json, sys; print(json.dumps(sys.argv[1:]))' "$@"
+}
+
+# logged_remote <campaign> <action> <json args> <command> <dry-run 0|1>
+#
+# One ssh call: check the log can be written, run <command> in a subshell from the
+# project root on RAL, then append the log line with the command's exit status. With
+# dry-run set, print the remote command instead and touch nothing.
+logged_remote() {
+    local name="$1" action="$2" json_args="$3" command="$4" dryrun="$5"
+    local log="campaign/${name}/actions.log"
+    local fmt='{"utc": "%s", "user": "%s", "campaign": "%s", "action": "%s", "args": %s, "exit": %s}'
+
+    local remote
+    remote="cd $(printf '%q' "${REMOTE_ROOT}") && mkdir -p $(printf '%q' "campaign/${name}") "
+    remote+="&& : >> $(printf '%q' "${log}") "
+    remote+="|| { echo $(printf '%q' "ERROR: cannot write ${log} on the cluster; nothing was done") >&2; exit 1; }; "
+    remote+="( ${command} ); rc=\$?; "
+    remote+="line=\$(printf $(printf '%q' "${fmt}") \"\$(date -u +%Y-%m-%dT%H:%M:%SZ)\" \"\$(id -un)\" "
+    remote+="$(printf '%q' "${name}") $(printf '%q' "${action}") $(printf '%q' "${json_args}") \"\$rc\"); "
+    remote+="echo \"\$line\" >> $(printf '%q' "${log}"); echo \"\$line\"; exit \$rc"
+
+    if [[ "$dryrun" -eq 1 ]]; then
+        echo "    dry run: nothing submitted, nothing logged. On ${HPC_HOST} this would run:"
+        echo ""
+        echo "    ${remote}"
+        return 0
+    fi
+    local rc=0
+    ssh "${HPC_HOST}" "${remote}" || rc=$?
+    return "${rc}"
+}
+
+submit_usage() {
+    echo "Usage: $(basename "$0") submit [--gpu|--cpu] [sbatch override …] [--env NAME=VALUE …]"
+    echo "                         [--campaign NAME] [--dry-run] <submit_script_name>"
+    echo ""
+    echo "  sbatch overrides (each goes to sbatch before the script name, beating its #SBATCH line):"
+    echo "    --time <limit>         e.g. 24:00:00 or 1-00:00:00"
+    echo "    --no-requeue           no SLURM auto-requeue after a node failure"
+    echo "    --mem <size>           e.g. 64gb"
+    echo "    --array <spec>         e.g. 0-1 or 0,3"
+    echo "    --dependency <spec>    e.g. afterok:123456"
+    echo "  --env NAME=VALUE         exported on RAL before sbatch; sbatch carries it into the job"
+    echo "  --campaign NAME          the campaign/<NAME>/actions.log this submit is logged in"
+    echo "                           (default \$CAMPAIGN, else adhoc)"
+    echo "  --dry-run                print the remote command; submit and log nothing"
+    echo ""
+    echo "  e.g. hpc/sync submit submit_slam_hst_base_a100_jax_gpu_dense_fp64"
+    echo "       hpc/sync submit --dependency afterok:123456 submit_hst_cleanslate_mass_samplers_jax_gpu_dense"
+    echo "       hpc/sync submit --cpu --time 24:00:00 --no-requeue \\"
+    echo "           --env XLA_FLAGS=--xla_cpu_multi_thread_eigen=false submit_p4_validation_mge_hst_jax_cpu_dense"
+}
+
+submit_fail() {
+    echo "submit: $1" >&2
+    echo "" >&2
+    submit_usage >&2
+    exit 1
+}
 
 submit() {
     local script_name=""
     local batch_type="gpu"
-    local dependency=""
+    local campaign="${CAMPAIGN:-adhoc}"
+    local dryrun=0
+    local -a sbatch_args=() env_args=() log_args=()
+    local value
 
     while [[ $# -gt 0 ]]; do
+        # `--flag=value` is read as `--flag value`.
+        case "$1" in
+            --dependency=*|--time=*|--mem=*|--array=*|--env=*|--campaign=*)
+                set -- "${1%%=*}" "${1#*=}" "${@:2}" ;;
+        esac
         case "$1" in
             --cpu) batch_type="cpu" ;;
             --gpu) batch_type="gpu" ;;
-            --dependency)
-                dependency="${2:-}"; shift
-                [[ -n "$dependency" ]] || { echo "submit: --dependency needs a spec (e.g. afterok:123456)"; exit 1; }
-                ;;
-            --dependency=*) dependency="${1#--dependency=}" ;;
+            --dry-run) dryrun=1 ;;
+            --no-requeue)
+                sbatch_args+=("--no-requeue"); log_args+=("--no-requeue") ;;
+            --dependency|--time|--mem|--array|--env|--campaign)
+                [[ $# -ge 2 && -n "$2" ]] || submit_fail "$1 needs a value"
+                value="$2"
+                case "$1" in
+                    # The values are handed to sbatch, so each is held to SLURM's own alphabet.
+                    --dependency)
+                        [[ "$value" =~ ^[A-Za-z0-9_:,?+]+$ ]] \
+                            || submit_fail "refusing dependency spec '${value}' (want e.g. afterok:123456)" ;;
+                    --time)
+                        [[ "$value" =~ ^([0-9]+-)?[0-9]+(:[0-9]+){0,2}$ ]] \
+                            || submit_fail "refusing time limit '${value}' (want e.g. 24:00:00 or 1-00:00:00)" ;;
+                    --mem)
+                        [[ "$value" =~ ^[0-9]+([KMGTkmgt][Bb]?)?$ ]] \
+                            || submit_fail "refusing memory '${value}' (want e.g. 64gb)" ;;
+                    --array)
+                        [[ "$value" =~ ^[0-9][0-9,:%-]*$ ]] \
+                            || submit_fail "refusing array spec '${value}' (want e.g. 0-1)" ;;
+                    --env)
+                        [[ "$value" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] \
+                            || submit_fail "--env wants NAME=VALUE (got '${value}')"
+                        [[ "$value" != *$'\n'* ]] || submit_fail "--env value must be one line" ;;
+                    --campaign)
+                        [[ "$value" =~ ^[A-Za-z0-9_.-]+$ ]] \
+                            || submit_fail "campaign name '${value}' may use only letters, digits, _ . -" ;;
+                esac
+                case "$1" in
+                    --env) env_args+=("$value") ;;
+                    --campaign) campaign="$value" ;;
+                    *) sbatch_args+=("$1=${value}") ;;
+                esac
+                [[ "$1" == "--campaign" ]] || log_args+=("$1=${value}")
+                shift ;;
             "") ;;
-            *) script_name="$1" ;;
+            -*) submit_fail "unknown option '$1' (only the overrides below pass to sbatch)" ;;
+            *)
+                [[ -z "$script_name" ]] || submit_fail "one script per submit (got '${script_name}' and '$1')"
+                script_name="$1" ;;
         esac
         shift
     done
 
-    if [[ -z "$script_name" ]]; then
-        echo "Usage: $(basename "$0") submit [--gpu|--cpu] [--dependency <spec>] <submit_script_name>"
-        echo "  e.g. hpc/sync submit submit_slam_hst_base_a100_jax_gpu_dense_fp64"
-        echo "       hpc/sync submit --dependency afterok:123456 submit_hst_cleanslate_mass_samplers_jax_gpu_dense"
-        exit 1
-    fi
-    # The spec is handed to sbatch verbatim, so keep it to SLURM's dependency alphabet.
-    if [[ -n "$dependency" && ! "$dependency" =~ ^[A-Za-z0-9_:,?+]+$ ]]; then
-        echo "submit: refusing dependency spec '${dependency}' (want e.g. afterok:123456)"
-        exit 1
-    fi
-    local sbatch_flags=""
-    [[ -n "$dependency" ]] && sbatch_flags="--dependency=${dependency} "
-
-    local remote_dir="${REMOTE_ROOT}/hpc/batch_${batch_type}"
+    [[ -n "$script_name" ]] || submit_fail "which submit script?"
+    [[ "$script_name" =~ ^[A-Za-z0-9_.-]+$ ]] \
+        || submit_fail "'${script_name}' is not a submit script name in hpc/batch_${batch_type}/"
 
     # sbatch is run from hpc/batch_<type>/ on purpose: the submit scripts' `#SBATCH -o`
     # / `-e` paths are relative (output/…, error/…), so submitting from the project root
     # makes SLURM fail to open the error file and kill the batch step at t=1s with
     # ExitCode 0:53 and no .err to read. Jobs 342008-342010 died exactly this way.
-    echo "==> [submit] sbatch ${sbatch_flags}${script_name}  (from hpc/batch_${batch_type}/)  @  ${HPC_HOST}"
+    #
+    # `ssh` runs sbatch on the login node, which never sees a laptop variable, so each
+    # --env is exported there, quoted, before sbatch. sbatch's default --export=ALL then
+    # carries it into the job.
+    local command="cd hpc/batch_${batch_type}"
+    local entry arg
+    for entry in "${env_args[@]}"; do
+        command+=" && export ${entry%%=*}=$(printf '%q' "${entry#*=}")"
+    done
+    command+=" && sbatch"
+    for arg in "${sbatch_args[@]}"; do
+        command+=" $(printf '%q' "$arg")"
+    done
+    command+=" $(printf '%q' "$script_name")"
+
+    echo "==> [submit] ${env_args[*]:+${env_args[*]} }sbatch ${sbatch_args[*]:+${sbatch_args[*]} }${script_name}  (from hpc/batch_${batch_type}/, campaign ${campaign})  @  ${HPC_HOST}"
     echo ""
-    ssh "${HPC_HOST}" "cd '${remote_dir}' && sbatch ${sbatch_flags}'${script_name}'"
+    logged_remote "${campaign}" submit "$(json_list "--${batch_type}" "${log_args[@]}" "${script_name}")" \
+        "${command}" "${dryrun}"
 }
 
 jobs_cmd() {
@@ -435,14 +559,22 @@ sacct_cmd() {
         --format=JobID%20,JobName%40,State,ExitCode,Elapsed,Start"
 }
 
+# Logged like `submit`, under $CAMPAIGN (default adhoc).
 cancel() {
     local job_id="${1:-}"
     if [[ -z "$job_id" ]]; then
         echo "Usage: $(basename "$0") cancel <job_id>"
         exit 1
     fi
-    echo "==> [cancel] scancel ${job_id}  @  ${HPC_HOST}"
-    ssh "${HPC_HOST}" "scancel '${job_id}'"
+    if [[ ! "$job_id" =~ ^[0-9]+(_[0-9]+)?$ ]]; then
+        echo "cancel: '${job_id}' is not a job id (want e.g. 414392 or 414392_1)"
+        exit 1
+    fi
+    local campaign="${CAMPAIGN:-adhoc}"
+    [[ "$campaign" =~ ^[A-Za-z0-9_.-]+$ ]] || { echo "cancel: bad CAMPAIGN '${campaign}'"; exit 1; }
+    echo "==> [cancel] scancel ${job_id}  (campaign ${campaign})  @  ${HPC_HOST}"
+    echo ""
+    logged_remote "${campaign}" cancel "$(json_list "${job_id}")" "scancel ${job_id}" 0
 }
 
 # ---------------------------------------------------------------------------
@@ -537,11 +669,13 @@ print_help() {
     echo "  status                       Dry run — show what a pull would transfer"
     echo ""
     echo "Jobs:"
-    echo "  submit [--gpu|--cpu] [--dependency <spec>] <name>"
-    echo "                               sbatch a submit script (from hpc/batch_<type>/)"
+    echo "  submit [--gpu|--cpu] [--time T] [--no-requeue] [--mem M] [--array A]"
+    echo "         [--dependency D] [--env NAME=VALUE] [--campaign C] [--dry-run] <name>"
+    echo "                               sbatch a submit script (from hpc/batch_<type>/),"
+    echo "                               logged in campaign/<C>/actions.log on RAL"
     echo "  jobs                         Show queued/running jobs"
     echo "  sacct                        Show job history and exit codes"
-    echo "  cancel <job_id>              Cancel a job"
+    echo "  cancel <job_id>              Cancel a job (logged)"
     echo ""
     echo "Inspect:"
     echo "  tail [gpu|cpu]               Stream the newest live SLURM log (default: gpu)"
