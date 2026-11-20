@@ -119,8 +119,8 @@ cp hpc/sync.conf.example hpc/sync.conf   # then edit; sync.conf is gitignored
 | `hpc/sync pull` | Download batch logs, then run outputs and results |
 | `hpc/sync logs` | Batch logs only — small and fast, use mid-run |
 | `hpc/sync status` | Dry run: what a pull would transfer |
-| `hpc/sync submit [--gpu\|--cpu] [--dependency <spec>] <name>` | `sbatch` a submit script, from `hpc/batch_<type>/`; `--dependency` is passed through as `sbatch --dependency=<spec>` |
-| `hpc/sync jobs` / `sacct` / `cancel <id>` | `squeue` / `sacct` / `scancel` |
+| `hpc/sync submit [--gpu\|--cpu] [override …] [--env NAME=VALUE …] [--campaign C] [--dry-run] <name>` | `sbatch` a submit script, from `hpc/batch_<type>/`, logged; see [Submit overrides](#submit-overrides-environment-variables-and-the-action-log) |
+| `hpc/sync jobs` / `sacct` / `cancel <id>` | `squeue` / `sacct` / `scancel` (`cancel` is logged like `submit`) |
 | `hpc/sync tail [gpu\|cpu]` | Stream the newest live `.out` |
 | `hpc/sync du` | Remote disk usage (`-d1` — never a bare recursive `du`; RAL's NFS is slow) |
 | `hpc/sync check` | Verify SSH, remote paths, `sbatch`, and the local pull root |
@@ -189,6 +189,45 @@ git pull
 
 The PyAuto* libraries are a separate story again: resolved from the shared checkouts on
 `PYTHONPATH` and updated with `HPCPullPyAuto`, never pip-installed and never rsynced.
+
+### Submit overrides, environment variables and the action log
+
+`hpc/sync submit` passes an allow-listed set of sbatch options through, before the script
+name, so each beats the script's own `#SBATCH` line:
+
+| option | sbatch gets | e.g. |
+|--------|-------------|------|
+| `--time <limit>` | `--time=<limit>` | `24:00:00`, `1-00:00:00` |
+| `--no-requeue` | `--no-requeue` | (SLURM does not resume the job after a node failure) |
+| `--mem <size>` | `--mem=<size>` | `64gb` |
+| `--array <spec>` | `--array=<spec>` | `0-1`, `0,3` |
+| `--dependency <spec>` | `--dependency=<spec>` | `afterok:414392` (below) |
+
+Each value is checked against SLURM's own format; any other option is refused. The partition
+is deliberately not on the list: it belongs to the submit script (CPU work only ever on `ral`).
+
+`--env NAME=VALUE` (repeatable) is exported in the login-node shell before `sbatch`, shell
+quoted, and sbatch's default `--export=ALL` carries it into the job. A plain laptop `export`
+never reaches the job, because `ssh` starts a fresh shell on RAL.
+`SBATCH_*`, `SLURM_*`, `SALLOC_*`, `SRUN_*`, `LD_*`, `PATH`, `BASH_ENV`, `ENV` and `IFS` are
+refused: sbatch reads `SBATCH_*` as its own options (`SBATCH_PARTITION=gpu` would move a CPU
+job onto the GPUs), and the rest change which programs run.
+
+Every submit and `cancel` appends one JSON line to `campaign/<name>/actions.log` in the RAL
+checkout and prints it: `{"utc", "user", "campaign", "action", "args", "exit"}`, the line
+AUTONOMY.md "Scheduler actions" asks of every queue change. The name is `--campaign`, else
+`$CAMPAIGN`, else `adhoc`. If the log cannot be written nothing is submitted; `exit` is
+sbatch's own exit code, so a refused submit is recorded too. `--dry-run` prints the exact
+remote command and touches nothing.
+
+A likelihood-lifecycle phase-4 timing resubmit (24 h limit, no requeue, the jaxlib 0.11.2 JAX
+CPU deadlock workaround) is one command, with no scheduler-guard exception:
+
+```bash
+hpc/sync submit --cpu --campaign p4_validation --time 24:00:00 --no-requeue \
+    --env XLA_FLAGS=--xla_cpu_multi_thread_eigen=false \
+    submit_p4_validation_mge_hst_jax_cpu_dense
+```
 
 ### Chaining a submit on another job: `--dependency`
 
@@ -409,7 +448,8 @@ reads two environment variables, with defaults in the file:
   `n` arms (`0-11` for Nautilus and Emcee); a deferred sampler is refused.
 
 `hpc/sync submit` runs `sbatch` over ssh, which does not carry laptop variables, so the
-defaults in the file are what a submit runs; a later attempt edits them in a commit. The GPU
+defaults in the file are what a submit runs unless a submit passes `--env NAME=VALUE`
+(e.g. `--env PYAUTO_WAVE_ATTEMPT=3`); a lasting change edits them in a commit. The GPU
 attempt-2 array needs no dependency (the problems exist):
 `hpc/sync submit submit_hst_cleanslate_mass_samplers_jax_gpu_dense`.
 
