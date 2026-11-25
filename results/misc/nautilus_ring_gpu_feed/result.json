@@ -1,0 +1,581 @@
+{
+  "runs": [
+    {
+      "arm": "gpu",
+      "seed": 1,
+      "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "wall_s": 197.51304875699861,
+      "logz": 1205.6138177433174,
+      "ess": 1768.9576371441842,
+      "mean": [
+        0.7693016350685977,
+        -0.09968129007331367,
+        -0.049270502633606744
+      ],
+      "std": [
+        0.0002314850776876786,
+        7.805753146374549e-05,
+        0.00019964885797485213
+      ],
+      "calls": 14300,
+      "native": {
+        "n_live": 200,
+        "n_update": 200,
+        "n_batch": 100,
+        "n_networks": 4
+      },
+      "batches": 143,
+      "eval_s": 11.68039373800275,
+      "first_batch_s": 4.195037503999629,
+      "warm_batch_ms": 44.53305749939318,
+      "cache_sizes": [
+        1
+      ],
+      "width": 100,
+      "membership_jobs": 0,
+      "wait_s": 0.0,
+      "collect_s": 7.328413606992399,
+      "digest": "5339d50a278275f64ee9e1fa83c7f4a04cb866b1dc3d1a64e3173391d914321f",
+      "process_wall_s": 203.19825576699986,
+      "latent_100_s": 42.63707399368286,
+      "resources": {
+        "wall_s": 192.7,
+        "cpu_s": 196.0,
+        "cpu_efficiency": 0.254,
+        "peak_rss_mb": 2048,
+        "peak_rss_source": "getrusage",
+        "gpu": null,
+        "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz"
+      }
+    },
+    {
+      "arm": "feed",
+      "seed": 1,
+      "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "wall_s": 222.72009840600003,
+      "logz": 1205.6138177433174,
+      "ess": 1768.9576371441965,
+      "mean": [
+        0.7693016350685974,
+        -0.09968129007331347,
+        -0.04927050263360676
+      ],
+      "std": [
+        0.00023148507768767956,
+        7.805753146374575e-05,
+        0.00019964885797485284
+      ],
+      "calls": 14300,
+      "native": {
+        "n_live": 200,
+        "n_update": 200,
+        "n_batch": 100,
+        "n_networks": 4
+      },
+      "batches": 143,
+      "eval_s": 14.274578549015132,
+      "first_batch_s": 5.374558920999334,
+      "warm_batch_ms": 67.17397700049332,
+      "cache_sizes": [
+        1
+      ],
+      "width": 50,
+      "membership_jobs": 1024,
+      "wait_s": 0.07327021901255648,
+      "collect_s": 8.52087218199631,
+      "digest": "5339d50a278275f64ee9e1fa83c7f4a04cb866b1dc3d1a64e3173391d914321f",
+      "process_wall_s": 229.39872109799944,
+      "latent_100_s": 46.471627712249756,
+      "resources": {
+        "wall_s": 219.5,
+        "cpu_s": 225.2,
+        "cpu_efficiency": 0.256,
+        "peak_rss_mb": 2062,
+        "peak_rss_source": "getrusage",
+        "gpu": null,
+        "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz"
+      }
+    },
+    {
+      "arm": "split",
+      "seed": 1,
+      "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "wall_s": 207.32741439200072,
+      "logz": 1205.6138177433174,
+      "ess": 1768.957637144185,
+      "mean": [
+        0.7693016350685963,
+        -0.09968129007331349,
+        -0.04927050263360673
+      ],
+      "std": [
+        0.000231485077687679,
+        7.805753146374564e-05,
+        0.00019964885797485256
+      ],
+      "calls": 14300,
+      "native": {
+        "n_live": 200,
+        "n_update": 200,
+        "n_batch": 100,
+        "n_networks": 4
+      },
+      "batches": 143,
+      "eval_s": 12.617202260998965,
+      "first_batch_s": 4.5318991120002465,
+      "warm_batch_ms": 46.421927499977755,
+      "cache_sizes": [
+        1
+      ],
+      "width": 50,
+      "membership_jobs": 0,
+      "wait_s": 0.0,
+      "collect_s": 7.803032776006148,
+      "digest": "5339d50a278275f64ee9e1fa83c7f4a04cb866b1dc3d1a64e3173391d914321f",
+      "process_wall_s": 213.51485270800003,
+      "latent_100_s": 44.83046841621399,
+      "resources": {
+        "wall_s": 204.3,
+        "cpu_s": 208.9,
+        "cpu_efficiency": 0.256,
+        "peak_rss_mb": 2037,
+        "peak_rss_source": "getrusage",
+        "gpu": null,
+        "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz"
+      }
+    },
+    {
+      "arm": "cpu",
+      "seed": 1,
+      "device": "cpu",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "wall_s": 149.78962076000062,
+      "logz": 1205.6138177472387,
+      "ess": 1768.957653404439,
+      "mean": [
+        0.7693016350682601,
+        -0.09968129007342759,
+        -0.04927050263389857
+      ],
+      "std": [
+        0.00023148507758846744,
+        7.80575314302834e-05,
+        0.00019964885788928245
+      ],
+      "calls": 14300,
+      "native": {
+        "n_live": 200,
+        "n_update": 200,
+        "n_batch": 100,
+        "n_networks": 4
+      },
+      "batches": 143,
+      "eval_s": 16.857464556993364,
+      "first_batch_s": 4.1149330390016985,
+      "warm_batch_ms": 85.44400699975085,
+      "cache_sizes": [
+        1
+      ],
+      "width": 100,
+      "membership_jobs": 0,
+      "wait_s": 0.0,
+      "collect_s": 12.687410922995696,
+      "digest": "5339d50a278275f64ee9e1fa83c7f4a04cb866b1dc3d1a64e3173391d914321f",
+      "process_wall_s": 154.87980436500038,
+      "latent_100_s": 10.35097885131836,
+      "resources": {
+        "wall_s": 147.0,
+        "cpu_s": 169.6,
+        "cpu_efficiency": 0.289,
+        "peak_rss_mb": 1943,
+        "peak_rss_source": "getrusage",
+        "gpu": null,
+        "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz"
+      }
+    },
+    {
+      "arm": "cpu",
+      "seed": 2,
+      "device": "cpu",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "wall_s": 136.33737669199945,
+      "logz": 1205.6153023475513,
+      "ess": 1827.1912375222478,
+      "mean": [
+        0.7693078022386263,
+        -0.09967921036910526,
+        -0.049265183648780055
+      ],
+      "std": [
+        0.00023325650402040795,
+        7.865473461728547e-05,
+        0.00020117668589689068
+      ],
+      "calls": 15000,
+      "native": {
+        "n_live": 200,
+        "n_update": 200,
+        "n_batch": 100,
+        "n_networks": 4
+      },
+      "batches": 150,
+      "eval_s": 14.472012749991336,
+      "first_batch_s": 2.7494904849991144,
+      "warm_batch_ms": 76.92184999905294,
+      "cache_sizes": [
+        1
+      ],
+      "width": 100,
+      "membership_jobs": 0,
+      "wait_s": 0.0,
+      "collect_s": 11.67002084300293,
+      "digest": "a5727d42462f9f13c38a06691ac8ef9c14346c0bfe0009dd1c5dd91e544d5c87",
+      "process_wall_s": 140.2225844149998,
+      "latent_100_s": 9.429752349853516,
+      "resources": {
+        "wall_s": 134.6,
+        "cpu_s": 154.1,
+        "cpu_efficiency": 0.286,
+        "peak_rss_mb": 1893,
+        "peak_rss_source": "getrusage",
+        "gpu": null,
+        "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz"
+      }
+    },
+    {
+      "arm": "split",
+      "seed": 2,
+      "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "wall_s": 230.7237221510004,
+      "logz": 1205.61530234269,
+      "ess": 1827.1912496384018,
+      "mean": [
+        0.7693078022407606,
+        -0.09967921036838608,
+        -0.04926518364694036
+      ],
+      "std": [
+        0.00023325650495915133,
+        7.865473493383076e-05,
+        0.00020117668670652998
+      ],
+      "calls": 15000,
+      "native": {
+        "n_live": 200,
+        "n_update": 200,
+        "n_batch": 100,
+        "n_networks": 4
+      },
+      "batches": 150,
+      "eval_s": 12.15606033500444,
+      "first_batch_s": 3.6171559390004404,
+      "warm_batch_ms": 48.3516200001759,
+      "cache_sizes": [
+        1
+      ],
+      "width": 50,
+      "membership_jobs": 0,
+      "wait_s": 0.0,
+      "collect_s": 8.190110724995975,
+      "digest": "a5727d42462f9f13c38a06691ac8ef9c14346c0bfe0009dd1c5dd91e544d5c87",
+      "process_wall_s": 235.990550257,
+      "latent_100_s": 50.92389702796936,
+      "resources": {
+        "wall_s": 229.1,
+        "cpu_s": 235.2,
+        "cpu_efficiency": 0.257,
+        "peak_rss_mb": 2047,
+        "peak_rss_source": "getrusage",
+        "gpu": null,
+        "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz"
+      }
+    },
+    {
+      "arm": "feed",
+      "seed": 2,
+      "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "wall_s": 215.8899990250011,
+      "logz": 1205.61530234269,
+      "ess": 1827.1912496384043,
+      "mean": [
+        0.7693078022407589,
+        -0.09967921036838626,
+        -0.049265183646940415
+      ],
+      "std": [
+        0.00023325650495915044,
+        7.865473493383031e-05,
+        0.00020117668670652925
+      ],
+      "calls": 15000,
+      "native": {
+        "n_live": 200,
+        "n_update": 200,
+        "n_batch": 100,
+        "n_networks": 4
+      },
+      "batches": 150,
+      "eval_s": 13.52108469200357,
+      "first_batch_s": 4.614330735999829,
+      "warm_batch_ms": 56.90934600170294,
+      "cache_sizes": [
+        1
+      ],
+      "width": 50,
+      "membership_jobs": 1242,
+      "wait_s": 0.07184964399675664,
+      "collect_s": 8.521093065999594,
+      "digest": "a5727d42462f9f13c38a06691ac8ef9c14346c0bfe0009dd1c5dd91e544d5c87",
+      "process_wall_s": 223.41908790900015,
+      "latent_100_s": 42.397316455841064,
+      "resources": {
+        "wall_s": 213.2,
+        "cpu_s": 219.7,
+        "cpu_efficiency": 0.258,
+        "peak_rss_mb": 2034,
+        "peak_rss_source": "getrusage",
+        "gpu": null,
+        "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz"
+      }
+    },
+    {
+      "arm": "gpu",
+      "seed": 2,
+      "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "wall_s": 190.03639452300013,
+      "logz": 1205.61530234269,
+      "ess": 1827.1912496384282,
+      "mean": [
+        0.7693078022407615,
+        -0.0996792103683861,
+        -0.04926518364694033
+      ],
+      "std": [
+        0.0002332565049591509,
+        7.865473493383055e-05,
+        0.00020117668670652965
+      ],
+      "calls": 15000,
+      "native": {
+        "n_live": 200,
+        "n_update": 200,
+        "n_batch": 100,
+        "n_networks": 4
+      },
+      "batches": 150,
+      "eval_s": 12.247123730005114,
+      "first_batch_s": 4.125238850001551,
+      "warm_batch_ms": 45.44310399978713,
+      "cache_sizes": [
+        1
+      ],
+      "width": 100,
+      "membership_jobs": 0,
+      "wait_s": 0.0,
+      "collect_s": 7.95087026399051,
+      "digest": "a5727d42462f9f13c38a06691ac8ef9c14346c0bfe0009dd1c5dd91e544d5c87",
+      "process_wall_s": 195.92076016800092,
+      "latent_100_s": 39.822669982910156,
+      "resources": {
+        "wall_s": 187.9,
+        "cpu_s": 192.2,
+        "cpu_efficiency": 0.256,
+        "peak_rss_mb": 2034,
+        "peak_rss_source": "getrusage",
+        "gpu": null,
+        "cpu_model": "Intel(R) Core(TM) i9-10885H CPU @ 2.40GHz"
+      }
+    }
+  ],
+  "pairs": [
+    {
+      "seed": 1,
+      "correctness": {
+        "cpu": {
+          "proposals_match": true,
+          "max_log_l_error": 3.0968831197242253e-06,
+          "values_outside_tolerance": 8,
+          "logz_delta": 3.92128640669398e-09,
+          "max_mean_shift_sd": 1.461711646521841e-09,
+          "passes": false
+        },
+        "gpu": {
+          "proposals_match": true,
+          "max_log_l_error": 0.0,
+          "values_outside_tolerance": 0,
+          "logz_delta": 0.0,
+          "max_mean_shift_sd": 0.0,
+          "passes": true
+        },
+        "split": {
+          "proposals_match": true,
+          "max_log_l_error": 3.637978807091713e-12,
+          "values_outside_tolerance": 0,
+          "logz_delta": 0.0,
+          "max_mean_shift_sd": 6.234915643072255e-12,
+          "passes": true
+        },
+        "feed": {
+          "proposals_match": true,
+          "max_log_l_error": 3.637978807091713e-12,
+          "values_outside_tolerance": 0,
+          "logz_delta": 0.0,
+          "max_mean_shift_sd": 2.489049111162856e-12,
+          "passes": true
+        }
+      },
+      "feeder_saving_pct": {
+        "cpu": -48.68860557625136,
+        "gpu": -12.762219917942641,
+        "split": -7.424336072071913
+      },
+      "passes": false
+    },
+    {
+      "seed": 2,
+      "correctness": {
+        "cpu": {
+          "proposals_match": true,
+          "max_log_l_error": 4.503060608840315e-06,
+          "values_outside_tolerance": 11,
+          "logz_delta": 4.8612491809763014e-09,
+          "max_mean_shift_sd": 9.153789393067624e-09,
+          "passes": false
+        },
+        "gpu": {
+          "proposals_match": true,
+          "max_log_l_error": 0.0,
+          "values_outside_tolerance": 0,
+          "logz_delta": 0.0,
+          "max_mean_shift_sd": 0.0,
+          "passes": true
+        },
+        "split": {
+          "proposals_match": true,
+          "max_log_l_error": 3.637978807091713e-12,
+          "values_outside_tolerance": 0,
+          "logz_delta": 0.0,
+          "max_mean_shift_sd": 3.807732692623803e-12,
+          "passes": true
+        },
+        "feed": {
+          "proposals_match": true,
+          "max_log_l_error": 3.637978807091713e-12,
+          "values_outside_tolerance": 0,
+          "logz_delta": 0.0,
+          "max_mean_shift_sd": 1.0947231491293436e-11,
+          "passes": true
+        }
+      },
+      "feeder_saving_pct": {
+        "cpu": -58.34982619089073,
+        "gpu": -13.604554310186035,
+        "split": 6.42921455483939
+      },
+      "passes": false
+    }
+  ],
+  "advance": false
+}

@@ -1,0 +1,134 @@
+{
+  "probes": {
+    "cpu": {
+      "arm": "cpu",
+      "seed": 1,
+      "device": "cpu",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "common": {
+        "50": {
+          "values": [
+            60.21924369082626,
+            -2572.8175323084997,
+            -1705.6645120808025,
+            213.7582978271539,
+            -2676.4127226025594,
+            -365.8816418770575,
+            -3172.535058381166,
+            -319.16881891848607,
+            -2629.9971167053345,
+            -2192.518093718568,
+            -67.34347507947496,
+            -3513.668230733406,
+            -2412.178067137048
+          ],
+          "first_s": 3.653722259999995
+        },
+        "100": {
+          "values": [
+            60.21924369082626,
+            -2572.8175323084997,
+            -1705.6645120808025,
+            213.7582978271539,
+            -2676.4127226025594,
+            -365.8816418770575,
+            -3172.535058381166,
+            -319.16881891848607,
+            -2629.9971167053345,
+            -2192.518093718568,
+            -67.34347507947496,
+            -3513.668230733406,
+            -2412.178067137048
+          ],
+          "first_s": 2.9134565239983203
+        }
+      }
+    },
+    "gpu": {
+      "arm": "gpu",
+      "seed": 1,
+      "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+      "hashes": {
+        "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+        "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+        "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+        "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+        "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+        "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+      },
+      "parameters": [
+        "einstein_radius",
+        "centre_0",
+        "centre_1"
+      ],
+      "common": {
+        "50": {
+          "values": [
+            60.219243690836265,
+            -2572.817532308497,
+            -1705.6645120807998,
+            213.75829782715573,
+            -2676.412722602555,
+            -365.8816418770557,
+            -3172.535058381166,
+            -319.16881891848243,
+            -2629.9971167053272,
+            -2192.518093718564,
+            -67.34347507946586,
+            -3513.668230733406,
+            -2412.178067137047
+          ],
+          "first_s": 5.613889072999882
+        },
+        "100": {
+          "values": [
+            60.219243690834446,
+            -2572.817532308496,
+            -1705.6645120807998,
+            213.75829782715664,
+            -2676.412722602555,
+            -365.8816418770557,
+            -3172.535058381165,
+            -319.16881891848243,
+            -2629.9971167053272,
+            -2192.518093718564,
+            -67.34347507946677,
+            -3513.668230733406,
+            -2412.178067137046
+          ],
+          "first_s": 3.724568915000418
+        }
+      }
+    }
+  },
+  "revisions": {
+    "PyAutoNerves": "3af6de8d6f9262289bd5e9dd2d78e191403332f1",
+    "PyAutoFit": "cc764bf70bcca8015fb6eb2e99cbb1a226a073ad",
+    "PyAutoArray": "5240c7e88618d4bb0d9845e07e3ddf4e18bef1d7",
+    "PyAutoGalaxy": "9756fa9c1615d18b3e7d21fcb2e2c8e3b5290c63",
+    "PyAutoLens": "930de76be28fc5f708a5c05efe9c8104ef9c0b89",
+    "autolens_assistant": "5a0d8e5ee62ebf2566249aa01f967bf73b772a34",
+    "autofit_profiling": "7db263c56cddd3c177aab815cce467b0393ed537"
+  },
+  "python": "Python 3.12.10",
+  "packages": {
+    "jax": "0.12.0.1",
+    "jaxlib": "0.12.0.1",
+    "numpy": "2.2.6",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.5.1",
+    "nautilus-sampler": "1.0.5"
+  }
+}

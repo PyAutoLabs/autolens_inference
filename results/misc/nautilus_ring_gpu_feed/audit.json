@@ -1,0 +1,86 @@
+{
+  "reference_log_l": 60.21924369080898,
+  "conditional_centre_log_l": 60.21924369083172,
+  "inputs": {
+    "data.fits": "a83c44e890dcf730783bccc77f21d2dde8dfdc3416915bbd2feceba83a548f98",
+    "noise_map.fits": "7ed7be41cd60c1f3d0f1735a46e2b92fc305db18af7b984995b1913f819b5d08",
+    "psf.fits": "3a22dced26fc3107d222c137dde3d2e96ecc6c61d7ea8e5b8093ceec43b5c88e",
+    "mask_extra_galaxies.fits": "7456f8ece19d704ff5f35e3eb4a1a4aa5718e6d20ac35fcbbbf97158b5ddf621",
+    "info.json": "617e4388dccd4a46114b453ad57e6f5d1dbccc0fb4130a60f52ab79d708b6e51",
+    "tracer.json": "4ca9d0e1236e3f9aac8d28fb93c7e94e6bb41c3ccab864d8d361a7e77e2c6182"
+  },
+  "checks": [
+    {
+      "case": "s1-cpu",
+      "points": 10,
+      "values_outside_tolerance": 2,
+      "worst_pair_index": 12746,
+      "worst_pair_numpy": 1244.3613447095418,
+      "worst_pair_backend": 1244.361335589162,
+      "max_error": 9.12037967282231e-06
+    },
+    {
+      "case": "s1-feed",
+      "points": 10,
+      "values_outside_tolerance": 2,
+      "worst_pair_index": 12746,
+      "worst_pair_numpy": 1244.3613447095418,
+      "worst_pair_backend": 1244.361332492279,
+      "max_error": 1.2217262792546535e-05
+    },
+    {
+      "case": "s1-gpu",
+      "points": 10,
+      "values_outside_tolerance": 2,
+      "worst_pair_index": 12746,
+      "worst_pair_numpy": 1244.3613447095418,
+      "worst_pair_backend": 1244.361332492279,
+      "max_error": 1.2217262792546535e-05
+    },
+    {
+      "case": "s1-split",
+      "points": 10,
+      "values_outside_tolerance": 2,
+      "worst_pair_index": 12746,
+      "worst_pair_numpy": 1244.3613447095418,
+      "worst_pair_backend": 1244.3613324922794,
+      "max_error": 1.2217262337799184e-05
+    },
+    {
+      "case": "s2-cpu",
+      "points": 10,
+      "values_outside_tolerance": 3,
+      "worst_pair_index": 14188,
+      "worst_pair_numpy": 1243.9167793697134,
+      "worst_pair_backend": 1243.916880086132,
+      "max_error": 0.00010071641872855253
+    },
+    {
+      "case": "s2-feed",
+      "points": 10,
+      "values_outside_tolerance": 3,
+      "worst_pair_index": 14188,
+      "worst_pair_numpy": 1243.9167793697134,
+      "worst_pair_backend": 1243.9168755830706,
+      "max_error": 9.621335721021751e-05
+    },
+    {
+      "case": "s2-gpu",
+      "points": 10,
+      "values_outside_tolerance": 3,
+      "worst_pair_index": 14188,
+      "worst_pair_numpy": 1243.9167793697134,
+      "worst_pair_backend": 1243.9168755830715,
+      "max_error": 9.621335811971221e-05
+    },
+    {
+      "case": "s2-split",
+      "points": 10,
+      "values_outside_tolerance": 3,
+      "worst_pair_index": 14188,
+      "worst_pair_numpy": 1243.9167793697134,
+      "worst_pair_backend": 1243.9168755830706,
+      "max_error": 9.621335721021751e-05
+    }
+  ]
+}
