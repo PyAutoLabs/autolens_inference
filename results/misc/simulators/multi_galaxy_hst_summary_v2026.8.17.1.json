@@ -1,0 +1,49 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "type": "multi_galaxy",
+  "instrument": "hst",
+  "configuration": {
+    "dataset_type": "multi_galaxy",
+    "instrument": "hst",
+    "provenance": "autolens_workspace scripts/multi_galaxy/simulator.py (grid 200x200 at 0.05\", galaxies, exposure 900 s, sky 0.1, mask_extra_galaxies 3 x 0.3\") and modeling.py (3.0\" mask, noise scaling, radial-bin over-sampling on both lenses); autolens_visualization true_models/multi_galaxy.py; PSF from instruments/imaging.py hst (21x21, sigma 0.05\")",
+    "shape_native": [
+      200,
+      200
+    ],
+    "pixel_scale": 0.05,
+    "psf": {
+      "shape": [
+        21,
+        21
+      ],
+      "sigma": 0.05
+    },
+    "exposure_time": 900.0,
+    "background_sky_level": 0.1,
+    "noise_seed": 1,
+    "over_sampling": {
+      "sub_size_list": [
+        32,
+        8,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centres": [
+        [
+          0.35,
+          0.25
+        ],
+        [
+          -0.35,
+          -0.25
+        ]
+      ]
+    }
+  },
+  "phases": {
+    "simulate": 1.8848245779518038
+  }
+}
