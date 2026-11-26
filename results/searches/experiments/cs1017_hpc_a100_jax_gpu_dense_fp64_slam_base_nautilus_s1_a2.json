@@ -1,0 +1,146 @@
+{
+  "backend": "jax_gpu",
+  "completed": true,
+  "config_name": "hpc_a100_jax_gpu_dense_fp64",
+  "dataset_class": "imaging",
+  "dataset_id": "sha256:e6558145d769730dc3c145a89fc21989e45376834e8472bf53d78d2eabf7b52a",
+  "environment": {
+    "cache": "unknown",
+    "cache_reason": "Not independently measured; operator did not declare state",
+    "compilation": "cold",
+    "hardware_id": "ral-a100-1gpu-4cpu"
+  },
+  "experiment_options": {
+    "batch": 20,
+    "chains": 1,
+    "jitter": 0.05,
+    "live": 150,
+    "particles": 256,
+    "steps": 1000,
+    "walkers": 50,
+    "warmup": 500
+  },
+  "experiment_protocol": "frozen-mass-total-v1",
+  "initialization": {
+    "mode": "cold",
+    "recipe": "Draw from frozen prepared priors; no baseline sampler information",
+    "sources": []
+  },
+  "initialization_s": null,
+  "initialization_s_reason": "Sampler initialization/warmup not timed separately from fit",
+  "instrument": "hst",
+  "library_revisions": {
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+  },
+  "max_likelihood_parameters": {
+    "fields.shear.gamma_1": 0.04949103827923518,
+    "fields.shear.gamma_2": 0.04971755471427308,
+    "galaxies.lens.mass.centre_0": -0.0009082921518763429,
+    "galaxies.lens.mass.centre_1": 0.0002132468956841055,
+    "galaxies.lens.mass.einstein_radius": 1.598555763759242,
+    "galaxies.lens.mass.ell_comps_0": 0.052082127972605426,
+    "galaxies.lens.mass.ell_comps_1": 0.001623644223967685,
+    "galaxies.lens.mass.slope": 1.9765497002515455
+  },
+  "max_log_likelihood": 31655.320638384568,
+  "measured_at": "2026-10-20T17:04:59.690195Z",
+  "model": "sha256:b30987d1024c7c907bb984f1c10ded341714542ac31073d9af05b3f32f85665e",
+  "output_path": "output/autolens/experiments/cs1017_hpc_a100_jax_gpu_dense_fp64_slam_base_nautilus_s1_a2",
+  "pipeline": "slam",
+  "posterior": {
+    "centre_0": {
+      "lower_1": -0.00122328918920933,
+      "median": -0.0008902490828173608,
+      "sigma": 0.000326854911697287,
+      "upper_1": -0.000569579365814756
+    },
+    "centre_1": {
+      "lower_1": -0.0007543890935490837,
+      "median": -0.00029524131695646906,
+      "sigma": 0.00043296235934912593,
+      "upper_1": 0.00011153562514916819
+    },
+    "einstein_radius": {
+      "lower_1": 1.6014862612894816,
+      "median": 1.6048156842323429,
+      "sigma": 0.003594929834230265,
+      "upper_1": 1.608676120957942
+    },
+    "ell_comps_0": {
+      "lower_1": 0.05399903943497924,
+      "median": 0.05568106523200884,
+      "sigma": 0.0020559868164961824,
+      "upper_1": 0.058111013067971604
+    },
+    "ell_comps_1": {
+      "lower_1": 0.0002744782914874865,
+      "median": 0.0012231931610298594,
+      "sigma": 0.0016897764989772847,
+      "upper_1": 0.0036540312894420557
+    },
+    "gamma_1": {
+      "lower_1": 0.05111481281723116,
+      "median": 0.05280617352394352,
+      "sigma": 0.0021924899923771446,
+      "upper_1": 0.05549979280198545
+    },
+    "gamma_2": {
+      "lower_1": 0.05063589103019577,
+      "median": 0.05138348463837527,
+      "sigma": 0.0007824518644016232,
+      "upper_1": 0.05220079475899902
+    },
+    "shear_magnitude": {
+      "lower_1": 0.07202993008424276,
+      "median": 0.07367294436564721,
+      "sigma": 0.0020670896645336723,
+      "upper_1": 0.0761641094133101
+    },
+    "slope": {
+      "lower_1": 2.010974768870262,
+      "median": 2.051584855407537,
+      "sigma": 0.04333252218533756,
+      "upper_1": 2.0976398132409373
+    }
+  },
+  "precision": "fp64",
+  "preparation_s": 2349.3604316147976,
+  "problem_id": "prepared-e92cf5ac442fd10ce3e88c5a92ab358af7072c5cae19490d104c29afc4d4f9d5",
+  "sampler": "nautilus",
+  "schema_version": 2,
+  "seed": 1,
+  "setup_id": "imaging/rectangular/hst",
+  "stage": "mass_total[1]",
+  "status": "complete",
+  "target": "prepared-e92cf5ac442fd10ce3e88c5a92ab358af7072c5cae19490d104c29afc4d4f9d5",
+  "timing_definitions": {
+    "initialization_s": "Sampler initialization and warmup included in total_s; not separately instrumented",
+    "preparation_s": "Elapsed prerequisite SLaM stage fits and mass model construction after dataset setup; excludes mass fit and prepared export; shared prerequisite cost excluded from total_s; never sum across experiment rows",
+    "sampling_s": "Sampler-native clock; cumulative on resume where reported; scope depends on sampler",
+    "total_s": "Elapsed experiment search.fit call only; segment-only for resume; excludes shared prerequisite preparation and artifact validation"
+  },
+  "total_wall_s": 744.0171982292086,
+  "variant": "slam_base",
+  "wall_s": 654.3182046413422,
+  "work": {
+    "definitions": {
+      "effective_sample_size": "No common posterior ESS estimator instrumented; terminal SMC weight ESS is not substituted",
+      "gradient_evaluations": "Not instrumented; neither iterations nor particle counts are gradient counts",
+      "iterations": "Sampler-native Emcee steps aggregated over synchronized walkers or SMC tempering steps; includes native warmup where reported; cumulative on resume",
+      "likelihood_evaluations": "Nautilus total_samples counts rejected and accepted likelihood calls, including exploration; other samplers not instrumented",
+      "retained_samples": "Length of PyAutoFit returned sample list after sampler-native burn-in/filtering; cumulative on resume"
+    },
+    "effective_sample_size": null,
+    "effective_sample_size_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "gradient_evaluations": null,
+    "gradient_evaluations_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "iterations": null,
+    "iterations_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "likelihood_evaluations": 27340,
+    "retained_samples": 27340
+  }
+}

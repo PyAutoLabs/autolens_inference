@@ -1,0 +1,146 @@
+{
+  "backend": "jax_gpu",
+  "completed": true,
+  "config_name": "hpc_a100_jax_gpu_dense_fp64",
+  "dataset_class": "imaging",
+  "dataset_id": "sha256:e6558145d769730dc3c145a89fc21989e45376834e8472bf53d78d2eabf7b52a",
+  "environment": {
+    "cache": "unknown",
+    "cache_reason": "Not independently measured; operator did not declare state",
+    "compilation": "cold",
+    "hardware_id": "ral-a100-1gpu-4cpu"
+  },
+  "experiment_options": {
+    "batch": 20,
+    "chains": 1,
+    "jitter": 0.05,
+    "live": 150,
+    "particles": 256,
+    "steps": 1000,
+    "walkers": 50,
+    "warmup": 500
+  },
+  "experiment_protocol": "frozen-mass-total-v1",
+  "initialization": {
+    "mode": "cold",
+    "recipe": "Draw from frozen prepared priors; no baseline sampler information",
+    "sources": []
+  },
+  "initialization_s": null,
+  "initialization_s_reason": "Sampler initialization/warmup not timed separately from fit",
+  "instrument": "hst",
+  "library_revisions": {
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+  },
+  "max_likelihood_parameters": {
+    "fields.shear.gamma_1": 0.050501783514159904,
+    "fields.shear.gamma_2": 0.05044485027977863,
+    "galaxies.lens.mass.centre_0": -0.0009166379290243341,
+    "galaxies.lens.mass.centre_1": -0.0007750926427800766,
+    "galaxies.lens.mass.einstein_radius": 1.5995739396221744,
+    "galaxies.lens.mass.ell_comps_0": 0.05352277910739787,
+    "galaxies.lens.mass.ell_comps_1": 0.0033677175621832623,
+    "galaxies.lens.mass.slope": 1.9874514092030047
+  },
+  "max_log_likelihood": 31654.96430326027,
+  "measured_at": "2026-10-20T16:55:46.340213Z",
+  "model": "sha256:b30987d1024c7c907bb984f1c10ded341714542ac31073d9af05b3f32f85665e",
+  "output_path": "output/autolens/experiments/cs1017_hpc_a100_jax_gpu_dense_fp64_slam_base_nautilus_s0_a2",
+  "pipeline": "slam",
+  "posterior": {
+    "centre_0": {
+      "lower_1": -0.0012813515176107288,
+      "median": -0.0009628161462714105,
+      "sigma": 0.0003256658464731713,
+      "upper_1": -0.0006300198246643863
+    },
+    "centre_1": {
+      "lower_1": -0.0009326405292406723,
+      "median": -0.0005498320990005307,
+      "sigma": 0.0004291197062392013,
+      "upper_1": -7.440111676226973e-05
+    },
+    "einstein_radius": {
+      "lower_1": 1.600080655090832,
+      "median": 1.6028757114693692,
+      "sigma": 0.0034649438366699536,
+      "upper_1": 1.6070105427641719
+    },
+    "ell_comps_0": {
+      "lower_1": 0.05348185079772509,
+      "median": 0.05475803788689795,
+      "sigma": 0.0017391645476495243,
+      "upper_1": 0.05696017989302414
+    },
+    "ell_comps_1": {
+      "lower_1": 0.0008594870086295032,
+      "median": 0.002979976631586005,
+      "sigma": 0.001623559635267727,
+      "upper_1": 0.004106606279164957
+    },
+    "gamma_1": {
+      "lower_1": 0.05084608598878403,
+      "median": 0.05211961462587606,
+      "sigma": 0.0017332866662661227,
+      "upper_1": 0.05431265932131628
+    },
+    "gamma_2": {
+      "lower_1": 0.05039733646918025,
+      "median": 0.05096455313976497,
+      "sigma": 0.000743269104751889,
+      "upper_1": 0.05188387467868403
+    },
+    "shear_magnitude": {
+      "lower_1": 0.0716465512502456,
+      "median": 0.07291181786471747,
+      "sigma": 0.001713343555050248,
+      "upper_1": 0.0750732383603461
+    },
+    "slope": {
+      "lower_1": 1.9928553550385846,
+      "median": 2.0279598880702325,
+      "sigma": 0.04272332215187247,
+      "upper_1": 2.0783019993423295
+    }
+  },
+  "precision": "fp64",
+  "preparation_s": 2349.3604316147976,
+  "problem_id": "prepared-e92cf5ac442fd10ce3e88c5a92ab358af7072c5cae19490d104c29afc4d4f9d5",
+  "sampler": "nautilus",
+  "schema_version": 2,
+  "seed": 0,
+  "setup_id": "imaging/rectangular/hst",
+  "stage": "mass_total[1]",
+  "status": "complete",
+  "target": "prepared-e92cf5ac442fd10ce3e88c5a92ab358af7072c5cae19490d104c29afc4d4f9d5",
+  "timing_definitions": {
+    "initialization_s": "Sampler initialization and warmup included in total_s; not separately instrumented",
+    "preparation_s": "Elapsed prerequisite SLaM stage fits and mass model construction after dataset setup; excludes mass fit and prepared export; shared prerequisite cost excluded from total_s; never sum across experiment rows",
+    "sampling_s": "Sampler-native clock; cumulative on resume where reported; scope depends on sampler",
+    "total_s": "Elapsed experiment search.fit call only; segment-only for resume; excludes shared prerequisite preparation and artifact validation"
+  },
+  "total_wall_s": 678.482486196328,
+  "variant": "slam_base",
+  "wall_s": 596.4306938648224,
+  "work": {
+    "definitions": {
+      "effective_sample_size": "No common posterior ESS estimator instrumented; terminal SMC weight ESS is not substituted",
+      "gradient_evaluations": "Not instrumented; neither iterations nor particle counts are gradient counts",
+      "iterations": "Sampler-native Emcee steps aggregated over synchronized walkers or SMC tempering steps; includes native warmup where reported; cumulative on resume",
+      "likelihood_evaluations": "Nautilus total_samples counts rejected and accepted likelihood calls, including exploration; other samplers not instrumented",
+      "retained_samples": "Length of PyAutoFit returned sample list after sampler-native burn-in/filtering; cumulative on resume"
+    },
+    "effective_sample_size": null,
+    "effective_sample_size_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "gradient_evaluations": null,
+    "gradient_evaluations_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "iterations": null,
+    "iterations_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "likelihood_evaluations": 25740,
+    "retained_samples": 25740
+  }
+}

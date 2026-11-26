@@ -1,0 +1,146 @@
+{
+  "backend": "jax_gpu",
+  "completed": true,
+  "config_name": "hpc_a100_jax_gpu_dense_fp64",
+  "dataset_class": "imaging",
+  "dataset_id": "sha256:e6558145d769730dc3c145a89fc21989e45376834e8472bf53d78d2eabf7b52a",
+  "environment": {
+    "cache": "unknown",
+    "cache_reason": "Not independently measured; operator did not declare state",
+    "compilation": "cold",
+    "hardware_id": "ral-a100-1gpu-4cpu"
+  },
+  "experiment_options": {
+    "batch": 20,
+    "chains": 1,
+    "jitter": 0.05,
+    "live": 150,
+    "particles": 256,
+    "steps": 1000,
+    "walkers": 50,
+    "warmup": 500
+  },
+  "experiment_protocol": "frozen-mass-total-v1",
+  "initialization": {
+    "mode": "cold",
+    "recipe": "Draw from frozen prepared priors; no baseline sampler information",
+    "sources": []
+  },
+  "initialization_s": null,
+  "initialization_s_reason": "Sampler initialization/warmup not timed separately from fit",
+  "instrument": "hst",
+  "library_revisions": {
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+  },
+  "max_likelihood_parameters": {
+    "fields.shear.gamma_1": 0.0487504926326181,
+    "fields.shear.gamma_2": 0.049761407517799006,
+    "galaxies.lens.mass.centre_0": -0.0006423029939495519,
+    "galaxies.lens.mass.centre_1": 7.543464663520182e-06,
+    "galaxies.lens.mass.einstein_radius": 1.5979826836903077,
+    "galaxies.lens.mass.ell_comps_0": 0.052005363491572476,
+    "galaxies.lens.mass.ell_comps_1": 0.0009868452702231976,
+    "galaxies.lens.mass.slope": 1.9668740131434523
+  },
+  "max_log_likelihood": 31655.226678454626,
+  "measured_at": "2026-10-20T17:44:17.334809Z",
+  "model": "sha256:167e0b754983015f06b43eb7609ee418d8a858350f850901c948dd578016fed4",
+  "output_path": "output/autolens/experiments/cs1017_hpc_a100_jax_gpu_dense_fp64_slam_base_light_fixed_nautilus_s2_a2",
+  "pipeline": "slam",
+  "posterior": {
+    "centre_0": {
+      "lower_1": -0.0012139637739031252,
+      "median": -0.0009078083538047737,
+      "sigma": 0.00031530973844835026,
+      "upper_1": -0.0005833442970064246
+    },
+    "centre_1": {
+      "lower_1": -0.0007093394241935029,
+      "median": -0.0002953362902500434,
+      "sigma": 0.0004040767341684747,
+      "upper_1": 9.881404414344651e-05
+    },
+    "einstein_radius": {
+      "lower_1": 1.6007947056623677,
+      "median": 1.6037831419424482,
+      "sigma": 0.0028300491329417143,
+      "upper_1": 1.6064548039282511
+    },
+    "ell_comps_0": {
+      "lower_1": 0.05372395082748743,
+      "median": 0.055244536984588435,
+      "sigma": 0.0015819911161509062,
+      "upper_1": 0.056887933059789245
+    },
+    "ell_comps_1": {
+      "lower_1": 0.0004713497558929312,
+      "median": 0.0013798953164272292,
+      "sigma": 0.001575194515647491,
+      "upper_1": 0.003621738787187913
+    },
+    "gamma_1": {
+      "lower_1": 0.05095784455950801,
+      "median": 0.05224448891804747,
+      "sigma": 0.001447178590879221,
+      "upper_1": 0.05385220174126645
+    },
+    "gamma_2": {
+      "lower_1": 0.050497564075563224,
+      "median": 0.05119400183646966,
+      "sigma": 0.0007102528359337126,
+      "upper_1": 0.05191806974743065
+    },
+    "shear_magnitude": {
+      "lower_1": 0.07179047771588053,
+      "median": 0.07317364175572862,
+      "sigma": 0.0014484389393239275,
+      "upper_1": 0.07468735559452838
+    },
+    "slope": {
+      "lower_1": 2.001695626792502,
+      "median": 2.0384897846757815,
+      "sigma": 0.03553606132291742,
+      "upper_1": 2.072767749438337
+    }
+  },
+  "precision": "fp64",
+  "preparation_s": 2352.3002238608897,
+  "problem_id": "prepared-ee74b3ebf1f06e4d9ad478499711523081a25f653a5da89dac6f16dc057e8882",
+  "sampler": "nautilus",
+  "schema_version": 2,
+  "seed": 2,
+  "setup_id": "imaging/rectangular/hst",
+  "stage": "mass_total[1]",
+  "status": "complete",
+  "target": "prepared-ee74b3ebf1f06e4d9ad478499711523081a25f653a5da89dac6f16dc057e8882",
+  "timing_definitions": {
+    "initialization_s": "Sampler initialization and warmup included in total_s; not separately instrumented",
+    "preparation_s": "Elapsed prerequisite SLaM stage fits and mass model construction after dataset setup; excludes mass fit and prepared export; shared prerequisite cost excluded from total_s; never sum across experiment rows",
+    "sampling_s": "Sampler-native clock; cumulative on resume where reported; scope depends on sampler",
+    "total_s": "Elapsed experiment search.fit call only; segment-only for resume; excludes shared prerequisite preparation and artifact validation"
+  },
+  "total_wall_s": 679.3056221720763,
+  "variant": "slam_base_light_fixed",
+  "wall_s": 607.1222379207611,
+  "work": {
+    "definitions": {
+      "effective_sample_size": "No common posterior ESS estimator instrumented; terminal SMC weight ESS is not substituted",
+      "gradient_evaluations": "Not instrumented; neither iterations nor particle counts are gradient counts",
+      "iterations": "Sampler-native Emcee steps aggregated over synchronized walkers or SMC tempering steps; includes native warmup where reported; cumulative on resume",
+      "likelihood_evaluations": "Nautilus total_samples counts rejected and accepted likelihood calls, including exploration; other samplers not instrumented",
+      "retained_samples": "Length of PyAutoFit returned sample list after sampler-native burn-in/filtering; cumulative on resume"
+    },
+    "effective_sample_size": null,
+    "effective_sample_size_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "gradient_evaluations": null,
+    "gradient_evaluations_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "iterations": null,
+    "iterations_reason": "Not measured by this producer/sampler; no estimate substituted",
+    "likelihood_evaluations": 28520,
+    "retained_samples": 28520
+  }
+}

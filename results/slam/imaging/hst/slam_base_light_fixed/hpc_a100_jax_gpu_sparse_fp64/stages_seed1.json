@@ -1,0 +1,503 @@
+{
+  "schema_version": 3,
+  "target": "hst/slam5_slam_base_light_fixed/seed1",
+  "variant": "slam_base_light_fixed",
+  "lens_light_mode": "fixed",
+  "results_tag": null,
+  "library_revisions": {
+    "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+    "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+    "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+    "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+    "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+  },
+  "release_pin": "2026.10.17.1",
+  "slurm_job_id": "412537_1",
+  "config_name": "hpc_a100_jax_gpu_sparse_fp64",
+  "backend": "jax_gpu",
+  "inversion": "sparse",
+  "precision": "fp64",
+  "instrument": "hst",
+  "dataset_class": "imaging",
+  "seed": 1,
+  "sampler": "nautilus",
+  "version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 4807 MiB, 81920 MiB"
+  },
+  "cores": 4,
+  "use_jax": true,
+  "rect_mesh": "bilinear",
+  "memo": "off",
+  "mesh": "rect",
+  "mesh_pixels": 28,
+  "mesh_areas_factor": null,
+  "mesh_zeroed_pixels": null,
+  "image_mesh": null,
+  "image_mesh_weight_power": null,
+  "image_mesh_weight_floor": null,
+  "image_mesh_edge_points": null,
+  "regularization": "adapt",
+  "mesh_shape": [
+    28,
+    28
+  ],
+  "stages_requested": null,
+  "test_mode": false,
+  "status": "complete",
+  "stages": [
+    {
+      "name": "source_lp[1]",
+      "free_parameters": 17,
+      "n_live": 200,
+      "n_batch": 50,
+      "wall_s": 719.88591837883,
+      "total_wall_s": 885.7352682480123,
+      "compile_s": 13.48990987520665,
+      "likelihood_evals": 87700,
+      "log_evidence": 31968.14022063857,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": 32068.749007003848,
+      "posterior": {
+        "galaxies.lens.bulge.profile_list.0.centre_0": {
+          "median": 0.0001325899927738847,
+          "sigma": 0.00021496762222094964,
+          "lower_1": -8.426445253623112e-05,
+          "upper_1": 0.00034567079190566817
+        },
+        "galaxies.lens.bulge.profile_list.0.centre_1": {
+          "median": -4.4371139398618346e-05,
+          "sigma": 0.0002088724132491318,
+          "lower_1": -0.0002488480455473488,
+          "upper_1": 0.0001688967809509148
+        },
+        "galaxies.lens.bulge.profile_list.0.ell_comps_0": {
+          "median": 0.05244955192071564,
+          "sigma": 0.0019315383687521677,
+          "lower_1": 0.0503910631877561,
+          "upper_1": 0.05425413992526044
+        },
+        "galaxies.lens.bulge.profile_list.0.ell_comps_1": {
+          "median": -0.0014758290408897652,
+          "sigma": 0.004583810334094378,
+          "lower_1": -0.00614529866642273,
+          "upper_1": 0.0030223220017660253
+        },
+        "galaxies.lens.bulge.profile_list.20.ell_comps_0": {
+          "median": 0.04074168166894908,
+          "sigma": 0.10409085829969356,
+          "lower_1": -0.06748262184592922,
+          "upper_1": 0.14069909475345788
+        },
+        "galaxies.lens.bulge.profile_list.20.ell_comps_1": {
+          "median": 0.09867659630032455,
+          "sigma": 0.189187668785632,
+          "lower_1": -0.1346980952369912,
+          "upper_1": 0.24367724233427282
+        },
+        "galaxies.source.bulge.profile_list.0.centre_0": {
+          "median": -0.00029944345762511677,
+          "sigma": 0.0002186892725663239,
+          "lower_1": -0.0005211597560702705,
+          "upper_1": -8.378121093762276e-05
+        },
+        "galaxies.source.bulge.profile_list.0.centre_1": {
+          "median": -0.0002674644723656927,
+          "sigma": 0.0002030930523464761,
+          "lower_1": -0.00047205188108997786,
+          "upper_1": -6.58657763970257e-05
+        },
+        "galaxies.source.bulge.profile_list.0.ell_comps_0": {
+          "median": 0.09765126863722307,
+          "sigma": 0.0019928974481351336,
+          "lower_1": 0.09570261792419231,
+          "upper_1": 0.09968841282046258
+        },
+        "galaxies.source.bulge.profile_list.0.ell_comps_1": {
+          "median": -0.055879392191205246,
+          "sigma": 0.0018761898869831505,
+          "lower_1": -0.05784443123730169,
+          "upper_1": -0.054092051463335386
+        },
+        "gamma_1": {
+          "median": 0.05001750624638253,
+          "sigma": 0.00036177529097885033,
+          "lower_1": 0.049659172447893196,
+          "upper_1": 0.0503827230298509
+        },
+        "gamma_2": {
+          "median": 0.05013987736677111,
+          "sigma": 0.00032278407555880184,
+          "lower_1": 0.04981800398531045,
+          "upper_1": 0.050463572136428055
+        },
+        "galaxies.lens.mass.centre_0": {
+          "median": -7.315211100954161e-05,
+          "sigma": 0.0002831167174791056,
+          "lower_1": -0.00035985547389245703,
+          "upper_1": 0.00020637796106575418
+        },
+        "galaxies.lens.mass.centre_1": {
+          "median": -0.00021394999630841804,
+          "sigma": 0.0002707132471100955,
+          "lower_1": -0.0004834558756429107,
+          "upper_1": 5.7970618577280336e-05
+        },
+        "galaxies.lens.mass.ell_comps_0": {
+          "median": 0.052803027259548774,
+          "sigma": 0.000591480119132716,
+          "lower_1": 0.052225229044744775,
+          "upper_1": 0.05340818928301021
+        },
+        "galaxies.lens.mass.ell_comps_1": {
+          "median": 0.0004056839393931171,
+          "sigma": 0.0009096052753203448,
+          "lower_1": -0.0004758912931545995,
+          "upper_1": 0.0013433192574860901
+        },
+        "einstein_radius": {
+          "median": 1.60043900708767,
+          "sigma": 0.00019267590377214372,
+          "lower_1": 1.6002456413035282,
+          "upper_1": 1.6006309931110725
+        },
+        "shear_magnitude": {
+          "median": 0.07082148507139015,
+          "sigma": 0.00034698484094831256,
+          "lower_1": 0.07047839327599759,
+          "upper_1": 0.07117236295789421
+        }
+      },
+      "truth_delta_sigma": {
+        "einstein_radius": 2.278474262090538,
+        "gamma_1": 0.048389834295093935,
+        "gamma_2": 0.4333465538191598,
+        "shear_magnitude": 0.3193423448486836
+      },
+      "inversion_applies": false,
+      "positions_info_present": false,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_gpu_sparse_fp64/seed_1/source_lp[1]/ef3b397b5af00c54a3cb359c5e4090d4"
+    },
+    {
+      "name": "source_pix[1]",
+      "free_parameters": 10,
+      "n_live": 150,
+      "n_batch": 20,
+      "wall_s": 1648.602859735489,
+      "total_wall_s": 1739.6825300571509,
+      "compile_s": 19.646947006927803,
+      "likelihood_evals": 30360,
+      "log_evidence": 31416.664936508296,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": 31483.137865144872,
+      "posterior": {
+        "gamma_1": {
+          "median": 0.05040676348623874,
+          "sigma": 0.0003794627213275989,
+          "lower_1": 0.050012077454404245,
+          "upper_1": 0.05077100289705944
+        },
+        "gamma_2": {
+          "median": 0.0494362862912475,
+          "sigma": 0.00023150700698474497,
+          "lower_1": 0.04920781394871487,
+          "upper_1": 0.04967082796268436
+        },
+        "centre_0": {
+          "median": -7.641454087460012e-05,
+          "sigma": 0.0002828240915211677,
+          "lower_1": -0.0003633175708065158,
+          "upper_1": 0.00020233061223581952
+        },
+        "centre_1": {
+          "median": -0.00023660866898398875,
+          "sigma": 0.00036196673365198955,
+          "lower_1": -0.0006108616866335773,
+          "upper_1": 0.00011307178067040182
+        },
+        "ell_comps_0": {
+          "median": 0.05137208839962126,
+          "sigma": 0.0004306412663189971,
+          "lower_1": 0.050928931368434675,
+          "upper_1": 0.05179021390107267
+        },
+        "ell_comps_1": {
+          "median": 0.0005379648527008988,
+          "sigma": 0.0009395275043108022,
+          "lower_1": -0.0005262724748570779,
+          "upper_1": 0.0013527825337645266
+        },
+        "einstein_radius": {
+          "median": 1.6004807402464263,
+          "sigma": 0.0002327530302607128,
+          "lower_1": 1.6002430754463102,
+          "upper_1": 1.6007085815068316
+        },
+        "inner_coefficient": {
+          "median": 3.7720029959981e-05,
+          "sigma": 0.00024304715540967792,
+          "lower_1": 3.501623310665679e-06,
+          "upper_1": 0.0004895959341300215
+        },
+        "outer_coefficient": {
+          "median": 147.50791510553665,
+          "sigma": 33.928169064820246,
+          "lower_1": 114.54612439474526,
+          "upper_1": 182.40246252438575
+        },
+        "signal_scale": {
+          "median": 0.021835714570728477,
+          "sigma": 0.00531320224229604,
+          "lower_1": 0.01765870318047186,
+          "upper_1": 0.02828510766506394
+        },
+        "shear_magnitude": {
+          "median": 0.0706119699575306,
+          "sigma": 0.000278302970017498,
+          "lower_1": 0.07031567956065456,
+          "upper_1": 0.07087228550068955
+        }
+      },
+      "truth_delta_sigma": {
+        "einstein_radius": 2.0654521485185495,
+        "gamma_1": 1.0719458417828769,
+        "gamma_2": -2.4349747167248688,
+        "shear_magnitude": -0.3546787916706972
+      },
+      "inversion_applies": true,
+      "positions_info_present": true,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_gpu_sparse_fp64/seed_1/source_pix[1]/5fa12a7897338e96dbe2f4da29b30535"
+    },
+    {
+      "name": "source_pix[2]",
+      "free_parameters": 5,
+      "n_live": 75,
+      "n_batch": 20,
+      "wall_s": 226.34285354614258,
+      "total_wall_s": 306.9743541041389,
+      "compile_s": 8.802023284835741,
+      "likelihood_evals": 6000,
+      "log_evidence": 31625.538804183372,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": 31645.540213376637,
+      "posterior": {
+        "weight_power": {
+          "median": 2.3217358691402064,
+          "sigma": 0.011749101436159926,
+          "lower_1": 2.3050766634737525,
+          "upper_1": 2.3285748663460724
+        },
+        "weight_floor": {
+          "median": 0.000527849761286727,
+          "sigma": 0.005658850883695618,
+          "lower_1": 4.56600280728107e-05,
+          "upper_1": 0.011363361795464048
+        },
+        "inner_coefficient": {
+          "median": 8.843720042573968e-06,
+          "sigma": 2.4394156530868576e-05,
+          "lower_1": 2.1771108661910226e-06,
+          "upper_1": 5.096542392792817e-05
+        },
+        "outer_coefficient": {
+          "median": 69.660207559419,
+          "sigma": 8.590191103117846,
+          "lower_1": 59.07600548799064,
+          "upper_1": 76.25638769422633
+        },
+        "signal_scale": {
+          "median": 0.057954452179839355,
+          "sigma": 0.00815976480698043,
+          "lower_1": 0.052344534824491605,
+          "upper_1": 0.06866406443845247
+        }
+      },
+      "truth_delta_sigma": {},
+      "inversion_applies": true,
+      "positions_info_present": true,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_gpu_sparse_fp64/seed_1/source_pix[2]/74dad9bf4e545dd7e469e5766f074992"
+    },
+    {
+      "name": "light[1]",
+      "free_parameters": 6,
+      "n_live": 150,
+      "n_batch": 20,
+      "wall_s": 196.74390411376953,
+      "total_wall_s": 278.5578172940295,
+      "compile_s": 3.158893384039402,
+      "likelihood_evals": 9200,
+      "log_evidence": 31621.461276676753,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": 31646.22430643654,
+      "posterior": {
+        "centre_0": {
+          "median": 0.00011563588343830034,
+          "sigma": 0.00022736691916748307,
+          "lower_1": -0.00010182975690691375,
+          "upper_1": 0.00035290408142805236
+        },
+        "centre_1": {
+          "median": -1.3991535798895442e-05,
+          "sigma": 0.00022700662123614947,
+          "lower_1": -0.0002436991252960588,
+          "upper_1": 0.0002103141171762401
+        },
+        "galaxies.lens.bulge.profile_list.0.ell_comps_0": {
+          "median": 0.05145965157311504,
+          "sigma": 0.004002693915361916,
+          "lower_1": 0.048364493189456466,
+          "upper_1": 0.0563698810201803
+        },
+        "galaxies.lens.bulge.profile_list.0.ell_comps_1": {
+          "median": -0.0014798997863046828,
+          "sigma": 0.007544558148401744,
+          "lower_1": -0.006688592843236568,
+          "upper_1": 0.008400523453566918
+        },
+        "galaxies.lens.bulge.profile_list.20.ell_comps_0": {
+          "median": 0.0697483883710267,
+          "sigma": 0.12496665601817528,
+          "lower_1": -0.04853790443379608,
+          "upper_1": 0.20139540760255448
+        },
+        "galaxies.lens.bulge.profile_list.20.ell_comps_1": {
+          "median": 0.09440090832975635,
+          "sigma": 0.17305547175771413,
+          "lower_1": -0.12705581844034466,
+          "upper_1": 0.21905512507508357
+        }
+      },
+      "truth_delta_sigma": {},
+      "inversion_applies": true,
+      "positions_info_present": true,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/autolens/imaging/hst/slam/slam_base/hpc_a100_jax_gpu_sparse_fp64/seed_1/light[1]/e7d7518536f1e4febf576b33ca6cf207"
+    },
+    {
+      "name": "mass_total[1]",
+      "free_parameters": 8,
+      "n_live": 150,
+      "n_batch": 20,
+      "wall_s": 1396.915834903717,
+      "total_wall_s": 1495.4526844238862,
+      "compile_s": 5.22585121402517,
+      "likelihood_evals": 41880,
+      "log_evidence": -43201.59320296694,
+      "log_evidence_err": null,
+      "log_evidence_err_note": "nautilus 1.0.5 exposes no log_z_err; samples_info carries only log_evidence, total_samples, time and number_live_points.",
+      "max_log_likelihood": -43131.688926426374,
+      "posterior": {
+        "gamma_1": {
+          "median": 0.09977822193888564,
+          "sigma": 6.761518628847774e-05,
+          "lower_1": 0.09971575151084863,
+          "upper_1": 0.09985098188342559
+        },
+        "gamma_2": {
+          "median": 0.05459240587222744,
+          "sigma": 4.0829530219610444e-05,
+          "lower_1": 0.054556315630877664,
+          "upper_1": 0.054637974691316885
+        },
+        "centre_0": {
+          "median": -0.002682668810980216,
+          "sigma": 0.00010375561330845206,
+          "lower_1": -0.002802572026646993,
+          "upper_1": -0.0025950608000300888
+        },
+        "centre_1": {
+          "median": 0.0011359303996373753,
+          "sigma": 5.7152409194349395e-05,
+          "lower_1": 0.0010752240116447451,
+          "upper_1": 0.001189528830033444
+        },
+        "ell_comps_0": {
+          "median": 0.5678547152827135,
+          "sigma": 0.0018074778316513052,
+          "lower_1": 0.5659425147997895,
+          "upper_1": 0.5695574704630921
+        },
+        "ell_comps_1": {
+          "median": 0.004654163669468015,
+          "sigma": 0.001777280403046482,
+          "lower_1": 0.0030272799485433367,
+          "upper_1": 0.006581840754636301
+        },
+        "einstein_radius": {
+          "median": 2.4265647700057644,
+          "sigma": 0.0051549093099005905,
+          "lower_1": 2.4211286308005935,
+          "upper_1": 2.4314384494203947
+        },
+        "slope": {
+          "median": 2.9631435441098697,
+          "sigma": 0.00015347727377990061,
+          "lower_1": 2.9629567615723955,
+          "upper_1": 2.9632637161199553
+        },
+        "shear_magnitude": {
+          "median": 0.11373665054037313,
+          "sigma": 6.159589215961464e-05,
+          "lower_1": 0.11367602411816388,
+          "upper_1": 0.11379921590248311
+        }
+      },
+      "truth_delta_sigma": {
+        "einstein_radius": 160.3451623131861,
+        "slope": 6275.47988304183,
+        "gamma_1": 736.1988433561162,
+        "gamma_2": 112.47755846139277,
+        "shear_magnitude": 698.5201595948041
+      },
+      "inversion_applies": true,
+      "positions_info_present": true,
+      "completed": true,
+      "resumed": false,
+      "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/autolens/imaging/hst/slam/slam_base_light_fixed/hpc_a100_jax_gpu_sparse_fp64/seed_1/mass_total[1]/8d9c048f91bd973d6fe15aed8b523383",
+      "setup_id": "imaging/rectangular/hst",
+      "problem_id": "prepared-b844493131720724d41739442300e7ef8d95ccb4fd3401ce61f6bbe322b4868c",
+      "dataset_id": "sha256:813099d950dd4bb5ce4cca58c71fea32042f233801c9e4982f914b7786f678ce",
+      "model": "sha256:31b15f003d19a8bde26086d589eb8523dd71b651735b2e53045653ccad49f14e",
+      "experiment_protocol": "frozen-mass-total-v1",
+      "initialization": {
+        "mode": "cold",
+        "recipe": "Nautilus prepared priors; no baseline sampler information reused",
+        "sources": []
+      },
+      "preparation_s": 3322.6852344668005,
+      "max_likelihood_parameters": {
+        "('fields.shear.gamma_1',)": 0.09974153326984331,
+        "('fields.shear.gamma_2',)": 0.05457908443626169,
+        "('galaxies.lens.mass.centre_0',)": -0.0026851896735368753,
+        "('galaxies.lens.mass.centre_1',)": 0.0011898490555721966,
+        "('galaxies.lens.mass.einstein_radius',)": 2.4331976207847075,
+        "('galaxies.lens.mass.ell_comps_0',)": 0.5701737163066217,
+        "('galaxies.lens.mass.ell_comps_1',)": 0.003645648533432416,
+        "('galaxies.lens.mass.slope',)": 2.9633364779285496
+      },
+      "library_revisions": {
+        "PyAutoArray": "e59d5fa901e54bf3d9931890067bc3447a5c1232",
+        "PyAutoFit": "4b183e226947312d9a98b8f8dee1a3cf29c548ef",
+        "PyAutoGalaxy": "35100def2b7cd775fb77e46dbc1a674841c8f897",
+        "PyAutoLens": "c90eceb0093ea1618e679184e4f2a59268caa581",
+        "PyAutoNerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+      }
+    }
+  ]
+}

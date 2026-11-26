@@ -1,0 +1,53 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "type": "group",
+  "instrument": "euclid",
+  "configuration": {
+    "dataset_type": "group",
+    "instrument": "euclid",
+    "provenance": "autolens_workspace scripts/group/simulator.py (grid 250x250 at 0.1\", galaxies, exposure 300 s, sky 0.1) and modeling.py (7.5\" mask, radial-bin over-sampling on every galaxy); autolens_visualization true_models/group.py; PSF from instruments/imaging.py euclid (21x21, sigma 0.1\")",
+    "shape_native": [
+      250,
+      250
+    ],
+    "pixel_scale": 0.1,
+    "psf": {
+      "shape": [
+        21,
+        21
+      ],
+      "sigma": 0.1
+    },
+    "exposure_time": 300.0,
+    "background_sky_level": 0.1,
+    "noise_seed": 1,
+    "over_sampling": {
+      "sub_size_list": [
+        32,
+        8,
+        2
+      ],
+      "radial_list": [
+        0.3,
+        0.6
+      ],
+      "centres": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          3.5,
+          2.5
+        ],
+        [
+          -4.4,
+          -5.0
+        ]
+      ]
+    }
+  },
+  "phases": {
+    "simulate": 1.8816564170410857
+  }
+}
